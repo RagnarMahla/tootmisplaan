@@ -2,33 +2,27 @@
 <html lang="et">
 <head>
     <meta charset="UTF-8">
-    <title>TOCI Tootmisjuhtimine V19.1 - Paindlik Võimekus</title>
+    <title>TOCI Tootmisjuhtimine V19.2 - LÕPLIK</title>
     <style>
         :root { --primary: #1a252f; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; --warning: #f1c40f; --bg: #f1f2f6; }
         body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); font-size: 13px; }
-        
         .top-bar { background: var(--primary); color: white; padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 9999; }
         .sync-status { font-size: 11px; padding: 4px 10px; border-radius: 4px; font-weight: bold; }
         .tabs { display: flex; background: #2c3e50; border-bottom: 4px solid var(--accent); overflow-x: auto; position: sticky; top: 62px; z-index: 4000; }
         .tab-btn { padding: 15px 20px; color: white; cursor: pointer; border: none; background: none; font-weight: bold; white-space: nowrap; opacity: 0.7; transition: 0.3s; }
         .tab-btn.active { opacity: 1; background: rgba(255,255,255,0.1); box-shadow: inset 0 -4px 0 var(--accent); }
-        
         .content { padding: 20px; display: none; }
         .content.active { display: block; }
-
         table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         th { background: #eee; padding: 12px 8px; text-align: left; position: sticky; top: 0; border-bottom: 2px solid #ddd; }
         td { padding: 8px; border-bottom: 1px solid #eee; }
         input { width: 92%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; }
-
         .gantt-wrapper { overflow: auto; background: white; border: 1px solid #ccc; max-height: 70vh; border-radius: 4px; }
         .gantt-grid { display: grid; grid-template-columns: 220px repeat(365, 45px); position: relative; }
         .gantt-cell { border-right: 0.1px solid #f0f0f0; border-bottom: 1px solid #f0f0f0; height: 50px; position: relative; }
         .gantt-label { position: sticky; left: 0; background: white; z-index: 20; border-right: 2px solid #ddd; padding: 10px; font-weight: bold; display: flex; align-items: center; box-shadow: 2px 0 5px rgba(0,0,0,0.05); }
-        
         .task-bar { position: absolute; height: 35px; top: 7px; background: var(--accent); color: white; border-radius: 4px; font-size: 11px; display: flex; align-items: center; z-index: 10; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.2); overflow: hidden; }
         .progress-fill { position: absolute; left: 0; top: 0; height: 100%; background: rgba(0,0,0,0.25); border-right: 1px solid rgba(255,255,255,0.3); }
-
         .charts-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; }
         .chart-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
         .bar-chart { display: flex; align-items: flex-end; height: 180px; gap: 6px; border-bottom: 2px solid #333; padding-top: 30px; position: relative; }
@@ -36,15 +30,13 @@
         .bar { width: 85%; border-radius: 3px 3px 0 0; transition: 0.3s; position: relative; }
         .bar-val { font-size: 9px; margin-bottom: 4px; font-weight: bold; }
         .cap-line { position: absolute; width: 100%; border-top: 2px dashed var(--danger); z-index: 5; opacity: 0.6; pointer-events: none; }
-        
-        /* Võimekuse tabeli stiil */
         .cap-input { width: 50px !important; padding: 2px !important; text-align: center; }
     </style>
 </head>
 <body>
 
 <div class="top-bar">
-    <div>🚀 <strong>TOCI TOOTMISJUHTIMINE</strong> (V19.1 LIVE)</div>
+    <div>🚀 <strong>TOCI TOOTMISJUHTIMINE</strong> (V19.2 LIVE)</div>
     <div id="syncStatus" class="sync-status" style="background:var(--warning); color:black;">Ühendamine...</div>
 </div>
 
@@ -52,21 +44,18 @@
     <button class="tab-btn active" onclick="openTab(event, 'sisestus')">SISESTUS</button>
     <button class="tab-btn" onclick="openTab(event, 'gantt_mk')">MUST KEEV</button>
     <button class="tab-btn" onclick="openTab(event, 'gantt_rk')">RV KEEV</button>
-    <button class="tab-btn" onclick="openTab(event, 'gantt_lukk')">LUKKSEPP</button>
+    <button class="tab-btn" onclick="openTab(event, 'gantt_ml')">MUST LUKK</button>
+    <button class="tab-btn" onclick="openTab(event, 'gantt_rl')">RV LUKK</button>
     <button class="tab-btn" onclick="openTab(event, 'koormus_tab')">KOORMATUS</button>
     <button class="tab-btn" onclick="openTab(event, 'voimekus_tab')" style="color: var(--warning)">⚙️ VÕIMEKUS</button>
-    <button class="tab-btn" style="background:var(--success)" onclick="fetchData()">🔄 VÄRSKENDA ANDMEID</button>
+    <button class="tab-btn" style="background:var(--success)" onclick="fetchData()">🔄 VÄRSKENDA</button>
 </div>
 
 <div id="sisestus" class="content active">
     <button onclick="addNewRow()" style="margin-bottom:15px; padding:10px 25px; background:var(--success); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">+ LISA UUS TELLIMUS</button>
     <table>
         <thead>
-            <tr>
-                <th>MT</th><th>Klient</th><th>Algus</th><th>Lõpp</th>
-                <th title="Must Keev">MK</th><th title="RV Keev">RK</th><th title="Must Lukk">ML</th><th title="RV Lukk">RL</th><th title="Kooste">KO</th>
-                <th>%</th><th>Haldus</th>
-            </tr>
+            <tr><th>MT</th><th>Klient</th><th>Algus</th><th>Lõpp</th><th>MK</th><th>RK</th><th>ML</th><th>RL</th><th>KO</th><th>%</th><th>Haldus</th></tr>
         </thead>
         <tbody id="table-body"></tbody>
     </table>
@@ -74,15 +63,15 @@
 
 <div id="gantt_mk" class="content"><div class="gantt-wrapper" id="gantt-must_k"></div></div>
 <div id="gantt_rk" class="content"><div class="gantt-wrapper" id="gantt-rv_k"></div></div>
-<div id="gantt_lukk" class="content"><div class="gantt-wrapper" id="gantt-lukk"></div></div>
+<div id="gantt_ml" class="content"><div class="gantt-wrapper" id="gantt-must_l"></div></div>
+<div id="gantt_rl" class="content"><div class="gantt-wrapper" id="gantt-rv_l"></div></div>
 
 <div id="koormus_tab" class="content">
     <div class="charts-container" id="charts-box"></div>
 </div>
 
 <div id="voimekus_tab" class="content">
-    <h3>Nädala võimekuse (Capacity) muurmine</h3>
-    <p><small>* Siin saad muuta konkreetse nädala piiri (nt haigused, pühad). Kui väli on tühi, kehtib osakonna baasvõimekus.</small></p>
+    <h3>Nädala võimekuse (Capacity) muutmine</h3>
     <div style="overflow-x: auto;">
         <table style="width: auto;">
             <thead id="cap-head"></thead>
@@ -106,7 +95,6 @@
 
     const START_VIEW = new Date("2026-01-01");
     let orders = [];
-    // LUEME MUUDETUD VÕIMEKUSE BRAUSERI MÄLUST
     let customCap = JSON.parse(localStorage.getItem('prod_custom_cap')) || {};
 
     async function fetchData() {
@@ -145,9 +133,7 @@
         }
     }
 
-    function renderAll() {
-        renderTable();
-    }
+    function renderAll() { renderTable(); }
 
     function cleanDate(d) {
         if(!d) return "";
@@ -183,14 +169,12 @@
             let cur = new Date(START_VIEW.getTime() + d*86400000);
             html += `<div style="text-align:center; font-size:9px; border-bottom:1px solid #ddd; background:#f9f9f9;">${cur.getDate()}.${cur.getMonth()+1}</div>`;
         }
-        
         orders.filter(o => o[key] > 0).forEach(o => {
             html += `<div class="gantt-label">${o.mt} <br><small>${o.client}</small></div>`;
             let sDate = new Date(o.start);
             let eDate = new Date(o.end);
             let sIdx = Math.floor((sDate - START_VIEW) / 86400000);
             let dur = Math.max(1, Math.floor((eDate - sDate) / 86400000) + 1);
-            
             for(let d=0; d<365; d++) {
                 let bar = (d === sIdx && sIdx >= 0) ? `<div class="task-bar" style="width:${dur*45}px"><div class="progress-fill" style="width:${o.progress}%"></div><span style="padding-left:8px">${o.mt} (${o.progress}%)</span></div>` : '';
                 html += `<div class="gantt-cell">${bar}</div>`;
@@ -199,7 +183,6 @@
         wrap.innerHTML = html + `</div>`;
     }
 
-    // --- UUENDATUD KOORMATUSE FUNKTSIOON ---
     function renderCharts() {
         const box = document.getElementById('charts-box');
         box.innerHTML = '';
@@ -208,18 +191,9 @@
             for(let w=1; w<=15; w++) {
                 let ws = new Date(START_VIEW.getTime() + (w-1)*7*86400000);
                 let we = new Date(ws.getTime() + 7*86400000);
-                
-                // Arvutame selle nädala tegeliku koormuse
-                let total = orders.filter(o => new Date(o.start) >= ws && new Date(o.start) < we)
-                                  .reduce((sum, o) => sum + (o[key]||0), 0);
-                
-                // --- VALEM: PAINDLIK VÕIMEKUS ---
+                let total = orders.filter(o => new Date(o.start) >= ws && new Date(o.start) < we).reduce((sum, o) => sum + (o[key]||0), 0);
                 let currentCap = (customCap[key] && customCap[key][w]) ? customCap[key][w] : CONFIG[key].cap;
-                
-                // Graafiku tulba kõrgus (suhestatuna max võimekusega, et vältida ülipikki tulpi)
                 let h = Math.min(150, (total / Math.max(total, currentCap, 10)) * 150);
-                
-                // Punane joon sellel tulbal (dünaamiline)
                 let capLinePos = (currentCap / Math.max(total, currentCap, 10)) * 150;
 
                 html += `<div class="bar-wrapper">
@@ -230,11 +204,10 @@
                     <span style="font-size:9px; color:${currentCap !== CONFIG[key].cap ? 'var(--danger)' : ''}">W${w}</span>
                 </div>`;
             }
-            box.innerHTML += html + `</div><p><small>Baaspiir: ${CONFIG[key].cap}h. Punane joon näitab hetke võimekust.</small></p></div>`;
+            box.innerHTML += html + `</div></div>`;
         });
     }
 
-    // VÕIMEKUSE TABELI JOONISTAMINE
     function renderCapacityManager() {
         const head = document.getElementById('cap-head');
         const body = document.getElementById('cap-body');
@@ -243,8 +216,8 @@
         head.innerHTML = hHtml + '</tr>';
 
         let bHtml = '';
-        Object.keys(DEPTS).forEach(key => {
-            bHtml += `<tr><td><strong>${DEPTS[key].label}</strong></td>`;
+        Object.keys(CONFIG).forEach(key => {
+            bHtml += `<tr><td><strong>${CONFIG[key].label}</strong></td>`;
             for(let w=1; w<=15; w++) {
                 let val = (customCap[key] && customCap[key][w]) ? customCap[key][w] : CONFIG[key].cap;
                 bHtml += `<td><input type="number" class="cap-input" data-dept="${key}" data-week="${w}" value="${val}"></td>`;
@@ -262,33 +235,20 @@
             customCap[dept][week] = parseInt(input.value);
         });
         localStorage.setItem('prod_custom_cap', JSON.stringify(customCap));
-        alert("Võimekus salvestatud brauserisse!");
+        alert("Võimekus salvestatud!");
         renderCharts();
     }
-
-    const DEPTS = CONFIG; // Lihtsustamiseks
 
     function updateVal(idx, key, val) { orders[idx][key] = val; saveToCloud(); }
     function addNewRow() { 
         orders.push({mt: "UUS", client: "", start: "2026-02-19", end: "2026-02-26", must_k: 0, rv_k: 0, must_l: 0, rv_l: 0, kooste: 0, progress: 0}); 
         renderTable(); saveToCloud(); 
     }
-    function deleteRow(idx) { if(confirm("Kustuta rida?")) { orders.splice(idx, 1); renderTable(); saveToCloud(); } }
+    function deleteRow(idx) { if(confirm("Kustuta?")) { orders.splice(idx, 1); renderTable(); saveToCloud(); } }
 
     function openTab(evt, tabName) {
         document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(tabName).classList.add('active');
         evt.currentTarget.classList.add('active');
-        
-        if(tabName === 'gantt_mk') renderGantt('gantt-must_k', 'must_k');
-        if(tabName === 'gantt_rk') renderGantt('gantt-rv_k', 'rv_k');
-        if(tabName === 'gantt_lukk') renderGantt('gantt-lukk', 'must_l');
-        if(tabName === 'koormus_tab') renderCharts();
-        if(tabName === 'voimekus_tab') renderCapacityManager();
-    }
-
-    fetchData();
-</script>
-</body>
-</html>
+        if(tabName === 'gantt_mk') renderGant
