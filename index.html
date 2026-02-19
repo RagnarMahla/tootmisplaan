@@ -2,57 +2,68 @@
 <html lang="et">
 <head>
     <meta charset="UTF-8">
-    <title>TOCI LIVE V18</title>
+    <title>TOCI LIVE V18.1 - KÕIK OSAKONNAD</title>
     <style>
         :root { --primary: #2c3e50; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; --warning: #f1c40f; }
         body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f1f2f6; font-size: 13px; }
-        .top-bar { background: #1a252f; color: white; padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; }
-        .sync-status { font-size: 11px; padding: 4px 10px; border-radius: 4px; }
-        .tabs { display: flex; background: var(--primary); border-bottom: 4px solid var(--accent); overflow-x: auto; }
-        .tab-btn { padding: 15px 20px; color: white; cursor: pointer; border: none; background: none; font-weight: bold; white-space: nowrap; }
-        .tab-btn.active { background: rgba(255,255,255,0.1); box-shadow: inset 0 -4px 0 var(--accent); }
+        .top-bar { background: #1a252f; color: white; padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; position: sticky; top:0; z-index:9999; }
+        .sync-status { font-size: 11px; padding: 4px 10px; border-radius: 4px; font-weight: bold; }
+        .tabs { display: flex; background: var(--primary); border-bottom: 4px solid var(--accent); overflow-x: auto; position: sticky; top: 62px; z-index: 4000; }
+        .tab-btn { padding: 15px 20px; color: white; cursor: pointer; border: none; background: none; font-weight: bold; white-space: nowrap; opacity: 0.8; }
+        .tab-btn.active { opacity: 1; background: rgba(255,255,255,0.1); box-shadow: inset 0 -4px 0 var(--accent); }
         .content { padding: 20px; display: none; }
         .content.active { display: block; }
-        table { width: 100%; border-collapse: collapse; background: white; }
+        table { width: 100%; border-collapse: collapse; background: white; margin-bottom: 50px; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        input { width: 95%; padding: 4px; border: 1px solid #eee; }
+        th { background: #eee; position: sticky; top: 0; }
+        input { width: 92%; padding: 4px; border: 1px solid #eee; font-family: inherit; }
         /* Gantt vaade */
-        .gantt-wrapper { overflow: auto; background: white; border: 1px solid #ccc; max-height: 60vh; }
-        .gantt-grid { display: grid; grid-template-columns: 200px repeat(365, 40px); }
-        .gantt-cell { border: 0.1px solid #f0f0f0; height: 40px; position: relative; }
-        .task-bar { position: absolute; height: 30px; top: 5px; background: var(--accent); color: white; border-radius: 4px; font-size: 10px; display: flex; align-items: center; padding-left: 5px; z-index: 10; overflow: hidden; }
-        .progress-fill { position: absolute; left: 0; top: 0; height: 100%; background: rgba(0,0,0,0.2); }
+        .gantt-wrapper { overflow: auto; background: white; border: 1px solid #ccc; max-height: 70vh; }
+        .gantt-grid { display: grid; grid-template-columns: 200px repeat(365, 40px); position: relative; }
+        .gantt-cell { border: 0.1px solid #f0f0f0; height: 45px; position: relative; }
+        .task-bar { position: absolute; height: 32px; top: 6px; background: var(--accent); color: white; border-radius: 4px; font-size: 10px; display: flex; align-items: center; padding-left: 5px; z-index: 10; white-space: nowrap; box-shadow: 1px 1px 3px rgba(0,0,0,0.2); }
+        .progress-fill { position: absolute; left: 0; top: 0; height: 100%; background: rgba(0,0,0,0.25); border-right: 1px solid rgba(255,255,255,0.3); }
+        .gantt-label { position: sticky; left: 0; background: white; z-index: 20; border-right: 2px solid #ddd; padding: 5px; font-weight: bold; display: flex; align-items: center; border-bottom: 1px solid #eee; }
     </style>
 </head>
 <body>
 
 <div class="top-bar">
-    <div>🚀 <strong>TOCI LIVE V18</strong></div>
+    <div>🚀 <strong>TOCI TOOTMISPLAAN LIVE</strong></div>
     <div id="syncStatus" class="sync-status" style="background:var(--warning); color:black;">Ühendan...</div>
 </div>
 
 <div class="tabs">
     <button class="tab-btn active" onclick="openTab(event, 'sisestus')">SISESTUS</button>
-    <button class="tab-btn" onclick="openTab(event, 'gantt_vaade')">GANTT (Must Keev)</button>
+    <button class="tab-btn" onclick="openTab(event, 'gantt_mk')">MK GANTT</button>
+    <button class="tab-btn" onclick="openTab(event, 'gantt_rk')">RK GANTT</button>
+    <button class="tab-btn" onclick="openTab(event, 'gantt_lukk')">LUKK GANTT</button>
+    <button class="tab-btn" onclick="openTab(event, 'gantt_kooste')">KOOSTE GANTT</button>
     <button class="tab-btn" style="background:#27ae60" onclick="fetchData()">🔄 VÄRSKENDA</button>
 </div>
 
 <div id="sisestus" class="content active">
-    <button onclick="addNewRow()" style="margin-bottom:10px; padding:8px; background:var(--success); color:white; border:none; cursor:pointer;">+ LISA RIDA</button>
+    <button onclick="addNewRow()" style="margin-bottom:15px; padding:10px 20px; background:var(--success); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">+ LISA UUS RIDA</button>
     <table>
         <thead>
-            <tr><th>MT</th><th>Klient</th><th>Algus</th><th>Lõpp</th><th>MK(h)</th><th>RK(h)</th><th>%</th><th>Haldus</th></tr>
+            <tr>
+                <th>MT</th><th>Klient</th><th>Algus</th><th>Lõpp</th>
+                <th title="Must Keev">MK</th><th title="RV Keev">RK</th>
+                <th title="Must Lukk">ML</th><th title="RV Lukk">RL</th>
+                <th title="Kooste">KO</th><th>%</th><th>Haldus</th>
+            </tr>
         </thead>
         <tbody id="table-body"></tbody>
     </table>
 </div>
 
-<div id="gantt_vaade" class="content">
-    <div class="gantt-wrapper" id="gantt-must_k"></div>
-</div>
+<div id="gantt_mk" class="content"><div class="gantt-wrapper" id="gantt-must_k"></div></div>
+<div id="gantt_rk" class="content"><div class="gantt-wrapper" id="gantt-rv_k"></div></div>
+<div id="gantt_lukk" class="content"><div class="gantt-wrapper" id="gantt-lukk"></div></div>
+<div id="gantt_kooste" class="content"><div class="gantt-wrapper" id="gantt-kooste"></div></div>
 
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbwFGxkxdlGqW57N4HlB3HI6lCofYLWrQIYlgUEag9KQR2oEFRiVX9vxoQZ4nKa-NlKb6w/exec"; // <--- PANE SIIA OMA UUS URL!
+    const API_URL = "https://script.google.com/macros/s/AKfycbwFGxkxdlGqW57N4HlB3HI6lCofYLWrQIYlgUEag9KQR2oEFRiVX9vxoQZ4nKa-NlKb6w/exec"; // <--- LISA OMA URL SIIA
 
     const START_VIEW = new Date("2026-01-01");
     let orders = [];
@@ -66,11 +77,12 @@
             if (Array.isArray(data)) {
                 orders = data;
                 renderAll();
-                status.innerText = "Andmed OK";
+                status.innerText = "Pilv OK";
                 status.style.background = "#27ae60";
+                status.style.color = "white";
             }
         } catch (e) {
-            status.innerText = "Ühenduse viga";
+            status.innerText = "Viga andmetega";
             status.style.background = "#e74c3c";
         }
     }
@@ -87,7 +99,16 @@
 
     function renderAll() {
         renderTable();
-        renderGantt();
+    }
+
+    // RANGE KUUPÄEVA PUHASTAJA
+    function cleanDate(dateStr) {
+        if (!dateStr) return "";
+        try {
+            const d = new Date(dateStr);
+            if (isNaN(d.getTime())) return "";
+            return d.toISOString().split('T')[0];
+        } catch(e) { return ""; }
     }
 
     function renderTable() {
@@ -97,31 +118,37 @@
             body.innerHTML += `<tr>
                 <td><input value="${o.mt||''}" onchange="updateVal(${idx}, 'mt', this.value)"></td>
                 <td><input value="${o.client||''}" onchange="updateVal(${idx}, 'client', this.value)"></td>
-                <td><input type="date" value="${formatDate(o.start)}" onchange="updateVal(${idx}, 'start', this.value)"></td>
-                <td><input type="date" value="${formatDate(o.end)}" onchange="updateVal(${idx}, 'end', this.value)"></td>
+                <td><input type="date" value="${cleanDate(o.start)}" onchange="updateVal(${idx}, 'start', this.value)"></td>
+                <td><input type="date" value="${cleanDate(o.end)}" onchange="updateVal(${idx}, 'end', this.value)"></td>
                 <td><input type="number" value="${o.must_k||0}" onchange="updateVal(${idx}, 'must_k', this.value)"></td>
                 <td><input type="number" value="${o.rv_k||0}" onchange="updateVal(${idx}, 'rv_k', this.value)"></td>
+                <td><input type="number" value="${o.must_l||0}" onchange="updateVal(${idx}, 'must_l', this.value)"></td>
+                <td><input type="number" value="${o.rv_l||0}" onchange="updateVal(${idx}, 'rv_l', this.value)"></td>
+                <td><input type="number" value="${o.kooste||0}" onchange="updateVal(${idx}, 'kooste', this.value)"></td>
                 <td><input type="number" value="${o.progress||0}" onchange="updateVal(${idx}, 'progress', this.value)"></td>
-                <td><button onclick="deleteRow(${idx})">🗑️</button></td>
+                <td><button onclick="deleteRow(${idx})" style="border:none; background:none; cursor:pointer;">🗑️</button></td>
             </tr>`;
         });
     }
 
-    function renderGantt() {
-        const wrap = document.getElementById('gantt-must_k');
+    function renderGantt(tabId, typeKey, label) {
+        const wrap = document.getElementById(tabId);
         if(!wrap) return;
-        let html = `<div class="gantt-grid"><div>MT / Klient</div>`;
-        for(let d=0; d<365; d++) html += `<div style="font-size:9px; border:0.1px solid #eee;">${d+1}</div>`;
+        let html = `<div class="gantt-grid"><div class="header-corner" style="position:sticky; left:0; background:#eee; z-index:30;">MT / Klient</div>`;
+        for(let d=0; d<365; d++) {
+            let day = new Date(START_VIEW.getTime() + d*86400000);
+            html += `<div style="font-size:9px; border:0.1px solid #eee; text-align:center; background:#f9f9f9;">${day.getDate()}.${day.getMonth()+1}</div>`;
+        }
         
-        orders.filter(o => o.must_k > 0).forEach(o => {
-            html += `<div style="padding:5px; border-bottom:1px solid #eee;">${o.mt}</div>`;
+        orders.filter(o => parseFloat(o[typeKey]) > 0).forEach(o => {
+            html += `<div class="gantt-label">${o.mt || 'MT'}</div>`;
             let sDate = new Date(o.start);
             let eDate = new Date(o.end);
             let sIdx = Math.floor((sDate - START_VIEW) / 86400000);
             let dur = Math.floor((eDate - sDate) / 86400000) + 1;
             
             for(let d=0; d<365; d++) {
-                let bar = (d === sIdx && sIdx >= 0) ? `<div class="task-bar" style="width:${dur*40}px"><div class="progress-fill" style="width:${o.progress}%"></div>${o.mt}</div>` : '';
+                let bar = (d === sIdx && sIdx >= 0) ? `<div class="task-bar" style="width:${dur*40}px"><div class="progress-fill" style="width:${o.progress||0}%"></div><span style="padding-left:5px">${o.mt}</span></div>` : '';
                 html += `<div class="gantt-cell">${bar}</div>`;
             }
         });
@@ -131,23 +158,16 @@
     function updateVal(idx, key, val) {
         orders[idx][key] = val;
         saveToCloud();
-        renderGantt();
     }
 
     function addNewRow() {
-        orders.push({mt: "UUS", client: "", start: "2026-02-19", end: "2026-02-26", must_k: 0, rv_k: 0, progress: 0});
+        orders.push({mt: "UUS", client: "", start: "2026-02-19", end: "2026-02-26", must_k: 0, rv_k: 0, must_l:0, rv_l:0, kooste:0, progress: 0});
         renderTable();
         saveToCloud();
     }
 
     function deleteRow(idx) {
-        if(confirm("Kustuta?")) { orders.splice(idx, 1); renderTable(); saveToCloud(); }
-    }
-
-    function formatDate(dateStr) {
-        if(!dateStr) return "";
-        let d = new Date(dateStr);
-        return d.toISOString().split('T')[0];
+        if(confirm("Kustuta rida?")) { orders.splice(idx, 1); renderTable(); saveToCloud(); }
     }
 
     function openTab(evt, tabName) {
@@ -157,7 +177,11 @@
         for (let i = 0; i < buttons.length; i++) buttons[i].classList.remove("active");
         document.getElementById(tabName).classList.add("active");
         evt.currentTarget.classList.add("active");
-        if(tabName === 'gantt_vaade') renderGantt();
+        
+        if(tabName === 'gantt_mk') renderGantt('gantt-must_k', 'must_k', 'Must Keev');
+        if(tabName === 'gantt_rk') renderGantt('gantt-rv_k', 'rv_k', 'RV Keev');
+        if(tabName === 'gantt_lukk') renderGantt('gantt-lukk', 'must_l', 'Lukksepp');
+        if(tabName === 'gantt_kooste') renderGantt('gantt-kooste', 'kooste', 'Kooste');
     }
 
     fetchData();
