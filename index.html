@@ -2,35 +2,51 @@
 <html lang="et">
 <head>
     <meta charset="UTF-8">
-    <title>TOCI Tootmisjuhtimine V19.3 - Interaktiivne Gantt</title>
+    <title>TOCI Tootmisjuhtimine V19.4 - Lihvitud Gantt</title>
     <style>
         :root { --primary: #1a252f; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; --warning: #f1c40f; --bg: #f1f2f6; }
         body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); font-size: 13px; }
+        
         .top-bar { background: var(--primary); color: white; padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 9999; }
         .sync-status { font-size: 11px; padding: 4px 10px; border-radius: 4px; font-weight: bold; }
         .tabs { display: flex; background: #2c3e50; border-bottom: 4px solid var(--accent); overflow-x: auto; position: sticky; top: 62px; z-index: 4000; }
         .tab-btn { padding: 15px 20px; color: white; cursor: pointer; border: none; background: none; font-weight: bold; white-space: nowrap; opacity: 0.7; transition: 0.3s; }
         .tab-btn.active { opacity: 1; background: rgba(255,255,255,0.1); box-shadow: inset 0 -4px 0 var(--accent); }
+        
         .content { padding: 20px; display: none; }
         .content.active { display: block; }
+
         table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         th { background: #eee; padding: 12px 8px; text-align: left; position: sticky; top: 0; border-bottom: 2px solid #ddd; }
         td { padding: 8px; border-bottom: 1px solid #eee; }
         input { width: 92%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; }
+
+        /* GANTT-GRAAFIKU STRUKTUUR */
+        .gantt-wrapper { overflow: auto; background: white; border: 1px solid #ccc; max-height: 75vh; border-radius: 4px; position: relative; }
+        .gantt-grid { display: grid; grid-template-columns: 350px repeat(365, 45px); position: relative; }
         
-        /* Gantt-graafiku täiendused */
-        .gantt-wrapper { overflow: auto; background: white; border: 1px solid #ccc; max-height: 75vh; border-radius: 4px; }
-        .gantt-grid { display: grid; grid-template-columns: 320px repeat(365, 45px); position: relative; }
-        .gantt-cell { border-right: 0.1px solid #f0f0f0; border-bottom: 1px solid #f0f0f0; height: 65px; position: relative; }
-        .gantt-label { position: sticky; left: 0; background: white; z-index: 20; border-right: 2px solid #ddd; padding: 5px 10px; font-weight: bold; border-bottom: 1px solid #eee; display: flex; flex-direction: column; justify-content: center; gap: 4px; box-shadow: 2px 0 5px rgba(0,0,0,0.05); }
-        .gantt-label input { width: 90px; padding: 2px; font-size: 10px; }
-        
-        .header-week { background: #dfe4ea; text-align: center; font-weight: bold; border-bottom: 1px solid #ccc; font-size: 11px; padding: 4px 0; }
-        .header-day { text-align: center; font-size: 9px; background: #f9f9f9; border-bottom: 1px solid #ddd; border-right: 1px solid #eee; }
-        
-        .task-bar { position: absolute; height: 35px; top: 15px; background: var(--accent); color: white; border-radius: 4px; font-size: 11px; display: flex; align-items: center; z-index: 10; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.2); overflow: hidden; }
+        .gantt-label { 
+            position: sticky; left: 0; background: #fff; z-index: 200; 
+            border-right: 2px solid #ddd; padding: 10px; 
+            display: flex; flex-direction: column; gap: 5px; 
+            box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+            border-bottom: 1px solid #eee;
+            height: 70px;
+            justify-content: center;
+        }
+        .gantt-label b { color: var(--primary); font-size: 14px; }
+        .gantt-label span { color: #666; font-size: 11px; }
+        .gantt-date-inputs { display: flex; gap: 5px; margin-top: 3px; }
+        .gantt-date-inputs input { width: 95px; font-size: 10px; padding: 2px; }
+
+        .header-week { background: #dfe4ea; text-align: center; font-weight: bold; border-bottom: 1px solid #ccc; font-size: 11px; padding: 5px 0; position: sticky; top: 0; z-index: 150; }
+        .header-day { text-align: center; font-size: 9px; background: #f9f9f9; border-bottom: 1px solid #ddd; border-right: 1px solid #eee; position: sticky; top: 25px; z-index: 150; padding: 3px 0; }
+        .header-corner { position: sticky; left: 0; top: 0; z-index: 500; background: #eee; height: 50px; grid-row: span 2; display: flex; align-items: center; padding-left: 15px; font-weight: bold; border-right: 2px solid #ddd; border-bottom: 2px solid #ccc; }
+
+        .gantt-cell { border-right: 1px solid #f0f0f0; border-bottom: 1px solid #f0f0f0; height: 90px; position: relative; }
+        .task-bar { position: absolute; height: 35px; top: 27px; background: var(--accent); color: white; border-radius: 4px; font-size: 11px; display: flex; align-items: center; z-index: 10; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.2); overflow: hidden; }
         .progress-fill { position: absolute; left: 0; top: 0; height: 100%; background: rgba(0,0,0,0.25); border-right: 1px solid rgba(255,255,255,0.3); }
-        
+
         .charts-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; }
         .chart-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
         .bar-chart { display: flex; align-items: flex-end; height: 180px; gap: 6px; border-bottom: 2px solid #333; padding-top: 30px; position: relative; }
@@ -38,13 +54,12 @@
         .bar { width: 85%; border-radius: 3px 3px 0 0; transition: 0.3s; position: relative; }
         .bar-val { font-size: 9px; margin-bottom: 4px; font-weight: bold; }
         .cap-line { position: absolute; width: 100%; border-top: 2px dashed var(--danger); z-index: 5; opacity: 0.6; pointer-events: none; }
-        .cap-input { width: 50px !important; padding: 2px !important; text-align: center; }
     </style>
 </head>
 <body>
 
 <div class="top-bar">
-    <div>🚀 <strong>TOCI TOOTMISJUHTIMINE</strong> (V19.3 LIVE)</div>
+    <div>🚀 <strong>TOCI TOOTMISJUHTIMINE</strong> (V19.4)</div>
     <div id="syncStatus" class="sync-status" style="background:var(--warning); color:black;">Ühendamine...</div>
 </div>
 
@@ -74,25 +89,16 @@
 <div id="gantt_ml" class="content"><div class="gantt-wrapper" id="gantt-must_l"></div></div>
 <div id="gantt_rl" class="content"><div class="gantt-wrapper" id="gantt-rv_l"></div></div>
 
-<div id="koormus_tab" class="content">
-    <div class="charts-container" id="charts-box"></div>
-</div>
+<div id="koormus_tab" class="content"><div class="charts-container" id="charts-box"></div></div>
 
 <div id="voimekus_tab" class="content">
     <h3>Nädala võimekuse (Capacity) muutmine</h3>
-    <div style="overflow-x: auto;">
-        <table style="width: auto;">
-            <thead id="cap-head"></thead>
-            <tbody id="cap-body"></tbody>
-        </table>
-    </div>
-    <br>
-    <button onclick="saveCapacity()" style="padding:10px 20px; background:var(--accent); color:white; border:none; border-radius:4px; cursor:pointer;">SALVESTA VÕIMEKUS ARVUTISSE</button>
+    <div style="overflow-x: auto;"><table><thead id="cap-head"></thead><tbody id="cap-body"></tbody></table></div>
+    <br><button onclick="saveCapacity()" style="padding:10px 20px; background:var(--accent); color:white; border:none; border-radius:4px; cursor:pointer;">SALVESTA VÕIMEKUS</button>
 </div>
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbwFGxkxdlGqW57N4HlB3HI6lCofYLWrQIYlgUEag9KQR2oEFRiVX9vxoQZ4nKa-NlKb6w/exec"; 
-
     const CONFIG = {
         must_k: { label: 'Must Keevitus', cap: 240 },
         rv_k:   { label: 'RV Keevitus',   cap: 120 },
@@ -100,7 +106,6 @@
         rv_l:   { label: 'RV Lukksepp',   cap: 40  },
         kooste: { label: 'Kooste',        cap: 40  }
     };
-
     const START_VIEW = new Date("2026-01-01");
     let orders = [];
     let customCap = JSON.parse(localStorage.getItem('prod_custom_cap')) || {};
@@ -135,26 +140,17 @@
         document.getElementById('syncStatus').innerText = "Salvestan...";
         try {
             await fetch(API_URL, { method: "POST", body: JSON.stringify(orders) });
-            document.getElementById('syncStatus').innerText = "Muudatused salvestatud";
-        } catch (e) {
-            document.getElementById('syncStatus').innerText = "Salvestamise tõrge";
-        }
+            document.getElementById('syncStatus').innerText = "Salvestatud";
+        } catch (e) { document.getElementById('syncStatus').innerText = "Viga!"; }
     }
 
     function renderAll() { renderTable(); }
-
-    function cleanDate(d) {
-        if(!d) return "";
-        let date = new Date(d);
-        return isNaN(date.getTime()) ? "" : date.toISOString().split('T')[0];
-    }
+    function cleanDate(d) { if(!d) return ""; let date = new Date(d); return isNaN(date.getTime()) ? "" : date.toISOString().split('T')[0]; }
 
     function getWeekNumber(d) {
         d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
         d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7));
-        var yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
-        var weekNo = Math.ceil(( ( (d - yearStart) / 86400000) + 1)/7);
-        return weekNo;
+        return Math.ceil((((d - new Date(Date.UTC(d.getUTCFullYear(),0,1))) / 86400000) + 1)/7);
     }
 
     function renderTable() {
@@ -172,7 +168,7 @@
                 <td><input type="number" value="${o.rv_l}" onchange="updateVal(${idx}, 'rv_l', this.value)"></td>
                 <td><input type="number" value="${o.kooste}" onchange="updateVal(${idx}, 'kooste', this.value)"></td>
                 <td><input type="number" value="${o.progress}" onchange="updateVal(${idx}, 'progress', this.value)"></td>
-                <td><button onclick="deleteRow(${idx})" style="color:red; border:none; background:none; cursor:pointer;">🗑️</button></td>
+                <td><button onclick="deleteRow(${idx})" style="color:red; border:none; background:none;">🗑️</button></td>
             </tr>`;
         });
     }
@@ -181,27 +177,26 @@
         const wrap = document.getElementById(containerId);
         if(!wrap) return;
         
-        let headerRow1 = `<div style="position:sticky; left:0; background:#eee; z-index:50; grid-row: span 2; border-bottom:2px solid #ccc; padding:10px;">MT / Klient / Aeg</div>`;
-        let headerRow2 = "";
+        let headerW = `<div class="header-corner">MT / Klient / Aeg</div>`;
+        let headerD = "";
         
-        // Joonistame päise (Nädala numbrid ja päevad)
         for(let d=0; d<365; d++) {
             let cur = new Date(START_VIEW.getTime() + d*86400000);
             if (cur.getDay() === 1 || d === 0) {
-                headerRow1 += `<div class="header-week" style="grid-column: span 7;">W${getWeekNumber(cur)}</div>`;
+                headerW += `<div class="header-week" style="grid-column: span 7;">Nädal ${getWeekNumber(cur)}</div>`;
             }
-            headerRow2 += `<div class="header-day">${cur.getDate()}.${cur.getMonth()+1}</div>`;
+            headerD += `<div class="header-day">${cur.getDate()}.${cur.getMonth()+1}</div>`;
         }
 
-        let html = `<div class="gantt-grid">${headerRow1}${headerRow2}`;
+        let html = `<div class="gantt-grid">${headerW}${headerD}`;
         
-        orders.filter(o => o[key] > 0).forEach((o, idx) => {
-            // Leiame õige indeksi algses orders massiivis
-            let globalIdx = orders.findIndex(x => x === o);
+        orders.filter(o => o[key] > 0).forEach((o) => {
+            let globalIdx = orders.indexOf(o);
             
             html += `<div class="gantt-label">
-                <span>${o.mt} | ${o.client}</span>
-                <div style="display:flex; gap:2px;">
+                <b>${o.mt}</b>
+                <span>${o.client}</span>
+                <div class="gantt-date-inputs">
                     <input type="date" value="${cleanDate(o.start)}" onchange="updateVal(${globalIdx}, 'start', this.value); renderGantt('${containerId}', '${key}')">
                     <input type="date" value="${cleanDate(o.end)}" onchange="updateVal(${globalIdx}, 'end', this.value); renderGantt('${containerId}', '${key}')">
                 </div>
@@ -232,74 +227,44 @@
                 let currentCap = (customCap[key] && customCap[key][w]) ? customCap[key][w] : CONFIG[key].cap;
                 let h = Math.min(150, (total / Math.max(total, currentCap, 10)) * 150);
                 let capLinePos = (currentCap / Math.max(total, currentCap, 10)) * 150;
-
-                html += `<div class="bar-wrapper">
-                    <span class="bar-val">${total||''}</span>
-                    <div class="bar" style="height:${h}px; background:${total > currentCap ? 'var(--danger)' : 'var(--success)'}">
-                         <div class="cap-line" style="top: auto; bottom: ${capLinePos}px"></div>
-                    </div>
-                    <span style="font-size:9px; color:${currentCap !== CONFIG[key].cap ? 'var(--danger)' : ''}">W${w}</span>
-                </div>`;
+                html += `<div class="bar-wrapper"><span class="bar-val">${total||''}</span><div class="bar" style="height:${h}px; background:${total > currentCap ? 'var(--danger)' : 'var(--success)'}"><div class="cap-line" style="top: auto; bottom: ${capLinePos}px"></div></div><span style="font-size:9px">W${w}</span></div>`;
             }
             box.innerHTML += html + `</div></div>`;
         });
     }
 
     function renderCapacityManager() {
-        const head = document.getElementById('cap-head');
-        const body = document.getElementById('cap-body');
-        let hHtml = '<tr><th>Osakond</th>';
-        for(let w=1; w<=15; w++) hHtml += `<th>W${w}</th>`;
-        head.innerHTML = hHtml + '</tr>';
-
-        let bHtml = '';
-        Object.keys(CONFIG).forEach(key => {
+        const head = document.getElementById('cap-head'); const body = document.getElementById('cap-body');
+        let hHtml = '<tr><th>Osakond</th>'; for(let w=1; w<=15; w++) hHtml += `<th>W${w}</th>`; head.innerHTML = hHtml + '</tr>';
+        let bHtml = ''; Object.keys(CONFIG).forEach(key => {
             bHtml += `<tr><td><strong>${CONFIG[key].label}</strong></td>`;
-            for(let w=1; w<=15; w++) {
-                let val = (customCap[key] && customCap[key][w]) ? customCap[key][w] : CONFIG[key].cap;
-                bHtml += `<td><input type="number" class="cap-input" data-dept="${key}" data-week="${w}" value="${val}"></td>`;
-            }
+            for(let w=1; w<=15; w++) { let val = (customCap[key] && customCap[key][w]) ? customCap[key][w] : CONFIG[key].cap; bHtml += `<td><input type="number" class="cap-input" data-dept="${key}" data-week="${w}" value="${val}"></td>`; }
             bHtml += '</tr>';
-        });
-        body.innerHTML = bHtml;
+        }); body.innerHTML = bHtml;
     }
 
     function saveCapacity() {
         document.querySelectorAll('.cap-input').forEach(input => {
-            const dept = input.dataset.dept;
-            const week = input.dataset.week;
-            if(!customCap[dept]) customCap[dept] = {};
-            customCap[dept][week] = parseInt(input.value);
+            if(!customCap[input.dataset.dept]) customCap[input.dataset.dept] = {};
+            customCap[input.dataset.dept][input.dataset.week] = parseInt(input.value);
         });
-        localStorage.setItem('prod_custom_cap', JSON.stringify(customCap));
-        alert("Võimekus salvestatud!");
-        renderCharts();
+        localStorage.setItem('prod_custom_cap', JSON.stringify(customCap)); renderCharts();
     }
 
-    function updateVal(idx, key, val) { 
-        orders[idx][key] = val; 
-        saveToCloud(); 
-    }
-
-    function addNewRow() { 
-        orders.push({mt: "UUS", client: "", start: "2026-02-19", end: "2026-02-26", must_k: 0, rv_k: 0, must_l: 0, rv_l: 0, kooste: 0, progress: 0}); 
-        renderTable(); saveToCloud(); 
-    }
+    function updateVal(idx, key, val) { orders[idx][key] = val; saveToCloud(); }
+    function addNewRow() { orders.push({mt: "UUS", client: "", start: "2026-02-19", end: "2026-02-26", must_k: 0, rv_k: 0, must_l: 0, rv_l: 0, kooste: 0, progress: 0}); renderTable(); saveToCloud(); }
     function deleteRow(idx) { if(confirm("Kustuta?")) { orders.splice(idx, 1); renderTable(); saveToCloud(); } }
 
     function openTab(evt, tabName) {
         document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById(tabName).classList.add('active');
-        evt.currentTarget.classList.add('active');
-        if(tabName === 'gantt_mk') renderGantt('gantt-must_k', 'must_k');
-        if(tabName === 'gantt_rk') renderGantt('gantt-rv_k', 'rv_k');
-        if(tabName === 'gantt_ml') renderGantt('gantt-must_l', 'must_l');
-        if(tabName === 'gantt_rl') renderGantt('gantt-rv_l', 'rv_l');
-        if(tabName === 'koormus_tab') renderCharts();
-        if(tabName === 'voimekus_tab') renderCapacityManager();
+        document.getElementById(tabName).classList.add('active'); evt.currentTarget.classList.add('active');
+        if(tabName.startsWith('gantt_')) {
+            const key = tabName === 'gantt_mk' ? 'must_k' : tabName === 'gantt_rk' ? 'rv_k' : tabName === 'gantt_ml' ? 'must_l' : 'rv_l';
+            renderGantt('gantt-' + (key === 'must_l' ? 'must_l' : key === 'rv_l' ? 'rv_l' : key), key);
+        }
+        if(tabName === 'koormus_tab') renderCharts(); if(tabName === 'voimekus_tab') renderCapacityManager();
     }
-
     fetchData();
 </script>
 </body>
