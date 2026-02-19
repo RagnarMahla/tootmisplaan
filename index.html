@@ -2,64 +2,59 @@
 <html lang="et">
 <head>
     <meta charset="UTF-8">
-    <title>TOCI Tootmisplaan V26.0</title>
+    <title>TOCI Tootmisjuhtimine V27.0</title>
     <style>
-        :root { --primary: #1a252f; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; --warning: #f1c40f; --bg: #f8f9fa; --today: #ff4757; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background: var(--bg); font-size: 13px; color: #333; overflow-x: hidden; }
+        :root { --primary: #1a252f; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; --warning: #f1c40f; --bg: #f4f7f6; --today: #ff4757; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); font-size: 13px; color: #333; overflow: hidden; }
         
-        .top-bar { background: var(--primary); color: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10000; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-        .tabs { display: flex; background: #2c3e50; border-bottom: 3px solid var(--accent); position: sticky; top: 48px; z-index: 9000; overflow-x: auto; }
-        .tab-btn { padding: 14px 20px; color: white; cursor: pointer; border: none; background: none; font-weight: bold; white-space: nowrap; transition: 0.2s; opacity: 0.8; }
+        /* Navigatsioon */
+        .top-bar { background: var(--primary); color: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; height: 50px; }
+        .tabs { display: flex; background: #2c3e50; border-bottom: 3px solid var(--accent); overflow-x: auto; height: 45px; }
+        .tab-btn { padding: 0 18px; color: white; cursor: pointer; border: none; background: none; font-weight: bold; white-space: nowrap; opacity: 0.8; height: 100%; }
         .tab-btn.active { opacity: 1; background: rgba(255,255,255,0.15); box-shadow: inset 0 -4px 0 var(--accent); }
         
-        .content { padding: 20px; display: none; }
+        .content { height: calc(100vh - 95px); display: none; padding: 20px; box-sizing: border-box; }
         .content.active { display: block; }
 
-        /* GANTT TABEL - RAUDKINDEL LUKUSTUS */
-        .gantt-outer { position: relative; background: white; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; }
-        .gantt-scroll-window { overflow: auto; max-height: 75vh; scroll-behavior: smooth; }
+        /* GANTT STRUKTUUR - ERALDI BLOKID */
+        .gantt-wrapper { display: flex; background: white; border: 1px solid #ccc; border-radius: 8px; height: 100%; overflow: hidden; }
         
-        table.gantt-table { border-collapse: separate; border-spacing: 0; width: 100%; table-layout: fixed; }
-        .gantt-table th, .gantt-table td { border-right: 1px solid #eee; border-bottom: 1px solid #eee; height: 50px; padding: 0; position: relative; }
-        
-        /* LUKUSTATUD VASAK TULP */
-        .sticky-col { 
-            position: sticky !important; left: 0 !important; background: #fff !important; z-index: 1000 !important; 
-            width: 320px; min-width: 320px; padding: 10px 15px !important; 
-            border-right: 3px solid #ccc !important; text-align: left;
-            box-shadow: 4px 0 8px rgba(0,0,0,0.1);
-        }
-        
-        /* LUKUSTATUD PÄISED */
-        .sticky-header { position: sticky !important; top: 0 !important; background: #f1f3f5 !important; z-index: 800; border-bottom: 2px solid #ccc !important; }
-        .sticky-corner { position: sticky !important; top: 0 !important; left: 0 !important; z-index: 1500 !important; background: #ececec !important; border-right: 3px solid #ccc !important; border-bottom: 2px solid #ccc !important; }
+        /* Vasak tulp - Alati nähtaval */
+        .gantt-sidebar { width: 320px; min-width: 320px; border-right: 2px solid #ccc; display: flex; flex-direction: column; z-index: 1000; background: #fff; }
+        .sidebar-header { height: 80px; background: #eee; border-bottom: 2px solid #ccc; display: flex; align-items: center; padding: 0 15px; font-weight: bold; }
+        .sidebar-row { height: 85px; padding: 10px 15px; border-bottom: 1px solid #eee; display: flex; flex-direction: column; justify-content: center; gap: 5px; box-sizing: border-box; }
+        .sidebar-row b { color: var(--primary); font-size: 14px; }
+        .sidebar-row input { width: 95px; font-size: 10px; padding: 2px; }
 
-        .day-cell { width: 45px; min-width: 45px; text-align: center; font-size: 10px; font-weight: bold; }
-        .week-header { background: #eef2f3; border-bottom: 1px solid #ccc; font-size: 11px; text-align: center; color: #555; }
-        .today-col { background: rgba(255, 71, 87, 0.1) !important; border-left: 2px solid var(--today) !important; border-right: 2px solid var(--today) !important; }
+        /* Graafiku osa - Keritav */
+        .gantt-main { flex-grow: 1; overflow: auto; scroll-behavior: smooth; position: relative; }
+        .gantt-grid { display: grid; grid-template-columns: repeat(180, 45px); position: relative; }
         
-        /* Riba stiilid */
-        .task-bar { 
-            position: absolute; height: 32px; top: 9px; background: var(--accent); 
-            border-radius: 6px; color: white; display: flex; align-items: center; 
-            padding: 0 10px; font-size: 11px; font-weight: bold; z-index: 100;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2); white-space: nowrap; overflow: hidden;
-        }
+        /* Graafiku päis */
+        .grid-header-week { grid-column: span 7; background: #dfe4ea; border-bottom: 1px solid #ccc; text-align: center; font-size: 11px; font-weight: bold; padding: 5px 0; position: sticky; top: 0; z-index: 500; }
+        .grid-header-day { background: #f8f9fa; border-bottom: 2px solid #ccc; border-right: 1px solid #eee; text-align: center; font-size: 10px; padding: 5px 0; position: sticky; top: 25px; z-index: 500; height: 30px; }
+        
+        /* Graafiku sisu */
+        .grid-cell { border-right: 1px solid #f1f1f1; border-bottom: 1px solid #eee; height: 85px; position: relative; box-sizing: border-box; }
+        .today-col { background: rgba(255, 71, 87, 0.08) !important; border-left: 1px solid var(--today); border-right: 1px solid var(--today); }
+        .today-marker { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--today); z-index: 400; pointer-events: none; }
+
+        .task-bar { position: absolute; height: 30px; top: 27px; background: var(--accent); border-radius: 4px; color: white; display: flex; align-items: center; padding: 0 10px; font-size: 11px; font-weight: bold; z-index: 100; box-shadow: 0 2px 4px rgba(0,0,0,0.2); white-space: nowrap; overflow: hidden; }
         .progress-fill { position: absolute; left: 0; top: 0; height: 100%; background: rgba(0,0,0,0.25); border-right: 1px solid rgba(255,255,255,0.3); }
 
         /* Tabelid ja graafikud */
-        .data-table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .data-table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; }
         .data-table th { background: #f1f3f5; padding: 12px; border-bottom: 2px solid #dee2e6; text-align: left; }
         .data-table td { padding: 10px; border-bottom: 1px solid #f1f3f5; }
-        .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 20px; }
+        .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 20px; overflow-y: auto; height: 100%; }
         .chart-card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
     </style>
 </head>
 <body>
 
 <div class="top-bar">
-    <div>🚀 <strong>TOCI TOOTMISJUHTIMINE V26.0</strong></div>
-    <div id="syncStatus" class="sync-status" style="background:var(--warning); color:black;">Ühendan...</div>
+    <div>🚀 <strong>TOCI LIVE V27.0</strong></div>
+    <div id="syncStatus" style="background:var(--warning); color:black; padding:4px 10px; border-radius:4px; font-weight:bold;">Ühendan...</div>
 </div>
 
 <div class="tabs">
@@ -75,21 +70,21 @@
 </div>
 
 <div id="sisestus" class="content active">
-    <button onclick="addNewRow()" style="margin-bottom:15px; padding:10px 25px; background:var(--success); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">+ LISA UUS TELLIMUS</button>
+    <button onclick="addNewRow()" style="margin-bottom:15px; padding:10px 20px; background:var(--success); color:white; border:none; border-radius:4px; cursor:pointer;">+ LISA UUS TELLIMUS</button>
     <table class="data-table">
         <thead><tr><th>MT</th><th>Klient</th><th>Algus</th><th>Lõpp</th><th>MK</th><th>RK</th><th>ML</th><th>RL</th><th>KO</th><th>%</th><th>🗑️</th></tr></thead>
         <tbody id="table-body"></tbody>
     </table>
 </div>
 
-<div id="gantt_mk" class="content"><div class="gantt-outer"><div class="gantt-scroll-window" id="sc-mk"></div></div></div>
-<div id="gantt_rk" class="content"><div class="gantt-outer"><div class="gantt-scroll-window" id="sc-rk"></div></div></div>
-<div id="gantt_ml" class="content"><div class="gantt-outer"><div class="gantt-scroll-window" id="sc-ml"></div></div></div>
-<div id="gantt_rl" class="content"><div class="gantt-outer"><div class="gantt-scroll-window" id="sc-rl"></div></div></div>
-<div id="gantt_ko" class="content"><div class="gantt-outer"><div class="gantt-scroll-window" id="sc-ko"></div></div></div>
+<div id="gantt_mk" class="content"><div class="gantt-wrapper"><div class="gantt-sidebar" id="side-mk"></div><div class="gantt-main" id="main-mk"></div></div></div>
+<div id="gantt_rk" class="content"><div class="gantt-wrapper"><div class="gantt-sidebar" id="side-rk"></div><div class="gantt-main" id="main-rk"></div></div></div>
+<div id="gantt_ml" class="content"><div class="gantt-wrapper"><div class="gantt-sidebar" id="side-ml"></div><div class="gantt-main" id="main-ml"></div></div></div>
+<div id="gantt_rl" class="content"><div class="gantt-wrapper"><div class="gantt-sidebar" id="side-rl"></div><div class="gantt-main" id="main-rl"></div></div></div>
+<div id="gantt_ko" class="content"><div class="gantt-wrapper"><div class="gantt-sidebar" id="side-ko"></div><div class="gantt-main" id="main-ko"></div></div></div>
 
 <div id="koormus_tab" class="content"><div class="charts-grid" id="charts-box"></div></div>
-<div id="voimekus_tab" class="content"><div id="cap-box" style="background:white; padding:20px; border-radius:8px;"></div></div>
+<div id="voimekus_tab" class="content"><div id="cap-box"></div></div>
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbwFGxkxdlGqW57N4HlB3HI6lCofYLWrQIYlgUEag9KQR2oEFRiVX9vxoQZ4nKa-NlKb6w/exec";
@@ -97,7 +92,7 @@
     const START_VIEW = new Date("2026-01-01");
     const TODAY = new Date();
     let orders = [];
-    let customCap = JSON.parse(localStorage.getItem('prod_cap_v26')) || {};
+    let customCap = JSON.parse(localStorage.getItem('prod_cap_v27')) || {};
 
     async function fetchData() {
         document.getElementById('syncStatus').innerText = "Laadin...";
@@ -107,85 +102,64 @@
             if(Array.isArray(d)) {
                 orders = d.map(o => ({...o, must_k:f(o.must_k), rv_k:f(o.rv_k), must_l:f(o.must_l), rv_l:f(o.rv_l), kooste:f(o.kooste), progress:f(o.progress)}));
                 renderTable();
-                document.getElementById('syncStatus').innerText = "Andmed Pilves OK";
+                document.getElementById('syncStatus').innerText = "Andmed OK";
                 document.getElementById('syncStatus').style.background = "#27ae60"; document.getElementById('syncStatus').style.color = "white";
             }
         } catch(e) { document.getElementById('syncStatus').innerText = "Ühenduse viga"; }
     }
     const f = (v) => parseFloat(v) || 0;
 
-    function renderGantt(id, key) {
-        const wrap = document.getElementById(id);
-        const dayCount = 180;
-        let h = `<table class="gantt-table"><thead><tr><th class="sticky-corner" rowspan="2">MT / Klient / Aeg</th>`;
+    function renderGantt(sideId, mainId, key) {
+        const side = document.getElementById(sideId);
+        const main = document.getElementById(mainId);
+        const dayCount = 120;
         
-        for(let d=0; d<dayCount; d+=7) {
-            h += `<th class="sticky-header week-header" colspan="7">Nädal ${getWeek(new Date(START_VIEW.getTime() + d*86400000))}</th>`;
-        }
-        h += `</tr><tr>`;
-        
+        // SIDEBAR
+        let sHtml = `<div class="sidebar-header">MT / Klient / Aeg</div>`;
+        orders.filter(o => o[key] > 0).forEach((o, i) => {
+            let gIdx = orders.indexOf(o);
+            sHtml += `<div class="sidebar-row">
+                <b>${o.mt||'MT'}</b><small>${o.client||'-'}</small>
+                <div style="display:flex;gap:3px;">
+                    <input type="date" value="${cd(o.start)}" onchange="u(${gIdx},'start',this.value);renderGantt('${sideId}','${mainId}','${key}')">
+                    <input type="date" value="${cd(o.end)}" onchange="u(${gIdx},'end',this.value);renderGantt('${sideId}','${mainId}','${key}')">
+                </div>
+            </div>`;
+        });
+        side.innerHTML = sHtml;
+
+        // MAIN GRID
+        let mHtml = `<div class="gantt-grid">`;
+        for(let d=0; d<dayCount; d+=7) mHtml += `<div class="grid-header-week" style="grid-column:span 7;">W${getWeek(new Date(START_VIEW.getTime() + d*86400000))}</div>`;
         for(let d=0; d<dayCount; d++) {
             let cur = new Date(START_VIEW.getTime() + d*86400000);
             let isT = cur.toDateString() === TODAY.toDateString();
-            h += `<th class="sticky-header day-cell ${isT?'today-col':''}">${cur.getDate()}.${cur.getMonth()+1}</th>`;
+            mHtml += `<div class="grid-header-day ${isT?'today-col':''}">${cur.getDate()}.${cur.getMonth()+1}</div>`;
         }
-        h += `</tr></thead><tbody>`;
         
         orders.filter(o => o[key] > 0).forEach((o) => {
-            let gIdx = orders.indexOf(o);
-            h += `<tr><td class="sticky-col">
-                <div style="font-weight:bold; color:var(--primary);">${o.mt||'MT'}</div>
-                <div style="font-size:10px; color:#666; margin-bottom:5px;">${o.client||'-'}</div>
-                <div style="display:flex; gap:3px;">
-                    <input type="date" value="${cd(o.start)}" onchange="u(${gIdx},'start',this.value);renderGantt('${id}','${key}')" style="width:95px; font-size:10px;">
-                    <input type="date" value="${cd(o.end)}" onchange="u(${gIdx},'end',this.value);renderGantt('${id}','${key}')" style="width:95px; font-size:10px;">
-                </div>
-            </td>`;
-            
             let sIdx = Math.floor((new Date(o.start) - START_VIEW) / 86400000);
             let dur = Math.max(1, Math.floor((new Date(o.end) - new Date(o.start)) / 86400000) + 1);
-            
             for(let d=0; d<dayCount; d++) {
                 let isT = new Date(START_VIEW.getTime() + d*86400000).toDateString() === TODAY.toDateString();
-                let bar = (d === sIdx) ? `<div class="task-bar" style="width:${dur*45 - 5}px"><div class="progress-fill" style="width:${o.progress}%"></div><span style="position:relative;">${o.mt} (${o.progress}%)</span></div>` : '';
-                h += `<td class="${isT?'today-col':''}">${bar}</td>`;
+                let bar = (d === sIdx) ? `<div class="task-bar" style="width:${dur*45 - 5}px"><div class="progress-fill" style="width:${o.progress}%"></div>${o.mt}</div>` : '';
+                mHtml += `<div class="grid-cell ${isT?'today-col':''}">${bar}</div>`;
             }
-            h += `</tr>`;
         });
-        wrap.innerHTML = h + `</tbody></table>`;
-        setTimeout(() => scrollToToday(id), 100);
+        main.innerHTML = mHtml + `</div>`;
+        
+        // Tänase päeva tsentreerimine
+        setTimeout(() => {
+            let tIdx = Math.floor((TODAY - START_VIEW) / 86400000);
+            main.scrollLeft = (tIdx * 45) - (main.offsetWidth / 2) + 150;
+        }, 100);
     }
 
-    function scrollToToday(containerId) {
-        const container = document.getElementById(containerId);
-        const todayCell = container.querySelector('.today-col');
-        if (todayCell && container) {
-            container.scrollLeft = todayCell.offsetLeft - (container.offsetWidth / 2) + 160;
-        }
-    }
-
-    async function save() {
-        document.getElementById('syncStatus').innerText = "Salvestan...";
-        await fetch(API_URL, {method:"POST", body:JSON.stringify(orders)});
-        document.getElementById('syncStatus').innerText = "Andmed Pilves OK";
-    }
-
+    async function save() { await fetch(API_URL, {method:"POST", body:JSON.stringify(orders)}); fetchData(); }
     function renderTable() {
         const b = document.getElementById('table-body'); b.innerHTML = '';
         orders.forEach((o, i) => {
-            b.innerHTML += `<tr>
-                <td><input value="${o.mt||''}" onchange="u(${i},'mt',this.value)"></td>
-                <td><input value="${o.client||''}" onchange="u(${i},'client',this.value)"></td>
-                <td><input type="date" value="${cd(o.start)}" onchange="u(${i},'start',this.value)"></td>
-                <td><input type="date" value="${cd(o.end)}" onchange="u(${i},'end',this.value)"></td>
-                <td><input type="number" value="${o.must_k}" onchange="u(${i},'must_k',this.value)"></td>
-                <td><input type="number" value="${o.rv_k}" onchange="u(${i},'rv_k',this.value)"></td>
-                <td><input type="number" value="${o.must_l}" onchange="u(${i},'must_l',this.value)"></td>
-                <td><input type="number" value="${o.rv_l}" onchange="u(${i},'rv_l',this.value)"></td>
-                <td><input type="number" value="${o.kooste}" onchange="u(${i},'kooste',this.value)"></td>
-                <td><input type="number" value="${o.progress}" onchange="u(${i},'progress',this.value)"></td>
-                <td><button onclick="del(${i})" style="background:none; border:none; cursor:pointer;">🗑️</button></td>
-            </tr>`;
+            b.innerHTML += `<tr><td><input value="${o.mt||''}" onchange="u(${i},'mt',this.value)"></td><td><input value="${o.client||''}" onchange="u(${i},'client',this.value)"></td><td><input type="date" value="${cd(o.start)}" onchange="u(${i},'start',this.value)"></td><td><input type="date" value="${cd(o.end)}" onchange="u(${i},'end',this.value)"></td><td><input type="number" value="${o.must_k}" onchange="u(${i},'must_k',this.value)"></td><td><input type="number" value="${o.rv_k}" onchange="u(${i},'rv_k',this.value)"></td><td><input type="number" value="${o.must_l}" onchange="u(${i},'must_l',this.value)"></td><td><input type="number" value="${o.rv_l}" onchange="u(${i},'rv_l',this.value)"></td><td><input type="number" value="${o.kooste}" onchange="u(${i},'kooste',this.value)"></td><td><input type="number" value="${o.progress}" onchange="u(${i},'progress',this.value)"></td><td><button onclick="del(${i})">🗑️</button></td></tr>`;
         });
     }
 
@@ -206,12 +180,12 @@
     }
 
     function renderCapacity() {
-        let h = `<table class="data-table"><thead><tr style="background:#eee;"><th>Osakond</th>` + Array.from({length:15},(_,i)=>`<th>W${i+1}</th>`).join('') + `</tr></thead><tbody>`;
+        let h = `<table class="data-table"><thead><tr><th>Osakond</th>` + Array.from({length:15},(_,i)=>`<th>W${i+1}</th>`).join('') + `</tr></thead><tbody>`;
         h += Object.keys(CONFIG).map(k => `<tr><td><b>${CONFIG[k].l}</b></td>` + Array.from({length:15},(_,i)=>{
             let v = (customCap[k] && customCap[k][i+1]) ? customCap[k][i+1] : CONFIG[k].c;
             return `<td><input type="number" class="cap-in" data-k="${k}" data-w="${i+1}" value="${v}" style="width:45px"></td>`;
         }).join('') + `</tr>`).join('');
-        document.getElementById('cap-box').innerHTML = h + `</tbody></table><br><button onclick="saveCap()" style="padding:10px 20px; background:var(--accent); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">SALVESTA VÕIMEKUS</button>`;
+        document.getElementById('cap-box').innerHTML = h + `</tbody></table><br><button onclick="saveCap()" style="padding:10px 20px; background:var(--accent); color:white; border:none; border-radius:4px; cursor:pointer;">SALVESTA VÕIMEKUS</button>`;
     }
 
     function saveCap() {
@@ -219,7 +193,7 @@
             if(!customCap[i.dataset.k]) customCap[i.dataset.k] = {};
             customCap[i.dataset.k][i.dataset.w] = parseInt(i.value);
         });
-        localStorage.setItem('prod_cap_v26', JSON.stringify(customCap)); alert("Võimekus salvestatud!"); fetchData();
+        localStorage.setItem('prod_cap_v27', JSON.stringify(customCap)); alert("Salvestatud!"); fetchData();
     }
 
     function u(i, k, v) { orders[i][k] = v; save(); }
@@ -232,11 +206,11 @@
         document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(t).classList.add('active'); e.currentTarget.classList.add('active');
-        if(t === 'gantt_mk') renderGantt('sc-mk', 'must_k');
-        if(t === 'gantt_rk') renderGantt('sc-rk', 'rv_k');
-        if(t === 'gantt_ml') renderGantt('sc-ml', 'must_l');
-        if(t === 'gantt_rl') renderGantt('sc-rl', 'rv_l');
-        if(t === 'gantt_ko') renderGantt('sc-ko', 'kooste');
+        if(t === 'gantt_mk') renderGantt('side-mk', 'main-mk', 'must_k');
+        if(t === 'gantt_rk') renderGantt('side-rk', 'main-rk', 'rv_k');
+        if(t === 'gantt_ml') renderGantt('side-ml', 'main-ml', 'must_l');
+        if(t === 'gantt_rl') renderGantt('side-rl', 'main-rl', 'rv_l');
+        if(t === 'gantt_ko') renderGantt('side-ko', 'main-ko', 'kooste');
         if(t === 'koormus_tab') renderCharts();
         if(t === 'voimekus_tab') renderCapacity();
     }
