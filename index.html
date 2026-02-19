@@ -2,47 +2,47 @@
 <html lang="et">
 <head>
     <meta charset="UTF-8">
-    <title>TOCI Tootmisplaan V28.0</title>
+    <title>TOCI Tootmisplaan V29.0</title>
     <style>
-        :root { --primary: #1a252f; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; --warning: #f1c40f; --bg: #f4f7f6; --today: #ff4757; }
+        :root { --primary: #1a252f; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; --warning: #f1c40f; --bg: #f1f2f6; --today: #ff4757; }
         body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); font-size: 12px; overflow: hidden; }
         
         /* Navigatsioon */
-        .top-bar { background: var(--primary); color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; height: 50px; }
-        .tabs { display: flex; background: #2c3e50; border-bottom: 3px solid var(--accent); overflow-x: auto; height: 45px; }
-        .tab-btn { padding: 0 18px; color: white; cursor: pointer; border: none; background: none; font-weight: bold; white-space: nowrap; height: 100%; opacity: 0.8; }
+        .top-bar { background: var(--primary); color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; height: 50px; position: sticky; top: 0; z-index: 10000; }
+        .tabs { display: flex; background: #2c3e50; border-bottom: 3px solid var(--accent); overflow-x: auto; height: 45px; position: sticky; top: 50px; z-index: 9000; }
+        .tab-btn { padding: 0 18px; color: white; cursor: pointer; border: none; background: none; font-weight: bold; white-space: nowrap; height: 100%; opacity: 0.8; transition: 0.2s; }
         .tab-btn.active { opacity: 1; background: rgba(255,255,255,0.15); box-shadow: inset 0 -4px 0 var(--accent); }
         
-        .content { height: calc(100vh - 95px); display: none; padding: 15px; box-sizing: border-box; }
+        .content { height: calc(100vh - 95px); display: none; padding: 15px; box-sizing: border-box; overflow: hidden; }
         .content.active { display: block; }
 
-        /* GANTT TABEL - TUGEVDATUD STICKY */
+        /* GANTT TABEL - KÕIK ÜHES STRUKTUURIS */
         .gantt-container { 
+            height: 100%; 
             overflow: auto; 
             background: white; 
             border: 1px solid #ccc; 
-            height: 100%; 
-            position: relative; 
-            scroll-behavior: smooth;
+            position: relative;
+            scrollbar-gutter: stable;
         }
 
         table.gantt-table { border-collapse: separate; border-spacing: 0; width: 100%; table-layout: fixed; }
-        .gantt-table th, .gantt-table td { border: 0.1px solid #eee; min-width: 45px; height: 50px; padding: 0; position: relative; }
+        .gantt-table th, .gantt-table td { border-right: 1px solid #eee; border-bottom: 1px solid #eee; height: 60px; padding: 0; position: relative; }
 
-        /* 1. LUKUSTATUD VASAK TULP (MT info) */
+        /* 1. LUKUSTATUD VASAK TULP (Andmed) */
         .sticky-col { 
             position: sticky !important; 
             left: 0 !important; 
-            background: #fff !important; 
+            background: #ffffff !important; 
             z-index: 1000 !important; 
-            min-width: 300px !important; 
-            max-width: 300px !important;
-            padding: 5px 10px !important; 
-            border-right: 3px solid #ccc !important;
+            width: 320px; min-width: 320px;
+            padding: 8px 15px !important; 
+            border-right: 3px solid #bbb !important;
             box-shadow: 4px 0 8px rgba(0,0,0,0.1);
+            display: flex; flex-direction: column; justify-content: center; gap: 4px;
         }
 
-        /* 2. LUKUSTATUD PÄIS (Kuupäevad) */
+        /* 2. LUKUSTATUD PÄIS (Kalender) */
         .sticky-row { 
             position: sticky !important; 
             top: 0 !important; 
@@ -50,35 +50,43 @@
             z-index: 1100 !important; 
             font-weight: bold; 
             border-bottom: 2px solid #ccc !important;
+            text-align: center;
         }
 
-        /* 3. NURK, KUS KOHTUVAD PÄIS JA TULP */
+        /* 3. LUKUSTATUD NURK */
         .sticky-intersect { 
             position: sticky !important; 
             top: 0 !important; 
             left: 0 !important; 
-            z-index: 1500 !important; 
+            z-index: 2000 !important; 
             background: #ececec !important; 
-            border-right: 3px solid #ccc !important;
+            border-right: 3px solid #bbb !important;
             border-bottom: 2px solid #ccc !important;
         }
 
-        .header-day { font-size: 10px; text-align: center; }
-        .today-col { background: rgba(255, 71, 87, 0.08) !important; border-left: 2px solid var(--today) !important; border-right: 2px solid var(--today) !important; }
+        /* Tänase päeva markeering */
+        .today-col { background: rgba(255, 71, 87, 0.1) !important; border-left: 2px solid var(--today) !important; border-right: 2px solid var(--today) !important; }
 
         /* Graafiku ribad */
-        .bar { position: absolute; height: 30px; top: 10px; background: var(--accent); border-radius: 4px; z-index: 100; color: white; display: flex; align-items: center; padding-left: 8px; font-size: 11px; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.2); font-weight: bold; overflow: hidden; }
-        .progress-fill { position: absolute; left: 0; top: 0; height: 100%; background: rgba(0,0,0,0.25); border-right: 1px solid rgba(255,255,255,0.4); }
+        .bar { 
+            position: absolute; height: 32px; top: 14px; background: var(--accent); 
+            border-radius: 5px; z-index: 100; color: white; display: flex; 
+            align-items: center; padding: 0 10px; font-size: 11px; font-weight: bold;
+            white-space: nowrap; box-shadow: 0 2px 5px rgba(0,0,0,0.2); overflow: hidden;
+        }
+        .progress-fill { position: absolute; left: 0; top: 0; height: 100%; background: rgba(0,0,0,0.3); border-right: 1px solid rgba(255,255,255,0.4); }
 
-        /* Muu */
-        .data-table { width: 100%; border-collapse: collapse; background: white; }
-        .data-table th, .data-table td { border: 1px solid #ddd; padding: 8px; }
+        /* Sisestus ja graafikud */
+        .data-table { width: 100%; border-collapse: collapse; background: white; border: 1px solid #ddd; }
+        .data-table th, .data-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 20px; overflow-y: auto; height: 100%; }
+        .chart-card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
     </style>
 </head>
 <body>
 
 <div class="top-bar">
-    <div>🚀 <strong>TOCI TOOTMISJUHTIMINE V28.0</strong></div>
+    <div>🚀 <strong>TOCI TOOTMISJUHTIMINE V29.0</strong></div>
     <div id="syncStatus" style="background:var(--warning); color:black; padding:4px 10px; border-radius:4px; font-weight:bold;">Ühendan...</div>
 </div>
 
@@ -94,8 +102,8 @@
     <button class="tab-btn" style="background:var(--success)" onclick="fetchData()">🔄 VÄRSKENDA</button>
 </div>
 
-<div id="sisestus" class="content active">
-    <button onclick="addNewRow()" style="margin-bottom:10px; padding:8px 15px; background:var(--success); color:white; border:none; border-radius:4px; cursor:pointer;">+ LISA UUS TELLIMUS</button>
+<div id="sisestus" class="content active" style="overflow-y: auto;">
+    <button onclick="addNewRow()" style="margin-bottom:15px; padding:10px 20px; background:var(--success); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">+ LISA UUS TELLIMUS</button>
     <table class="data-table">
         <thead><tr style="background:#eee;"><th>MT</th><th>Klient</th><th>Algus</th><th>Lõpp</th><th>MK</th><th>RK</th><th>ML</th><th>RL</th><th>KO</th><th>%</th><th>🗑️</th></tr></thead>
         <tbody id="table-body"></tbody>
@@ -108,15 +116,16 @@
 <div id="gantt_rl" class="content"><div class="gantt-container" id="g-rl"></div></div>
 <div id="gantt_ko" class="content"><div class="gantt-container" id="g-ko"></div></div>
 
-<div id="koormus_tab" class="content"><div id="charts-box"></div></div>
-<div id="voimekus_tab" class="content"><div id="cap-box"></div></div>
+<div id="koormus_tab" class="content"><div class="charts-grid" id="charts-box"></div></div>
+<div id="voimekus_tab" class="content"><div id="cap-box" style="background:white; padding:20px; border-radius:8px; overflow-y:auto; height:100%;"></div></div>
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbwFGxkxdlGqW57N4HlB3HI6lCofYLWrQIYlgUEag9KQR2oEFRiVX9vxoQZ4nKa-NlKb6w/exec";
     const CONFIG = { must_k:{l:'Must Keev',c:240}, rv_k:{l:'RV Keev',c:120}, must_l:{l:'Must Lukk',c:120}, rv_l:{l:'RV Lukk',c:40}, kooste:{l:'Kooste',c:40} };
     const START_VIEW = new Date("2026-01-01");
-    const TODAY = new Date("2026-02-19");
+    const TODAY = new Date();
     let orders = [];
+    let customCap = JSON.parse(localStorage.getItem('prod_cap_v29')) || {};
 
     async function fetchData() {
         document.getElementById('syncStatus').innerText = "Laadin...";
@@ -133,49 +142,45 @@
     }
     const f = (v) => parseFloat(v) || 0;
 
-    function renderGantt(id, key) {
-        const wrap = document.getElementById(id);
-        const dayCount = 150;
+    function renderGantt(containerId, key) {
+        const wrap = document.getElementById(containerId);
+        const dayCount = 120;
         
         let h = `<table class="gantt-table"><thead><tr><th class="sticky-intersect" rowspan="2">MT / Klient / Aeg</th>`;
-        for(let d=0; d<dayCount; d+=7) h += `<th class="sticky-row" colspan="7" style="background:#dfe4ea; text-align:center; font-size:11px;">Nädal ${getWeek(new Date(START_VIEW.getTime() + d*86400000))}</th>`;
+        for(let d=0; d<dayCount; d+=7) h += `<th class="sticky-row" colspan="7" style="background:#dfe4ea; text-align:center; font-size:11px; border-bottom:1px solid #ccc;">Nädal ${getWeek(new Date(START_VIEW.getTime() + d*86400000))}</th>`;
         h += `</tr><tr>`;
         for(let d=0; d<dayCount; d++) {
             let cur = new Date(START_VIEW.getTime() + d*86400000);
             let isT = cur.toDateString() === TODAY.toDateString();
-            h += `<th class="sticky-row ${isT?'today-col':''}"><div class="header-day">${cur.getDate()}.${cur.getMonth()+1}</div></th>`;
+            h += `<th class="sticky-row ${isT?'today-col':''}" style="font-size:9px; width:45px;">${cur.getDate()}.${cur.getMonth()+1}</th>`;
         }
         h += `</tr></thead><tbody>`;
         
         orders.filter(o => o[key] > 0).forEach((o) => {
             let gIdx = orders.indexOf(o);
             h += `<tr><td class="sticky-col">
-                <div style="font-weight:bold;">${o.mt||'MT'}</div>
-                <div style="font-size:10px; color:#666; margin-bottom:4px;">${o.client||'-'}</div>
-                <div style="display:flex;gap:3px;">
-                    <input type="date" value="${cd(o.start)}" onchange="u(${gIdx},'start',this.value);renderGantt('${id}','${key}')" style="width:95px;font-size:10px;">
-                    <input type="date" value="${cd(o.end)}" onchange="u(${gIdx},'end',this.value);renderGantt('${id}','${key}')" style="width:95px;font-size:10px;">
+                <div style="font-weight:bold; color:var(--primary);">${o.mt||'MT'}</div>
+                <div style="font-size:10px; color:#666;">${o.client||'-'}</div>
+                <div style="display:flex; gap:3px; margin-top:3px;">
+                    <input type="date" value="${cd(o.start)}" onchange="u(${gIdx},'start',this.value);renderGantt('${containerId}','${key}')" style="width:90px; font-size:10px;">
+                    <input type="date" value="${cd(o.end)}" onchange="u(${gIdx},'end',this.value);renderGantt('${containerId}','${key}')" style="width:90px; font-size:10px;">
                 </div>
             </td>`;
+            
             let sIdx = Math.floor((new Date(o.start) - START_VIEW) / 86400000);
             let dur = Math.max(1, Math.floor((new Date(o.end) - new Date(o.start)) / 86400000) + 1);
             for(let d=0; d<dayCount; d++) {
                 let isT = new Date(START_VIEW.getTime() + d*86400000).toDateString() === TODAY.toDateString();
-                let bar = (d === sIdx) ? `<div class="bar" style="width:${dur*45 - 5}px"><div class="progress-fill" style="width:${o.progress}%"></div>${o.mt}</div>` : '';
+                let bar = (d === sIdx) ? `<div class="bar" style="width:${dur*45 - 5}px"><div class="progress-fill" style="width:${o.progress}%"></div>${o.mt} (${o.progress}%)</div>` : '';
                 h += `<td class="${isT?'today-col':''}">${bar}</td>`;
             }
             h += `</tr>`;
         });
         wrap.innerHTML = h + `</tbody></table>`;
-        setTimeout(() => scrollToToday(id), 100);
-    }
-
-    function scrollToToday(containerId) {
-        const container = document.getElementById(containerId);
-        const todayCell = container.querySelector('.today-col');
-        if (todayCell && container) {
-            container.scrollLeft = todayCell.offsetLeft - (container.offsetWidth / 2) + 150;
-        }
+        setTimeout(() => {
+            let tIdx = Math.floor((TODAY - START_VIEW) / 86400000);
+            wrap.scrollLeft = (tIdx * 45) - (wrap.offsetWidth / 2) + 160;
+        }, 50);
     }
 
     async function save() { await fetch(API_URL, {method:"POST", body:JSON.stringify(orders)}); fetchData(); }
@@ -186,10 +191,43 @@
         });
     }
 
+    function renderCharts() {
+        const box = document.getElementById('charts-box'); box.innerHTML = '';
+        Object.keys(CONFIG).forEach(k => {
+            let h = `<div class="chart-card"><h3>${CONFIG[k].l}</h3><div style="display:flex; align-items:flex-end; height:160px; gap:5px; border-bottom:2px solid #333; margin-top:25px; position:relative;">`;
+            for(let w=1; w<=15; w++) {
+                let ws = new Date(START_VIEW.getTime() + (w-1)*7*86400000), we = new Date(ws.getTime() + 7*86400000);
+                let tot = orders.filter(o => new Date(o.start) >= ws && new Date(o.start) < we).reduce((s, o) => s + (o[k]||0), 0);
+                let cap = (customCap[k] && customCap[k][w]) ? customCap[k][w] : CONFIG[k].c;
+                let height = Math.min(150, (tot / Math.max(tot, cap, 10)) * 150);
+                let line = (cap / Math.max(tot, cap, 10)) * 150;
+                h += `<div style="flex:1; display:flex; flex-direction:column; align-items:center;"><span style="font-size:10px; font-weight:bold;">${tot||''}</span><div style="width:80%; height:${height}px; background:${tot>cap?'var(--danger)':'var(--success)'}; position:relative; border-radius:3px;"><div style="position:absolute; width:100%; border-top:2px dashed red; bottom:${line}px; opacity:0.6;"></div></div><span style="font-size:9px">W${w}</span></div>`;
+            }
+            box.innerHTML += h + `</div></div>`;
+        });
+    }
+
+    function renderCapacity() {
+        let h = `<table class="data-table"><thead><tr style="background:#eee;"><th>Osakond</th>` + Array.from({length:15},(_,i)=>`<th>W${i+1}</th>`).join('') + `</tr></thead><tbody>`;
+        h += Object.keys(CONFIG).map(k => `<tr><td><b>${CONFIG[k].l}</b></td>` + Array.from({length:15},(_,i)=>{
+            let v = (customCap[k] && customCap[k][i+1]) ? customCap[k][i+1] : CONFIG[k].c;
+            return `<td><input type="number" class="cap-in" data-k="${k}" data-w="${i+1}" value="${v}" style="width:45px"></td>`;
+        }).join('') + `</tr>`).join('');
+        document.getElementById('cap-box').innerHTML = h + `</tbody></table><br><button onclick="saveCap()" style="padding:10px 20px; background:var(--accent); color:white; border:none; border-radius:4px; cursor:pointer;">SALVESTA VÕIMEKUS</button>`;
+    }
+
+    function saveCap() {
+        document.querySelectorAll('.cap-in').forEach(i => {
+            if(!customCap[i.dataset.k]) customCap[i.dataset.k] = {};
+            customCap[i.dataset.k][i.dataset.w] = parseInt(i.value);
+        });
+        localStorage.setItem('prod_cap_v29', JSON.stringify(customCap)); alert("Salvestatud!"); fetchData();
+    }
+
     function u(i, k, v) { orders[i][k] = v; save(); }
     function cd(d) { if(!d) return ""; return new Date(d).toISOString().split('T')[0]; }
     function getWeek(d) { d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7)); return Math.ceil((((d - new Date(Date.UTC(d.getUTCFullYear(),0,1))) / 86400000) + 1)/7); }
-    function addNewRow() { orders.push({mt:"UUS", client:"", start:"2026-02-19", end:"2026-02-26", must_k:0, rv_k:0, must_l:0, rv_l:0, kooste:0, progress:0}); renderTable(); save(); }
+    function addNewRow() { orders.push({mt:"UUS", client:"", start:new Date().toISOString().split('T')[0], end:new Date().toISOString().split('T')[0], must_k:0, rv_k:0, must_l:0, rv_l:0, kooste:0, progress:0}); renderTable(); save(); }
     function del(i) { if(confirm("Kustuta?")) { orders.splice(i,1); renderTable(); save(); } }
 
     function openTab(e, t) {
@@ -201,6 +239,8 @@
         if(t === 'gantt_ml') renderGantt('g-ml', 'must_l');
         if(t === 'gantt_rl') renderGantt('g-rl', 'rv_l');
         if(t === 'gantt_ko') renderGantt('g-ko', 'kooste');
+        if(t === 'koormus_tab') renderCharts();
+        if(t === 'voimekus_tab') renderCapacity();
     }
     fetchData();
 </script>
