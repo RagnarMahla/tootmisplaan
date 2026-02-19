@@ -2,7 +2,7 @@
 <html lang="et">
 <head>
     <meta charset="UTF-8">
-    <title>TOCI Tootmisjuhtimine V22.1 - AUTO-SCROLL</title>
+    <title>TOCI LIVE V22.2 - FIXED LOCKS</title>
     <style>
         :root { --primary: #1a252f; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; --warning: #f1c40f; --bg: #f1f2f6; --today: #ff4757; }
         body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); font-size: 12px; }
@@ -15,33 +15,68 @@
         .content { padding: 15px; display: none; }
         .content.active { display: block; }
 
-        .gantt-container { overflow: auto; background: white; border: 1px solid #ccc; max-height: 75vh; position: relative; scroll-behavior: smooth; }
-        table.gantt-table { border-collapse: separate; border-spacing: 0; width: 100%; }
-        .gantt-table th, .gantt-table td { border: 0.1px solid #eee; min-width: 40px; height: 35px; padding: 0; position: relative; }
+        /* GANTT TABEL - TUGEVDATUD LUKUSTUS */
+        .gantt-container { 
+            overflow: auto; 
+            background: white; 
+            border: 1px solid #ccc; 
+            max-height: 80vh; 
+            position: relative; 
+            scroll-behavior: smooth;
+        }
         
-        .sticky-col { position: sticky; left: 0; background: #fff !important; z-index: 1000; min-width: 280px; padding: 5px 10px !important; border-right: 2px solid #ccc !important; box-shadow: 2px 0 5px rgba(0,0,0,0.1); }
-        .sticky-row { position: sticky; top: 0; background: #eee !important; z-index: 1100; font-weight: bold; border-bottom: 1px solid #ccc !important; }
-        .sticky-intersect { position: sticky; top: 0; left: 0; z-index: 1500; background: #ddd !important; border-right: 2px solid #ccc !important; }
+        table.gantt-table { border-collapse: separate; border-spacing: 0; width: 100%; table-layout: fixed; }
+        .gantt-table th, .gantt-table td { border: 0.1px solid #eee; min-width: 45px; height: 40px; padding: 0; position: relative; }
+        
+        /* 1. VASAK TULP LUKKU (MT info) - KRIITILINE */
+        .sticky-col { 
+            position: sticky !important; 
+            left: 0 !important; 
+            background-color: white !important; 
+            z-index: 2000 !important; /* Peab olema suurem kui päisel */
+            min-width: 300px !important; 
+            padding: 5px 12px !important; 
+            border-right: 3px solid #bbb !important;
+            box-shadow: 5px 0 10px rgba(0,0,0,0.15);
+        }
 
-        .header-day { font-size: 9px; text-align: center; }
-        /* Tänase päeva esiletõstmine */
-        .today-col { background: rgba(255, 71, 87, 0.1) !important; border-left: 2px solid var(--today) !important; border-right: 2px solid var(--today) !important; }
+        /* 2. ÜLEMINE PÄIS LUKKU (Kuupäevad) */
+        .sticky-row { 
+            position: sticky !important; 
+            top: 0 !important; 
+            background-color: #f8f9fa !important; 
+            z-index: 1500 !important; 
+            font-weight: bold; 
+            border-bottom: 2px solid #ccc !important;
+        }
 
-        .bar { position: absolute; height: 24px; top: 5px; background: var(--accent); border-radius: 3px; z-index: 100; color: white; display: flex; align-items: center; padding-left: 5px; font-size: 10px; white-space: nowrap; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
-        .progress-fill { position: absolute; left: 0; top: 0; height: 100%; background: rgba(0,0,0,0.2); border-right: 1px solid rgba(255,255,255,0.3); }
+        /* 3. NURK, KUS KOHTUVAD PÄIS JA TULP */
+        .sticky-intersect { 
+            position: sticky !important; 
+            top: 0 !important; 
+            left: 0 !important; 
+            z-index: 3000 !important; 
+            background-color: #ececec !important; 
+            border-right: 3px solid #bbb !important;
+            border-bottom: 2px solid #ccc !important;
+        }
 
-        .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 15px; }
-        .chart-card { background: white; padding: 15px; border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
-        .bar-chart { display: flex; align-items: flex-end; height: 150px; gap: 4px; border-bottom: 2px solid #444; margin-top: 20px; position: relative; }
-        .b-column { flex: 1; display: flex; flex-direction: column; align-items: center; }
-        .b-bar { width: 80%; position: relative; border-radius: 2px 2px 0 0; }
-        .c-line { position: absolute; width: 100%; border-top: 2px dashed var(--danger); z-index: 10; pointer-events: none; opacity: 0.7; }
+        .header-day { font-size: 10px; text-align: center; line-height: 1.2; }
+        .today-col { background-color: rgba(255, 71, 87, 0.12) !important; border-left: 2.5px solid var(--today) !important; border-right: 2.5px solid var(--today) !important; }
+
+        /* Graafiku ribad */
+        .bar { position: absolute; height: 28px; top: 6px; background: var(--accent); border-radius: 4px; z-index: 100; color: white; display: flex; align-items: center; padding-left: 8px; font-size: 11px; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.25); font-weight: bold; overflow: hidden; }
+        .progress-fill { position: absolute; left: 0; top: 0; height: 100%; background: rgba(0,0,0,0.3); border-right: 1px solid rgba(255,255,255,0.4); }
+
+        /* Muu */
+        .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; }
+        .chart-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
     </style>
 </head>
 <body>
 
 <div class="top-bar">
-    <div>🚀 <strong>TOCI LIVE V22.1</strong></div>
+    <div>🚀 <strong>TOCI TOOTMISJUHTIMINE V22.2</strong></div>
     <div id="syncStatus" class="sync-status" style="background:var(--warning); color:black;">Ühendan...</div>
 </div>
 
@@ -58,8 +93,8 @@
 </div>
 
 <div id="sisestus" class="content active">
-    <button onclick="addNewRow()" style="margin-bottom:10px; padding:8px 15px; background:var(--success); color:white; border:none; border-radius:4px; cursor:pointer;">+ LISA RIDA</button>
-    <table style="width:100%; background:white; border-collapse:collapse;">
+    <button onclick="addNewRow()" style="margin-bottom:15px; padding:10px 20px; background:var(--success); color:white; border:none; border-radius:4px; cursor:pointer;">+ LISA UUS RIDA</button>
+    <table style="width:100%; background:white; border-collapse:collapse; border:1px solid #ddd;">
         <thead><tr style="background:#eee;"><th>MT</th><th>Klient</th><th>Algus</th><th>Lõpp</th><th>MK</th><th>RK</th><th>ML</th><th>RL</th><th>KO</th><th>%</th><th>🗑️</th></tr></thead>
         <tbody id="table-body"></tbody>
     </table>
@@ -78,9 +113,9 @@
     const API_URL = "https://script.google.com/macros/s/AKfycbwFGxkxdlGqW57N4HlB3HI6lCofYLWrQIYlgUEag9KQR2oEFRiVX9vxoQZ4nKa-NlKb6w/exec";
     const CONFIG = { must_k:{l:'Must Keev',c:240}, rv_k:{l:'RV Keev',c:120}, must_l:{l:'Must Lukk',c:120}, rv_l:{l:'RV Lukk',c:40}, kooste:{l:'Kooste',c:40} };
     const START_VIEW = new Date("2026-01-01");
-    const TODAY = new Date(); // Reaalne tänane kuupäev
+    const TODAY = new Date(); 
     let orders = [];
-    let customCap = JSON.parse(localStorage.getItem('prod_cap_v22')) || {};
+    let customCap = JSON.parse(localStorage.getItem('prod_cap_v23')) || {};
 
     async function fetchData() {
         document.getElementById('syncStatus').innerText = "Laadin...";
@@ -91,27 +126,55 @@
                 orders = d.map(o => ({...o, must_k:f(o.must_k), rv_k:f(o.rv_k), must_l:f(o.must_l), rv_l:f(o.rv_l), kooste:f(o.kooste), progress:f(o.progress)}));
                 renderTable();
                 document.getElementById('syncStatus').innerText = "Andmed OK";
-                document.getElementById('syncStatus').style.background = "#27ae60";
+                document.getElementById('syncStatus').style.background = "#27ae60"; document.getElementById('syncStatus').style.color = "white";
             }
         } catch(e) { document.getElementById('syncStatus').innerText = "Viga!"; }
     }
     const f = (v) => parseFloat(v) || 0;
 
-    async function save() {
-        document.getElementById('syncStatus').innerText = "Salvestan...";
-        await fetch(API_URL, {method:"POST", body:JSON.stringify(orders)});
-        document.getElementById('syncStatus').innerText = "Salvestatud";
-    }
-
-    // --- UUS: KERIMISE FUNKTSIOON ---
     function scrollToToday(containerId) {
         const container = document.getElementById(containerId);
         const todayCell = container.querySelector('.today-col');
         if (todayCell && container) {
-            const offset = todayCell.offsetLeft;
-            // Kerib tänase päeva ekraani keskele (miinus vasaku tulba laius 280px)
-            container.scrollLeft = offset - (container.offsetWidth / 2) + 140;
+            container.scrollLeft = todayCell.offsetLeft - (container.offsetWidth / 2) + 150;
         }
+    }
+
+    function renderGantt(id, key) {
+        const wrap = document.getElementById(id);
+        let h = `<table class="gantt-table"><thead><tr><th class="sticky-intersect">MT / Klient / Aeg</th>`;
+        for(let d=0; d<150; d++) {
+            let cur = new Date(START_VIEW.getTime() + d*86400000);
+            let isT = cur.toDateString() === TODAY.toDateString();
+            h += `<th class="sticky-row ${isT?'today-col':''}"><div class="header-day">${cur.getDate()}.${cur.getMonth()+1}<br>W${getWeek(cur)}</div></th>`;
+        }
+        h += `</tr></thead><tbody>`;
+        
+        orders.filter(o => o[key] > 0).forEach((o) => {
+            let gIdx = orders.indexOf(o);
+            h += `<tr><td class="sticky-col">
+                <b>${o.mt||'MT'}</b> | ${o.client||''}<br>
+                <div style="display:flex;gap:3px;margin-top:4px;">
+                    <input type="date" value="${cd(o.start)}" onchange="u(${gIdx},'start',this.value);renderGantt('${id}','${key}')" style="width:90px;font-size:10px;">
+                    <input type="date" value="${cd(o.end)}" onchange="u(${gIdx},'end',this.value);renderGantt('${id}','${key}')" style="width:90px;font-size:10px;">
+                </div>
+            </td>`;
+            let sIdx = Math.floor((new Date(o.start) - START_VIEW) / 86400000);
+            let dur = Math.max(1, Math.floor((new Date(o.end) - new Date(o.start)) / 86400000) + 1);
+            for(let d=0; d<150; d++) {
+                let isT = new Date(START_VIEW.getTime() + d*86400000).toDateString() === TODAY.toDateString();
+                let bar = (d === sIdx) ? `<div class="bar" style="width:${dur*45}px"><div class="progress-fill" style="width:${o.progress}%"></div>${o.mt} (${o.progress}%)</div>` : '';
+                h += `<td class="${isT?'today-col':''}">${bar}</td>`;
+            }
+            h += `</tr>`;
+        });
+        wrap.innerHTML = h + `</tbody></table>`;
+    }
+
+    async function save() {
+        document.getElementById('syncStatus').innerText = "Salvestan...";
+        await fetch(API_URL, {method:"POST", body:JSON.stringify(orders)});
+        document.getElementById('syncStatus').innerText = "Salvestatud";
     }
 
     function renderTable() {
@@ -133,38 +196,6 @@
         });
     }
 
-    function renderGantt(id, key) {
-        const wrap = document.getElementById(id);
-        let h = `<table class="gantt-table"><thead><tr><th class="sticky-intersect">MT / Klient / Aeg</th>`;
-        for(let d=0; d<120; d++) {
-            let cur = new Date(START_VIEW.getTime() + d*86400000);
-            let isT = cur.toDateString() === TODAY.toDateString();
-            h += `<th class="sticky-row ${isT?'today-col':''}"><div class="header-day">${cur.getDate()}.${cur.getMonth()+1}</div></th>`;
-        }
-        h += `</tr></thead><tbody>`;
-        
-        orders.filter(o => o[key] > 0).forEach((o) => {
-            let gIdx = orders.indexOf(o);
-            h += `<tr><td class="sticky-col">
-                <b>${o.mt||'MT'}</b> | ${o.client||''}<br>
-                <div style="display:flex; gap:2px; margin-top:3px;">
-                    <input type="date" value="${cd(o.start)}" onchange="u(${gIdx},'start',this.value);renderGantt('${id}','${key}')" style="width:85px;font-size:9px">
-                    <input type="date" value="${cd(o.end)}" onchange="u(${gIdx},'end',this.value);renderGantt('${id}','${key}')" style="width:85px;font-size:9px">
-                </div>
-            </td>`;
-            let sDate = new Date(o.start), eDate = new Date(o.end);
-            let sIdx = Math.floor((sDate - START_VIEW) / 86400000);
-            let dur = Math.max(1, Math.floor((eDate - sDate) / 86400000) + 1);
-            for(let d=0; d<120; d++) {
-                let isT = new Date(START_VIEW.getTime() + d*86400000).toDateString() === TODAY.toDateString();
-                let bar = (d === sIdx) ? `<div class="bar" style="width:${dur*40}px"><div class="progress-fill" style="width:${o.progress}%"></div>${o.mt} (${o.progress}%)</div>` : '';
-                h += `<td class="${isT?'today-col':''}">${bar}</td>`;
-            }
-            h += `</tr>`;
-        });
-        wrap.innerHTML = h + `</tbody></table>`;
-    }
-
     function renderCharts() {
         const box = document.getElementById('charts-box'); box.innerHTML = '';
         Object.keys(CONFIG).forEach(k => {
@@ -175,19 +206,19 @@
                 let cap = (customCap[k] && customCap[k][w]) ? customCap[k][w] : CONFIG[k].c;
                 let height = Math.min(150, (tot / Math.max(tot, cap, 10)) * 150);
                 let line = (cap / Math.max(tot, cap, 10)) * 150;
-                h += `<div class="b-column"><span style="font-size:9px">${tot||''}</span><div class="b-bar" style="height:${height}px; background:${tot>cap?'var(--danger)':'var(--success)'}"><div class="c-line" style="bottom:${line}px"></div></div><span style="font-size:9px">W${w}</span></div>`;
+                h += `<div style="flex:1;display:flex;flex-direction:column;align-items:center;"><span style="font-size:9px">${tot||''}</span><div style="width:80%;height:${height}px;background:${tot>cap?'var(--danger)':'var(--success)'};position:relative;border-radius:2px;"><div style="position:absolute;width:100%;border-top:2px dashed red;bottom:${line}px;opacity:0.6;"></div></div><span style="font-size:9px">W${w}</span></div>`;
             }
             box.innerHTML += h + `</div></div>`;
         });
     }
 
     function renderCapacity() {
-        let h = `<table><tr style="background:#eee;"><th>Osakond</th>` + Array.from({length:15},(_,i)=>`<th>W${i+1}</th>`).join('') + `</tr>`;
+        let h = `<table><thead><tr style="background:#eee;"><th>Osakond</th>` + Array.from({length:15},(_,i)=>`<th>W${i+1}</th>`).join('') + `</tr></thead><tbody>`;
         h += Object.keys(CONFIG).map(k => `<tr><td><b>${CONFIG[k].l}</b></td>` + Array.from({length:15},(_,i)=>{
             let v = (customCap[k] && customCap[k][i+1]) ? customCap[k][i+1] : CONFIG[k].c;
-            return `<td><input type="number" class="cap-in" data-k="${k}" data-w="${i+1}" value="${v}" style="width:40px"></td>`;
+            return `<td><input type="number" class="cap-in" data-k="${k}" data-w="${i+1}" value="${v}" style="width:45px"></td>`;
         }).join('') + `</tr>`).join('');
-        document.getElementById('cap-box').innerHTML = h + `</table><br><button onclick="saveCap()" style="padding:10px 20px; background:var(--accent); color:white; border:none; border-radius:4px; cursor:pointer;">SALVESTA VÕIMEKUS</button>`;
+        document.getElementById('cap-box').innerHTML = h + `</tbody></table><br><button onclick="saveCap()" style="padding:10px 20px; background:var(--accent); color:white; border:none; border-radius:4px; cursor:pointer;">SALVESTA VÕIMEKUS</button>`;
     }
 
     function saveCap() {
@@ -195,11 +226,12 @@
             if(!customCap[i.dataset.k]) customCap[i.dataset.k] = {};
             customCap[i.dataset.k][i.dataset.w] = parseInt(i.value);
         });
-        localStorage.setItem('prod_cap_v22', JSON.stringify(customCap)); alert("Võimekus salvestatud!");
+        localStorage.setItem('prod_cap_v23', JSON.stringify(customCap)); alert("Salvestatud!");
     }
 
     function u(i, k, v) { orders[i][k] = v; save(); }
     function cd(d) { if(!d) return ""; return new Date(d).toISOString().split('T')[0]; }
+    function getWeek(d) { d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7)); return Math.ceil((((d - new Date(Date.UTC(d.getUTCFullYear(),0,1))) / 86400000) + 1)/7); }
     function addNewRow() { orders.push({mt:"UUS", client:"", start:"2026-02-19", end:"2026-02-26", must_k:0, rv_k:0, must_l:0, rv_l:0, kooste:0, progress:0}); renderTable(); save(); }
     function del(i) { if(confirm("Kustuta?")) { orders.splice(i,1); renderTable(); save(); } }
 
@@ -215,7 +247,7 @@
         if(t === 'gantt_rl') { renderGantt('g-rl', 'rv_l'); cId = 'g-rl'; }
         if(t === 'gantt_ko') { renderGantt('g-ko', 'kooste'); cId = 'g-ko'; }
         
-        if(cId) setTimeout(() => scrollToToday(cId), 100);
+        if(cId) setTimeout(() => scrollToToday(cId), 150);
         if(t === 'koormus_tab') renderCharts();
         if(t === 'voimekus_tab') renderCapacity();
     }
