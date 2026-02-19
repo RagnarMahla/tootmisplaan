@@ -2,11 +2,12 @@
 <html lang="et">
 <head>
     <meta charset="UTF-8">
-    <title>TOCI LIVE V22.2 - FIXED LOCKS</title>
+    <title>TOCI Tootmisplaan V23.0</title>
     <style>
         :root { --primary: #1a252f; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; --warning: #f1c40f; --bg: #f1f2f6; --today: #ff4757; }
         body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); font-size: 12px; }
         
+        /* Navigatsioon */
         .top-bar { background: var(--primary); color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 9999; }
         .tabs { display: flex; background: #2c3e50; border-bottom: 3px solid var(--accent); position: sticky; top: 45px; z-index: 9000; overflow-x: auto; }
         .tab-btn { padding: 12px 18px; color: white; cursor: pointer; border: none; background: none; font-weight: bold; white-space: nowrap; }
@@ -15,69 +16,44 @@
         .content { padding: 15px; display: none; }
         .content.active { display: block; }
 
-        /* GANTT TABEL - TUGEVDATUD LUKUSTUS */
-        .gantt-container { 
-            overflow: auto; 
-            background: white; 
-            border: 1px solid #ccc; 
-            max-height: 80vh; 
-            position: relative; 
-            scroll-behavior: smooth;
-        }
-        
+        /* GANTT TABEL - STICKY LUKUSTUS */
+        .gantt-container { overflow: auto; background: white; border: 1px solid #ccc; max-height: 75vh; position: relative; scroll-behavior: smooth; }
         table.gantt-table { border-collapse: separate; border-spacing: 0; width: 100%; table-layout: fixed; }
-        .gantt-table th, .gantt-table td { border: 0.1px solid #eee; min-width: 45px; height: 40px; padding: 0; position: relative; }
+        .gantt-table th, .gantt-table td { border: 0.1px solid #eee; min-width: 42px; height: 38px; padding: 0; position: relative; }
         
-        /* 1. VASAK TULP LUKKU (MT info) - KRIITILINE */
+        /* KÜLMUTATUD VASAK TULP */
         .sticky-col { 
-            position: sticky !important; 
-            left: 0 !important; 
-            background-color: white !important; 
-            z-index: 2000 !important; /* Peab olema suurem kui päisel */
-            min-width: 300px !important; 
-            padding: 5px 12px !important; 
-            border-right: 3px solid #bbb !important;
-            box-shadow: 5px 0 10px rgba(0,0,0,0.15);
+            position: sticky !important; left: 0 !important; background: #fff !important; z-index: 1000 !important; 
+            min-width: 320px !important; padding: 5px 12px !important; border-right: 3px solid #ccc !important;
+            box-shadow: 4px 0 8px rgba(0,0,0,0.1);
         }
+        /* KÜLMUTATUD PÄIS */
+        .sticky-row { position: sticky !important; top: 0 !important; background: #eee !important; z-index: 1100 !important; font-weight: bold; border-bottom: 2px solid #ccc !important; text-align: center; }
+        .sticky-intersect { position: sticky !important; top: 0 !important; left: 0 !important; z-index: 1500 !important; background: #ddd !important; border-right: 3px solid #ccc !important; border-bottom: 2px solid #ccc !important; }
 
-        /* 2. ÜLEMINE PÄIS LUKKU (Kuupäevad) */
-        .sticky-row { 
-            position: sticky !important; 
-            top: 0 !important; 
-            background-color: #f8f9fa !important; 
-            z-index: 1500 !important; 
-            font-weight: bold; 
-            border-bottom: 2px solid #ccc !important;
-        }
-
-        /* 3. NURK, KUS KOHTUVAD PÄIS JA TULP */
-        .sticky-intersect { 
-            position: sticky !important; 
-            top: 0 !important; 
-            left: 0 !important; 
-            z-index: 3000 !important; 
-            background-color: #ececec !important; 
-            border-right: 3px solid #bbb !important;
-            border-bottom: 2px solid #ccc !important;
-        }
-
-        .header-day { font-size: 10px; text-align: center; line-height: 1.2; }
-        .today-col { background-color: rgba(255, 71, 87, 0.12) !important; border-left: 2.5px solid var(--today) !important; border-right: 2.5px solid var(--today) !important; }
+        /* Tänase päeva veerg */
+        .today-col { background: rgba(255, 71, 87, 0.08) !important; border-left: 2px solid var(--today) !important; border-right: 2px solid var(--today) !important; }
 
         /* Graafiku ribad */
-        .bar { position: absolute; height: 28px; top: 6px; background: var(--accent); border-radius: 4px; z-index: 100; color: white; display: flex; align-items: center; padding-left: 8px; font-size: 11px; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.25); font-weight: bold; overflow: hidden; }
-        .progress-fill { position: absolute; left: 0; top: 0; height: 100%; background: rgba(0,0,0,0.3); border-right: 1px solid rgba(255,255,255,0.4); }
+        .bar { position: absolute; height: 26px; top: 6px; background: var(--accent); border-radius: 4px; z-index: 100; color: white; display: flex; align-items: center; padding-left: 8px; font-size: 11px; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.2); font-weight: bold; overflow: hidden; }
+        .progress-fill { position: absolute; left: 0; top: 0; height: 100%; background: rgba(0,0,0,0.25); border-right: 1px solid rgba(255,255,255,0.4); }
 
-        /* Muu */
-        .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; }
+        /* Koormuse tulpdiagrammid */
+        .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 20px; }
         .chart-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .bar-chart { display: flex; align-items: flex-end; height: 160px; gap: 5px; border-bottom: 2px solid #333; margin-top: 25px; position: relative; }
+        .b-column { flex: 1; display: flex; flex-direction: column; align-items: center; }
+        .b-bar { width: 85%; position: relative; border-radius: 3px 3px 0 0; }
+        .c-line { position: absolute; width: 100%; border-top: 2px dashed var(--danger); z-index: 10; pointer-events: none; opacity: 0.6; }
+        
+        .cap-input { width: 50px !important; text-align: center; }
     </style>
 </head>
 <body>
 
 <div class="top-bar">
-    <div>🚀 <strong>TOCI TOOTMISJUHTIMINE V22.2</strong></div>
-    <div id="syncStatus" class="sync-status" style="background:var(--warning); color:black;">Ühendan...</div>
+    <div>🚀 <strong>TOCI LIVE V23.0</strong></div>
+    <div id="syncStatus" class="sync-status" style="background:var(--warning); color:black;">Ühendamine...</div>
 </div>
 
 <div class="tabs">
@@ -93,7 +69,7 @@
 </div>
 
 <div id="sisestus" class="content active">
-    <button onclick="addNewRow()" style="margin-bottom:15px; padding:10px 20px; background:var(--success); color:white; border:none; border-radius:4px; cursor:pointer;">+ LISA UUS RIDA</button>
+    <button onclick="addNewRow()" style="margin-bottom:15px; padding:10px 20px; background:var(--success); color:white; border:none; border-radius:4px; cursor:pointer;">+ LISA RIDA</button>
     <table style="width:100%; background:white; border-collapse:collapse; border:1px solid #ddd;">
         <thead><tr style="background:#eee;"><th>MT</th><th>Klient</th><th>Algus</th><th>Lõpp</th><th>MK</th><th>RK</th><th>ML</th><th>RL</th><th>KO</th><th>%</th><th>🗑️</th></tr></thead>
         <tbody id="table-body"></tbody>
@@ -113,7 +89,7 @@
     const API_URL = "https://script.google.com/macros/s/AKfycbwFGxkxdlGqW57N4HlB3HI6lCofYLWrQIYlgUEag9KQR2oEFRiVX9vxoQZ4nKa-NlKb6w/exec";
     const CONFIG = { must_k:{l:'Must Keev',c:240}, rv_k:{l:'RV Keev',c:120}, must_l:{l:'Must Lukk',c:120}, rv_l:{l:'RV Lukk',c:40}, kooste:{l:'Kooste',c:40} };
     const START_VIEW = new Date("2026-01-01");
-    const TODAY = new Date(); 
+    const TODAY = new Date(); // Reaalne täna
     let orders = [];
     let customCap = JSON.parse(localStorage.getItem('prod_cap_v23')) || {};
 
@@ -146,7 +122,7 @@
         for(let d=0; d<150; d++) {
             let cur = new Date(START_VIEW.getTime() + d*86400000);
             let isT = cur.toDateString() === TODAY.toDateString();
-            h += `<th class="sticky-row ${isT?'today-col':''}"><div class="header-day">${cur.getDate()}.${cur.getMonth()+1}<br>W${getWeek(cur)}</div></th>`;
+            h += `<th class="sticky-row ${isT?'today-col':''}"><div>${cur.getDate()}.${cur.getMonth()+1}</div><div style="font-size:8px;opacity:0.6;">W${getWeek(cur)}</div></th>`;
         }
         h += `</tr></thead><tbody>`;
         
@@ -155,8 +131,8 @@
             h += `<tr><td class="sticky-col">
                 <b>${o.mt||'MT'}</b> | ${o.client||''}<br>
                 <div style="display:flex;gap:3px;margin-top:4px;">
-                    <input type="date" value="${cd(o.start)}" onchange="u(${gIdx},'start',this.value);renderGantt('${id}','${key}')" style="width:90px;font-size:10px;">
-                    <input type="date" value="${cd(o.end)}" onchange="u(${gIdx},'end',this.value);renderGantt('${id}','${key}')" style="width:90px;font-size:10px;">
+                    <input type="date" value="${cd(o.start)}" onchange="u(${gIdx},'start',this.value);renderGantt('${id}','${key}')" style="width:95px;font-size:10px;">
+                    <input type="date" value="${cd(o.end)}" onchange="u(${gIdx},'end',this.value);renderGantt('${id}','${key}')" style="width:95px;font-size:10px;">
                 </div>
             </td>`;
             let sIdx = Math.floor((new Date(o.start) - START_VIEW) / 86400000);
@@ -206,7 +182,7 @@
                 let cap = (customCap[k] && customCap[k][w]) ? customCap[k][w] : CONFIG[k].c;
                 let height = Math.min(150, (tot / Math.max(tot, cap, 10)) * 150);
                 let line = (cap / Math.max(tot, cap, 10)) * 150;
-                h += `<div style="flex:1;display:flex;flex-direction:column;align-items:center;"><span style="font-size:9px">${tot||''}</span><div style="width:80%;height:${height}px;background:${tot>cap?'var(--danger)':'var(--success)'};position:relative;border-radius:2px;"><div style="position:absolute;width:100%;border-top:2px dashed red;bottom:${line}px;opacity:0.6;"></div></div><span style="font-size:9px">W${w}</span></div>`;
+                h += `<div class="b-column"><span style="font-size:9px">${tot||''}</span><div class="b-bar" style="height:${height}px; background:${tot>cap?'var(--danger)':'var(--success)'}"><div class="c-line" style="bottom:${line}px"></div></div><span style="font-size:9px">W${w}</span></div>`;
             }
             box.innerHTML += h + `</div></div>`;
         });
@@ -226,7 +202,7 @@
             if(!customCap[i.dataset.k]) customCap[i.dataset.k] = {};
             customCap[i.dataset.k][i.dataset.w] = parseInt(i.value);
         });
-        localStorage.setItem('prod_cap_v23', JSON.stringify(customCap)); alert("Salvestatud!");
+        localStorage.setItem('prod_cap_v23', JSON.stringify(customCap)); alert("Võimekus salvestatud!");
     }
 
     function u(i, k, v) { orders[i][k] = v; save(); }
