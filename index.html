@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+    <meta charset="UTF-8">
+    <title>Tootmisplaan V17 - LIVE</title>
+    <style>
+        /* Kasutame sama stiili mis varem */
+        :root { --primary: #2c3e50; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f1f2f6; }
+        .top-bar { background: #1a252f; color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .sync-status { font-size: 12px; padding: 5px 10px; border-radius: 4px; }
+        .status-ok { background: var(--success); }
+        .status-loading { background: var(--accent); }
+        /* ... muud stiilid jäävad samaks ... */
+        .tabs { display: flex; background: var(--primary); overflow-x: auto; }
+        .tab-btn { padding: 15px 20px; color: white; cursor: pointer; border: none; background: none; }
+        .tab-btn.active { background: rgba(255,255,255,0.1); border-bottom: 3px solid var(--accent); }
+        .content { padding: 20px; display: none; }
+        .content.active { display: block; }
+        table { width: 100%; border-collapse: collapse; background: white; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    </style>
+</head>
+<body>
+
+<div class="top-bar">
+    <div>🚀 <strong>TOOTMISPLAAN LIVE</strong> (Google Sheets)</div>
+    <div id="syncStatus" class="sync-status">Andmete laadimine...</div>
+</div>
+
+<div class="tabs">
+    <button class="tab-btn active" onclick="openTab('sisestus')">SISESTUS</button>
+    <button class="tab-btn" onclick="fetchData()">VÄRSKENDA ANDMEID</button>
+</div>
+
+<div id="sisestus" class="content active">
+    <div id="loadingInfo" style="padding: 20px; text-align: center;">Võtan ühendust Google Sheetsiga...</div>
+    <table id="mainTable" style="display:none;">
+        <thead>
+            <tr><th>MT</th><th>Klient</th><th>Algus</th><th>Lõpp</th><th>MK</th><th>RK</th><th>Haldus</th></tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+    </table>
+    <br>
+    <button onclick="addNewRow()" style="padding:10px; background:var(--success); color:white; border:none; cursor:pointer;">+ LISARIDA</button>
+</div>
+
+<script>
+    // --- ASENDA SEE LINK OMA GOOGLE APPS SCRIPT URL-iga ---
+    const API_URL = "https://script.google.com/macros/s/AKfycbwzGm3aK1gT62lOBRu6QTFpUO6RZWVJRi28g-_QKHgOsPdbegfUz3Z6w8QyM9w3UbWc_w/exec"; 
+
+    let orders = [];
+
+    async function fetchData() {
+        showStatus("Laadin...", "status-loading");
+        try {
+            const response = await fetch(API_URL);
+            orders = await response.json();
+            render();
+            showStatus("Andmed pilves OK", "status-ok");
+            document.getElementById('loadingInfo').style.display = 'none';
+            document.getElementById('mainTable').style.display = 'table';
+        } catch (e) {
+            showStatus("Viga ühendusega!", "status-danger");
+            console.error(e);
+        }
+    }
+
+    async function saveToCloud() {
+        showStatus("Salvestan pilve...", "status-loading");
+        try {
+            await fetch(API_URL, {
+                method: "POST",
+                body: JSON.stringify(orders)
+            });
+            showStatus("Salvestatud!", "status-ok");
+        } catch (e) {
+            showStatus("Salvestamise viga!", "status-danger");
+        }
+    }
+
+    function render() {
+        const body = document.getElementById('table-body');
+        body.innerHTML = '';
+        orders.forEach((o, index) => {
+            body.innerHTML += `<tr>
+                <td><input value="${o.mt || ''}" onchange="updateVal(${index}, 'mt', this.value)"></td>
+                <td><input value="${o.client || ''}" onchange="updateVal(${index}, 'client', this.value)"></td>
+                <td><input type="date" value="${o.start || ''}" onchange="updateVal(${index}, 'start', this.value)"></td>
+                <td><input type="date" value="${o.end || ''}" onchange="updateVal(${index}, 'end', this.value)"></td>
+                <td><input type="number" value="${o.must_k || 0}" onchange="updateVal(${index}, 'must_k', this.value)"></td>
+                <td><input type="number" value="${o.rv_k || 0}" onchange="updateVal(${index}, 'rv_k', this.value)"></td>
+                <td><button onclick="deleteRow(${index})" style="color:red">🗑️</button></td>
+            </tr>`;
+        });
+    }
+
+    function updateVal(idx, key, val) {
+        orders[idx][key] = val;
+        saveToCloud();
+    }
+
+    function addNewRow() {
+        orders.push({mt: "UUS", client: "", start: "", end: "", must_k: 0, rv_k: 0});
+        render();
+        saveToCloud();
+    }
+
+    function deleteRow(idx) {
+        if(confirm("Kustuta rida?")) {
+            orders.splice(idx, 1);
+            render();
+            saveToCloud();
+        }
+    }
+
+    function showStatus(text, className) {
+        const s = document.getElementById('syncStatus');
+        s.innerText = text;
+        s.className = "sync-status " + className;
+    }
+
+    function openTab(id) {
+        document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+    }
+
+    // Käivita kohe
+    fetchData();
+</script>
+</body>
+</html>
