@@ -2,7 +2,7 @@
 <html lang="et">
 <head>
     <meta charset="UTF-8">
-    <title>TOCI Tootmisjuhtimine V19.2 - LÕPLIK</title>
+    <title>TOCI Tootmisjuhtimine V19.3 - Interaktiivne Gantt</title>
     <style>
         :root { --primary: #1a252f; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; --warning: #f1c40f; --bg: #f1f2f6; }
         body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); font-size: 13px; }
@@ -16,13 +16,21 @@
         table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         th { background: #eee; padding: 12px 8px; text-align: left; position: sticky; top: 0; border-bottom: 2px solid #ddd; }
         td { padding: 8px; border-bottom: 1px solid #eee; }
-        input { width: 92%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; }
-        .gantt-wrapper { overflow: auto; background: white; border: 1px solid #ccc; max-height: 70vh; border-radius: 4px; }
-        .gantt-grid { display: grid; grid-template-columns: 220px repeat(365, 45px); position: relative; }
-        .gantt-cell { border-right: 0.1px solid #f0f0f0; border-bottom: 1px solid #f0f0f0; height: 50px; position: relative; }
-        .gantt-label { position: sticky; left: 0; background: white; z-index: 20; border-right: 2px solid #ddd; padding: 10px; font-weight: bold; display: flex; align-items: center; box-shadow: 2px 0 5px rgba(0,0,0,0.05); }
-        .task-bar { position: absolute; height: 35px; top: 7px; background: var(--accent); color: white; border-radius: 4px; font-size: 11px; display: flex; align-items: center; z-index: 10; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.2); overflow: hidden; }
+        input { width: 92%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; }
+        
+        /* Gantt-graafiku täiendused */
+        .gantt-wrapper { overflow: auto; background: white; border: 1px solid #ccc; max-height: 75vh; border-radius: 4px; }
+        .gantt-grid { display: grid; grid-template-columns: 320px repeat(365, 45px); position: relative; }
+        .gantt-cell { border-right: 0.1px solid #f0f0f0; border-bottom: 1px solid #f0f0f0; height: 65px; position: relative; }
+        .gantt-label { position: sticky; left: 0; background: white; z-index: 20; border-right: 2px solid #ddd; padding: 5px 10px; font-weight: bold; border-bottom: 1px solid #eee; display: flex; flex-direction: column; justify-content: center; gap: 4px; box-shadow: 2px 0 5px rgba(0,0,0,0.05); }
+        .gantt-label input { width: 90px; padding: 2px; font-size: 10px; }
+        
+        .header-week { background: #dfe4ea; text-align: center; font-weight: bold; border-bottom: 1px solid #ccc; font-size: 11px; padding: 4px 0; }
+        .header-day { text-align: center; font-size: 9px; background: #f9f9f9; border-bottom: 1px solid #ddd; border-right: 1px solid #eee; }
+        
+        .task-bar { position: absolute; height: 35px; top: 15px; background: var(--accent); color: white; border-radius: 4px; font-size: 11px; display: flex; align-items: center; z-index: 10; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.2); overflow: hidden; }
         .progress-fill { position: absolute; left: 0; top: 0; height: 100%; background: rgba(0,0,0,0.25); border-right: 1px solid rgba(255,255,255,0.3); }
+        
         .charts-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; }
         .chart-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
         .bar-chart { display: flex; align-items: flex-end; height: 180px; gap: 6px; border-bottom: 2px solid #333; padding-top: 30px; position: relative; }
@@ -36,7 +44,7 @@
 <body>
 
 <div class="top-bar">
-    <div>🚀 <strong>TOCI TOOTMISJUHTIMINE</strong> (V19.2 LIVE)</div>
+    <div>🚀 <strong>TOCI TOOTMISJUHTIMINE</strong> (V19.3 LIVE)</div>
     <div id="syncStatus" class="sync-status" style="background:var(--warning); color:black;">Ühendamine...</div>
 </div>
 
@@ -141,6 +149,14 @@
         return isNaN(date.getTime()) ? "" : date.toISOString().split('T')[0];
     }
 
+    function getWeekNumber(d) {
+        d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+        d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7));
+        var yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+        var weekNo = Math.ceil(( ( (d - yearStart) / 86400000) + 1)/7);
+        return weekNo;
+    }
+
     function renderTable() {
         const body = document.getElementById('table-body');
         body.innerHTML = '';
@@ -164,17 +180,38 @@
     function renderGantt(containerId, key) {
         const wrap = document.getElementById(containerId);
         if(!wrap) return;
-        let html = `<div class="gantt-grid"><div style="position:sticky; left:0; background:#eee; z-index:50; padding:10px; font-weight:bold;">MT / Klient</div>`;
+        
+        let headerRow1 = `<div style="position:sticky; left:0; background:#eee; z-index:50; grid-row: span 2; border-bottom:2px solid #ccc; padding:10px;">MT / Klient / Aeg</div>`;
+        let headerRow2 = "";
+        
+        // Joonistame päise (Nädala numbrid ja päevad)
         for(let d=0; d<365; d++) {
             let cur = new Date(START_VIEW.getTime() + d*86400000);
-            html += `<div style="text-align:center; font-size:9px; border-bottom:1px solid #ddd; background:#f9f9f9;">${cur.getDate()}.${cur.getMonth()+1}</div>`;
+            if (cur.getDay() === 1 || d === 0) {
+                headerRow1 += `<div class="header-week" style="grid-column: span 7;">W${getWeekNumber(cur)}</div>`;
+            }
+            headerRow2 += `<div class="header-day">${cur.getDate()}.${cur.getMonth()+1}</div>`;
         }
-        orders.filter(o => o[key] > 0).forEach(o => {
-            html += `<div class="gantt-label">${o.mt} <br><small>${o.client}</small></div>`;
+
+        let html = `<div class="gantt-grid">${headerRow1}${headerRow2}`;
+        
+        orders.filter(o => o[key] > 0).forEach((o, idx) => {
+            // Leiame õige indeksi algses orders massiivis
+            let globalIdx = orders.findIndex(x => x === o);
+            
+            html += `<div class="gantt-label">
+                <span>${o.mt} | ${o.client}</span>
+                <div style="display:flex; gap:2px;">
+                    <input type="date" value="${cleanDate(o.start)}" onchange="updateVal(${globalIdx}, 'start', this.value); renderGantt('${containerId}', '${key}')">
+                    <input type="date" value="${cleanDate(o.end)}" onchange="updateVal(${globalIdx}, 'end', this.value); renderGantt('${containerId}', '${key}')">
+                </div>
+            </div>`;
+            
             let sDate = new Date(o.start);
             let eDate = new Date(o.end);
             let sIdx = Math.floor((sDate - START_VIEW) / 86400000);
             let dur = Math.max(1, Math.floor((eDate - sDate) / 86400000) + 1);
+            
             for(let d=0; d<365; d++) {
                 let bar = (d === sIdx && sIdx >= 0) ? `<div class="task-bar" style="width:${dur*45}px"><div class="progress-fill" style="width:${o.progress}%"></div><span style="padding-left:8px">${o.mt} (${o.progress}%)</span></div>` : '';
                 html += `<div class="gantt-cell">${bar}</div>`;
@@ -239,7 +276,11 @@
         renderCharts();
     }
 
-    function updateVal(idx, key, val) { orders[idx][key] = val; saveToCloud(); }
+    function updateVal(idx, key, val) { 
+        orders[idx][key] = val; 
+        saveToCloud(); 
+    }
+
     function addNewRow() { 
         orders.push({mt: "UUS", client: "", start: "2026-02-19", end: "2026-02-26", must_k: 0, rv_k: 0, must_l: 0, rv_l: 0, kooste: 0, progress: 0}); 
         renderTable(); saveToCloud(); 
