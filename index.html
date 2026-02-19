@@ -2,130 +2,228 @@
 <html lang="et">
 <head>
     <meta charset="UTF-8">
-    <title>Tootmisplaan V17 - LIVE</title>
+    <title>TOCI TOOTMISPLAAN LIVE V17.5</title>
     <style>
-        /* Kasutame sama stiili mis varem */
-        :root { --primary: #2c3e50; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; }
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f1f2f6; }
-        .top-bar { background: #1a252f; color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
-        .sync-status { font-size: 12px; padding: 5px 10px; border-radius: 4px; }
+        :root { --primary: #2c3e50; --accent: #3498db; --danger: #e74c3c; --success: #27ae60; --warning: #f1c40f; --today: #ff4757; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f1f2f6; font-size: 13px; }
+        
+        .top-bar { background: #1a252f; color: white; padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 9999; }
+        .sync-status { font-size: 11px; padding: 4px 10px; border-radius: 4px; font-weight: bold; }
         .status-ok { background: var(--success); }
-        .status-loading { background: var(--accent); }
-        /* ... muud stiilid jäävad samaks ... */
-        .tabs { display: flex; background: var(--primary); overflow-x: auto; }
-        .tab-btn { padding: 15px 20px; color: white; cursor: pointer; border: none; background: none; }
-        .tab-btn.active { background: rgba(255,255,255,0.1); border-bottom: 3px solid var(--accent); }
+        .status-loading { background: var(--warning); color: black; }
+
+        .tabs { display: flex; background: var(--primary); position: sticky; top: 62px; z-index: 4000; border-bottom: 4px solid var(--accent); overflow-x: auto; }
+        .tab-btn { padding: 15px 20px; color: white; cursor: pointer; border: none; background: none; opacity: 0.7; font-weight: bold; white-space: nowrap; }
+        .tab-btn.active { opacity: 1; background: rgba(255,255,255,0.1); box-shadow: inset 0 -4px 0 var(--accent); }
+        
         .content { padding: 20px; display: none; }
         .content.active { display: block; }
-        table { width: 100%; border-collapse: collapse; background: white; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+
+        /* Gantt Stiilid */
+        .gantt-wrapper { overflow: auto; background: white; border: 1px solid #ccc; max-height: 70vh; position: relative; border-radius: 4px; }
+        .gantt-grid { display: grid; grid-template-columns: 280px repeat(366, 48px); position: relative; } 
+        .header-week { background: #dfe4ea; text-align: center; font-weight: bold; border: 1px solid #ced6e0; padding: 8px; grid-column: span 7; position: sticky; top: 0; z-index: 1500; }
+        .header-day { background: #f1f2f6; text-align: center; font-size: 10px; border: 1px solid #ced6e0; padding: 5px; position: sticky; top: 31px; z-index: 1500; }
+        .header-day.today { background: var(--today); color: white; font-weight: bold; }
+        .gantt-label { padding: 8px 15px; border-bottom: 1px solid #eee; background: white; position: sticky; left: 0; z-index: 2000; box-shadow: 5px 0 10px rgba(0,0,0,0.1); min-height: 55px; display: flex; flex-direction: column; justify-content: center; }
+        .header-corner { position: sticky; left: 0; top: 0; z-index: 2500; background: #eee; border: 1px solid #ced6e0; height: 62px; display: flex; align-items: center; padding-left: 10px; font-weight: bold; grid-row: span 2; }
+        
+        .task-bar { position: absolute; height: 38px; top: 8px; border-radius: 4px; color: white; font-size: 10px; display: flex; align-items: center; font-weight: bold; z-index: 5; white-space: nowrap; box-shadow: 0 2px 5px rgba(0,0,0,0.2); overflow: hidden; background: var(--accent); }
+        .progress-fill { position: absolute; left: 0; top: 0; height: 100%; background: rgba(0,0,0,0.3); z-index: 1; border-right: 1px solid rgba(255,255,255,0.4); }
+        .task-text { position: relative; z-index: 2; padding-left: 8px; }
+
+        /* Graafikute stiilid */
+        .chart-card { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .bar-chart { display: flex; align-items: flex-end; height: 180px; gap: 4px; border-bottom: 2px solid #333; overflow-x: auto; padding-bottom: 20px; }
+        .bar-wrapper { flex: 1; min-width: 35px; display: flex; flex-direction: column; align-items: center; }
+        .bar { width: 80%; border-radius: 2px 2px 0 0; transition: height 0.3s; }
+
+        table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background: #f8f9fa; position: sticky; top: 0; }
+        input[type="text"], input[type="number"], input[type="date"] { width: 90%; padding: 4px; border: 1px solid #ddd; }
     </style>
 </head>
 <body>
 
 <div class="top-bar">
-    <div>🚀 <strong>TOOTMISPLAAN LIVE</strong> (Google Sheets)</div>
-    <div id="syncStatus" class="sync-status">Andmete laadimine...</div>
+    <div>🚀 <strong>TOCI LIVE</strong> | Tootmisplaan 2026</div>
+    <div id="syncStatus" class="sync-status status-loading">Ühendamine pilvega...</div>
 </div>
 
 <div class="tabs">
     <button class="tab-btn active" onclick="openTab('sisestus')">SISESTUS</button>
-    <button class="tab-btn" onclick="fetchData()">VÄRSKENDA ANDMEID</button>
+    <button class="tab-btn" onclick="openTab('must_k')">MUST KEEV</button>
+    <button class="tab-btn" onclick="openTab('rv_k')">RV KEEV</button>
+    <button class="tab-btn" onclick="openTab('must_l')">MUST LUKK</button>
+    <button class="tab-btn" onclick="openTab('rv_l')">RV LUKK</button>
+    <button class="tab-btn" onclick="openTab('kooste')">KOOSTE</button>
+    <button class="tab-btn" onclick="openTab('koormatus')">KOORMATUS</button>
+    <button class="tab-btn" style="background:var(--accent)" onclick="fetchData()">🔄 VÄRSKENDA</button>
 </div>
 
 <div id="sisestus" class="content active">
-    <div id="loadingInfo" style="padding: 20px; text-align: center;">Võtan ühendust Google Sheetsiga...</div>
-    <table id="mainTable" style="display:none;">
+    <button onclick="addNewRow()" style="margin-bottom:10px; padding:10px 20px; background:var(--success); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">+ LISA UUS TELLIMUS</button>
+    <table>
         <thead>
-            <tr><th>MT</th><th>Klient</th><th>Algus</th><th>Lõpp</th><th>MK</th><th>RK</th><th>Haldus</th></tr>
+            <tr>
+                <th>MT</th><th>Klient</th><th>Algus</th><th>Lõpp</th>
+                <th>MK(h)</th><th>RK(h)</th><th>ML(h)</th><th>RL(h)</th><th>KO(h)</th>
+                <th>%</th><th>Haldus</th>
+            </tr>
         </thead>
         <tbody id="table-body"></tbody>
     </table>
-    <br>
-    <button onclick="addNewRow()" style="padding:10px; background:var(--success); color:white; border:none; cursor:pointer;">+ LISARIDA</button>
 </div>
 
+<div id="must_k" class="content"><div class="gantt-wrapper" id="gantt-must_k"></div></div>
+<div id="rv_k" class="content"><div class="gantt-wrapper" id="gantt-rv_k"></div></div>
+<div id="must_l" class="content"><div class="gantt-wrapper" id="gantt-must_l"></div></div>
+<div id="rv_l" class="content"><div class="gantt-wrapper" id="gantt-rv_l"></div></div>
+<div id="kooste" class="content"><div class="gantt-wrapper" id="gantt-kooste"></div></div>
+<div id="koormatus" class="content"><div id="charts-box"></div></div>
+
 <script>
-    // --- ASENDA SEE LINK OMA GOOGLE APPS SCRIPT URL-iga ---
+    // --- KASUTA OMA URL-I ---
     const API_URL = "https://script.google.com/macros/s/AKfycbwzGm3aK1gT62lOBRu6QTFpUO6RZWVJRi28g-_QKHgOsPdbegfUz3Z6w8QyM9w3UbWc_w/exec"; 
 
+    const DEPTS = { 
+        must_k: { label: 'Must Keevitus', base: 240 }, 
+        rv_k: { label: 'RV Keevitus', base: 120 }, 
+        must_l: { label: 'Must Lukksepp', base: 120 }, 
+        rv_l: { label: 'RV Lukksepp', base: 40 }, 
+        kooste: { label: 'Kooste', base: 40 } 
+    };
+
+    const START_VIEW = new Date("2026-01-01");
+    const TODAY = new Date("2026-02-19");
     let orders = [];
 
     async function fetchData() {
-        showStatus("Laadin...", "status-loading");
+        showStatus("Uuendan...", "status-loading");
         try {
             const response = await fetch(API_URL);
-            orders = await response.json();
-            render();
-            showStatus("Andmed pilves OK", "status-ok");
-            document.getElementById('loadingInfo').style.display = 'none';
-            document.getElementById('mainTable').style.display = 'table';
+            const data = await response.json();
+            // Puhastame andmed (numbritüübid)
+            orders = data.map(o => ({
+                ...o,
+                must_k: parseFloat(o.must_k) || 0,
+                rv_k: parseFloat(o.rv_k) || 0,
+                must_l: parseFloat(o.must_l) || 0,
+                rv_l: parseFloat(o.rv_l) || 0,
+                kooste: parseFloat(o.kooste) || 0,
+                progress: parseInt(o.progress) || 0
+            }));
+            renderAll();
+            showStatus("Pilv on OK", "status-ok");
         } catch (e) {
-            showStatus("Viga ühendusega!", "status-danger");
+            showStatus("VIGA!", "status-danger");
             console.error(e);
         }
     }
 
     async function saveToCloud() {
-        showStatus("Salvestan pilve...", "status-loading");
+        showStatus("Salvestan...", "status-loading");
         try {
-            await fetch(API_URL, {
-                method: "POST",
-                body: JSON.stringify(orders)
-            });
+            await fetch(API_URL, { method: "POST", body: JSON.stringify(orders) });
             showStatus("Salvestatud!", "status-ok");
         } catch (e) {
-            showStatus("Salvestamise viga!", "status-danger");
+            showStatus("Viga salvestamisel!", "status-danger");
         }
     }
 
-    function render() {
+    function renderAll() {
+        renderTable();
+        Object.keys(DEPTS).forEach(k => renderGantt(k));
+        renderCharts();
+    }
+
+    function renderTable() {
         const body = document.getElementById('table-body');
         body.innerHTML = '';
-        orders.forEach((o, index) => {
+        orders.forEach((o, idx) => {
             body.innerHTML += `<tr>
-                <td><input value="${o.mt || ''}" onchange="updateVal(${index}, 'mt', this.value)"></td>
-                <td><input value="${o.client || ''}" onchange="updateVal(${index}, 'client', this.value)"></td>
-                <td><input type="date" value="${o.start || ''}" onchange="updateVal(${index}, 'start', this.value)"></td>
-                <td><input type="date" value="${o.end || ''}" onchange="updateVal(${index}, 'end', this.value)"></td>
-                <td><input type="number" value="${o.must_k || 0}" onchange="updateVal(${index}, 'must_k', this.value)"></td>
-                <td><input type="number" value="${o.rv_k || 0}" onchange="updateVal(${index}, 'rv_k', this.value)"></td>
-                <td><button onclick="deleteRow(${index})" style="color:red">🗑️</button></td>
+                <td><input value="${o.mt||''}" onchange="updateVal(${idx}, 'mt', this.value)"></td>
+                <td><input value="${o.client||''}" onchange="updateVal(${idx}, 'client', this.value)"></td>
+                <td><input type="date" value="${o.start||''}" onchange="updateVal(${idx}, 'start', this.value)"></td>
+                <td><input type="date" value="${o.end||''}" onchange="updateVal(${idx}, 'end', this.value)"></td>
+                <td><input type="number" value="${o.must_k}" onchange="updateVal(${idx}, 'must_k', this.value)"></td>
+                <td><input type="number" value="${o.rv_k}" onchange="updateVal(${idx}, 'rv_k', this.value)"></td>
+                <td><input type="number" value="${o.must_l}" onchange="updateVal(${idx}, 'must_l', this.value)"></td>
+                <td><input type="number" value="${o.rv_l}" onchange="updateVal(${idx}, 'rv_l', this.value)"></td>
+                <td><input type="number" value="${o.kooste}" onchange="updateVal(${idx}, 'kooste', this.value)"></td>
+                <td><input type="number" value="${o.progress}" onchange="updateVal(${idx}, 'progress', this.value)"></td>
+                <td><button onclick="deleteRow(${idx})" style="color:red; border:none; background:none; cursor:pointer;">🗑️</button></td>
             </tr>`;
+        });
+    }
+
+    function renderGantt(type) {
+        const wrap = document.getElementById('gantt-' + type);
+        if(!wrap) return;
+        let html = `<div class="gantt-grid"><div class="header-corner">${DEPTS[type].label}</div>`;
+        for(let w=1; w<=52; w++) html += `<div class="header-week">W${w}</div>`;
+        for(let d=0; d<365; d++) {
+            let cur = new Date(START_VIEW.getTime() + d*86400000);
+            html += `<div class="header-day ${cur.toDateString()===TODAY.toDateString()?'today':''}">${cur.getDate()}.${cur.getMonth()+1}</div>`;
+        }
+        orders.filter(o => o[type] > 0).forEach(o => {
+            html += `<div class="gantt-label"><b>${o.mt}</b><small>${o.client}</small></div>`;
+            let sIdx = Math.floor((new Date(o.start) - START_VIEW) / 86400000);
+            let eIdx = Math.floor((new Date(o.end) - START_VIEW) / 86400000);
+            let dur = Math.max(1, (eIdx - sIdx) + 1);
+            for(let d=0; d<365; d++) {
+                let bar = (d === sIdx && sIdx >= 0) ? `<div class="task-bar" style="width:${dur*48}px"><div class="progress-fill" style="width:${o.progress}%"></div><span class="task-text">${o.mt}</span></div>` : '';
+                html += `<div class="gantt-cell">${bar}</div>`;
+            }
+        });
+        wrap.innerHTML = html + `</div>`;
+    }
+
+    function renderCharts() {
+        const box = document.getElementById('charts-box'); box.innerHTML = '';
+        Object.keys(DEPTS).forEach(k => {
+            let html = `<div class="chart-card"><h4>${DEPTS[k].label}</h4><div class="bar-chart">`;
+            for(let w=1; w<=52; w++) {
+                let ws = new Date(START_VIEW.getTime() + (w-1)*7*86400000), we = new Date(ws.getTime() + 7*86400000);
+                let total = orders.filter(o => new Date(o.start) >= ws && new Date(o.start) < we).reduce((s, o) => s + (o[k]||0), 0);
+                let cap = DEPTS[k].base;
+                let h = Math.min(150, (total/Math.max(total, cap, 10)) * 150);
+                html += `<div class="bar-wrapper"><span style="font-size:8px">${total||''}</span><div class="bar" style="height:${h}px; background:${total>cap?'var(--danger)':'var(--success)'}"></div><span style="font-size:8px">W${w}</span></div>`;
+            }
+            box.innerHTML += html + `</div></div>`;
         });
     }
 
     function updateVal(idx, key, val) {
         orders[idx][key] = val;
+        renderAll();
         saveToCloud();
     }
 
     function addNewRow() {
-        orders.push({mt: "UUS", client: "", start: "", end: "", must_k: 0, rv_k: 0});
-        render();
+        orders.push({mt: "UUS", client: "", start: "2026-02-19", end: "2026-02-26", must_k: 0, rv_k: 0, must_l: 0, rv_l: 0, kooste: 0, progress: 0});
+        renderAll();
         saveToCloud();
     }
 
     function deleteRow(idx) {
-        if(confirm("Kustuta rida?")) {
-            orders.splice(idx, 1);
-            render();
-            saveToCloud();
-        }
+        if(confirm("Kustuta rida?")) { orders.splice(idx, 1); renderAll(); saveToCloud(); }
     }
 
     function showStatus(text, className) {
         const s = document.getElementById('syncStatus');
-        s.innerText = text;
-        s.className = "sync-status " + className;
+        s.innerText = text; s.className = "sync-status " + className;
     }
 
     function openTab(id) {
         document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(id).classList.add('active');
+        event.currentTarget.classList.add('active');
+        renderAll();
     }
 
-    // Käivita kohe
     fetchData();
 </script>
 </body>
