@@ -251,4 +251,15 @@
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(tabName).classList.add('active');
         evt.currentTarget.classList.add('active');
-        if(tabName === 'gantt_mk') renderGant
+        if(tabName === 'gantt_mk') renderGantt('gantt-must_k', 'must_k');
+        if(tabName === 'gantt_rk') renderGantt('gantt-rv_k', 'rv_k');
+        if(tabName === 'gantt_ml') renderGantt('gantt-must_l', 'must_l');
+        if(tabName === 'gantt_rl') renderGantt('gantt-rv_l', 'rv_l');
+        if(tabName === 'koormus_tab') renderCharts();
+        if(tabName === 'voimekus_tab') renderCapacityManager();
+    }
+
+    fetchData();
+</script>
+</body>
+</html>
