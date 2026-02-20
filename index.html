@@ -2,7 +2,7 @@
 <html lang="et">
 <head>
     <meta charset="UTF-8">
-    <title>TOCI Tootmisplaan V71.0</title>
+    <title>TOCI Tootmisplaan V72.0</title>
     <style>
         :root { --primary: #1a252f; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; --warning: #f1c40f; --bg: #f4f7f6; --today: #ff4757; --cell-w: 45px; --sub-bg: #95a5a6; }
         *, *:before, *:after { box-sizing: border-box; }
@@ -29,11 +29,11 @@
         /* PÄEVA KOORMUS */
         .daily-charts-container { height: 100%; overflow-y: auto; display: flex; flex-direction: column; gap: 40px; padding-bottom: 50px; }
         .daily-chart-wrapper { background: white; padding: 20px; border-radius: 12px; min-width: 1200px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        .daily-chart-area { display: flex; align-items: flex-end; height: 200px; gap: 4px; border-bottom: 2px solid #444; position: relative; margin-top: 30px; }
+        /* Kõrgendatud diagrammi ala, et jooned ära mahuksid */
+        .daily-chart-area { display: flex; align-items: flex-end; height: 280px; gap: 4px; border-bottom: 2px solid #444; position: relative; margin-top: 40px; }
         .day-column { flex: 1; min-width: 55px; display: flex; flex-direction: column-reverse; position: relative; height: 100%; }
         .day-label { position: absolute; top: 100%; left: 0; width: 100%; text-align: center; font-size: 9px; padding-top: 5px; line-height: 1.2; }
         .order-segment { width: 100%; border: 1px solid rgba(255,255,255,0.3); border-radius: 2px; display: flex; align-items: center; justify-content: center; overflow: hidden; color: white; font-size: 8px; font-weight: bold; cursor: help; }
-        .cap-line { position: absolute; width: 100%; border-top: 2px dashed #e74c3c; z-index: 10; pointer-events: none; opacity: 0.7; }
         .today-bg { background: rgba(255,71,87,0.05); }
         .weekend-label { color: #999; }
 
@@ -62,7 +62,7 @@
     </style>
 </head>
 <body>
-<div class="top-bar"><div>🚀 <strong>TOCI LIVE V71.0</strong></div><div id="syncStatus" style="background:var(--warning); color:black; padding:4px 10px; border-radius:4px; font-weight:bold;">Ühendan...</div></div>
+<div class="top-bar"><div>🚀 <strong>TOCI LIVE V72.0</strong></div><div id="syncStatus" style="background:var(--warning); color:black; padding:4px 10px; border-radius:4px; font-weight:bold;">Ühendan...</div></div>
 <div class="tabs">
     <button class="tab-btn active" onclick="openTab(event, 'sisestus')">SISESTUS</button>
     <button class="tab-btn" onclick="openTab(event, 'gantt_mk')">MUST KEEV</button>
@@ -192,22 +192,46 @@
     function renderDailyLoad() {
         const container = document.getElementById('daily-load-container'); container.innerHTML = "";
         const daysToShow = 40, startDate = new Date(TODAY); startDate.setDate(startDate.getDate() - 2);
+        
+        // MÄÄRAME UUE MÕÕTKAVA (1 tund = 4 pikslit) et suured koormused ära mahuksid
+        const SCALE = 4;
+
         Object.keys(CONFIG).forEach(k => {
             let chartHtml = `<div class="daily-chart-wrapper"><h3>${CONFIG[k].l} (Päeva koormus)</h3><div class="daily-chart-area">`;
+            
             for(let i=0; i<daysToShow; i++) {
-                let curDate = new Date(startDate.getTime() + i*86400000), wNo = getWeek(curDate), isToday = curDate.toDateString() === TODAY.toDateString(), isWeekend = curDate.getDay() === 0 || curDate.getDay() === 6, segmentsHtml = "", totalH = 0;
+                let curDate = new Date(startDate.getTime() + i*86400000);
+                let wNo = getWeek(curDate);
+                let isToday = curDate.toDateString() === TODAY.toDateString();
+                let isWeekend = curDate.getDay() === 0 || curDate.getDay() === 6;
+                let segmentsHtml = "";
+                let totalH = 0;
+                
+                // Arvutame igale päevale dünaamilise piirjoone!
                 let dailyCap = (customCap[k] && customCap[k][wNo]) ? customCap[k][wNo] / 5 : CONFIG[k].c / 5;
-                if(i===0) chartHtml += `<div class="cap-line" style="bottom:${dailyCap * 10}px"></div>`;
+                
                 if (!isWeekend) {
                     orders.filter(o => o.status === 'Töös' && o[k] > 0).forEach(o => {
                         let s = new Date(o.start), e = new Date(o.end);
                         if(curDate >= s && curDate <= e) {
                             let workDays = getWorkingDays(s, e), hPerDay = o[k] / workDays;
-                            totalH += hPerDay; segmentsHtml += `<div class="order-segment" style="height:${hPerDay * 10}px; background:${CONFIG[k].color};" title="${o.mt}: ${hPerDay.toFixed(1)}h">${hPerDay > 0.5 ? o.mt : ''}</div>`;
+                            totalH += hPerDay; 
+                            segmentsHtml += `<div class="order-segment" style="height:${hPerDay * SCALE}px; background:${CONFIG[k].color};" title="${o.mt}: ${hPerDay.toFixed(1)}h">${hPerDay > 0.5 ? o.mt : ''}</div>`;
                         }
                     });
                 }
-                chartHtml += `<div class="day-column ${isToday?'today-bg':''}"> ${segmentsHtml} <div class="day-label ${isWeekend?'weekend-label':''}"><strong>${curDate.getDate()}.${curDate.getMonth()+1}</strong><br>${['P','E','T','K','N','R','L'][curDate.getDay()]}<br><span style="color:${totalH > dailyCap ? 'red' : '#666'}">${totalH > 0 ? totalH.toFixed(1)+'h' : ''}</span></div></div>`;
+                
+                // Iga tulba sisse joonistatakse oma punane joon!
+                let limitLineHtml = isWeekend ? '' : `<div style="position:absolute; bottom:${dailyCap * SCALE}px; width:100%; border-top:2px dashed red; z-index:10; opacity:0.8; pointer-events:none;"></div>`;
+
+                chartHtml += `<div class="day-column ${isToday?'today-bg':''}">
+                    ${limitLineHtml}
+                    ${segmentsHtml} 
+                    <div class="day-label ${isWeekend?'weekend-label':''}">
+                        <strong>${curDate.getDate()}.${curDate.getMonth()+1}</strong><br>${['P','E','T','K','N','R','L'][curDate.getDay()]}<br>
+                        <span style="color:${totalH > dailyCap ? 'red' : '#666'}">${totalH > 0 ? totalH.toFixed(1)+'h' : ''}</span>
+                    </div>
+                </div>`;
             }
             container.innerHTML += chartHtml + `</div></div>`;
         });
@@ -244,7 +268,7 @@
 
     async function save() { await fetch(API_URL, {method:"POST", body:JSON.stringify(orders), mode:'no-cors'}); fetchData(); }
     function u(i, k, v) { orders[i][k] = v; save(); }
-    function del(i) { if(confirm("Kustuta?")) { orders.splice(i,1); save(); } }
+    function del(i) { if(confirm("Kustuta rida?")) { orders.splice(i,1); save(); } }
     function addNewRow() { orders.unshift({mt:"UUS", client:"", start:new Date().toISOString().split('T')[0], end:new Date().toISOString().split('T')[0], sub1:0, sub2:0, must_k:0, rv_k:0, must_l:0, rv_l:0, kooste:0, progress:0, status:'Ootel'}); renderTable(); }
 
     function openTab(e, t) {
