@@ -2,7 +2,7 @@
 <html lang="et">
 <head>
     <meta charset="UTF-8">
-    <title>TOCI Tootmisplaan V67.0</title>
+    <title>TOCI Tootmisplaan V68.0</title>
     <style>
         :root { --primary: #1a252f; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; --warning: #f1c40f; --bg: #f4f7f6; --today: #ff4757; --cell-w: 45px; --sub-bg: #95a5a6; }
         *, *:before, *:after { box-sizing: border-box; }
@@ -14,11 +14,11 @@
         .content { height: calc(100vh - 95px); display: none; padding: 15px; box-sizing: border-box; }
         .content.active { display: block; }
         
-        /* TABELID */
+        /* TABELID JA STAATUSE VÄRVID */
         .table-container { height: calc(100% - 60px); overflow: auto; background: white; border-radius: 8px; border: 1px solid #ddd; }
         .data-table { width: 100%; border-collapse: collapse; position: relative; }
         .data-table thead th { position: sticky; top: 0; background: #eee; z-index: 10; border-bottom: 2px solid #ccc; padding: 10px 5px; text-align: left; }
-        .data-table td { border-bottom: 1px solid #eee; padding: 4px 8px; }
+        .data-table td { border-bottom: 1px solid #eee; padding: 2px 5px; }
         tr.status-ootel { background-color: #f8f9fa !important; }
         tr.status-toos { background-color: #e3f2fd !important; }
         tr.status-valmis { background-color: #e8f5e9 !important; }
@@ -45,8 +45,8 @@
         .h-week { height: 35px; background: #dfe4ea; border-bottom: 1px solid #ccc; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; }
         .h-day { height: 40px; display: flex; align-items: center; justify-content: center; font-size: 9px; }
         .gantt-body { flex-grow: 1; overflow: auto; scroll-behavior: smooth; }
-        .gantt-row { display: flex; border-bottom: 1px solid #eee; min-height: 95px; width: max-content; }
-        .gantt-info { position: sticky; left: 0; width: 320px; min-width: 320px; background: #fff; z-index: 1000; border-right: 3px solid #bbb; padding: 10px 15px; display: flex; flex-direction: column; justify-content: center; gap: 5px; }
+        .gantt-row { display: flex; border-bottom: 1px solid #eee; min-height: 105px; width: max-content; }
+        .gantt-info { position: sticky !important; left: 0 !important; width: 320px; min-width: 320px; background: #fff !important; z-index: 1000 !important; border-right: 3px solid #bbb !important; padding: 10px 15px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; gap: 4px; }
         .gantt-bars-area { position: relative; display: flex; background-color: #fff; width: max-content; }
         .day-cell-bg { width: var(--cell-w); min-width: var(--cell-w); border-right: 1px solid #f1f1f1; height: 100%; flex-shrink: 0; }
         .today-line { position: absolute; top: 0; bottom: 0; width: 3px; background: var(--today); z-index: 500; pointer-events: none; }
@@ -57,7 +57,7 @@
     </style>
 </head>
 <body>
-<div class="top-bar"><div>🚀 <strong>TOCI LIVE V67.0</strong></div><div id="syncStatus" style="background:var(--warning); color:black; padding:4px 10px; border-radius:4px; font-weight:bold;">Ühendan...</div></div>
+<div class="top-bar"><div>🚀 <strong>TOCI LIVE V68.0</strong></div><div id="syncStatus" style="background:var(--warning); color:black; padding:4px 10px; border-radius:4px; font-weight:bold;">Ühendan...</div></div>
 <div class="tabs">
     <button class="tab-btn active" onclick="openTab(event, 'sisestus')">SISESTUS</button>
     <button class="tab-btn" onclick="openTab(event, 'gantt_mk')">MUST KEEV</button>
@@ -71,11 +71,15 @@
 </div>
 
 <div id="sisestus" class="content active">
-    <div style="margin-bottom:15px; display:flex; gap:10px;">
+    <div style="margin-bottom:15px; display:flex; gap:10px; align-items:center;">
         <button onclick="addNewRow()" style="padding:10px 20px; background:var(--success); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">+ LISA TELLIMUS</button>
-        <input type="text" id="mtFilter" placeholder="Otsi MT..." oninput="renderTable()" style="padding:8px; border-radius:4px; border:1px solid #ccc;">
+        <input type="text" id="mtFilter" placeholder="Otsi MT..." oninput="renderTable()" style="padding:8px; border-radius:4px; border:1px solid #ccc; width:120px;">
+        <select id="monthFilter" onchange="renderTable()" style="padding:8px; border-radius:4px; border:1px solid #ccc;">
+            <option value="">Kõik kuud</option>
+            <option value="-01-">Jaanuar</option><option value="-02-">Veebruar</option><option value="-03-">Märts</option><option value="-04-">Aprill</option><option value="-05-">Mai</option><option value="-06-">Juuni</option><option value="-07-">Juuli</option><option value="-08-">August</option><option value="-09-">September</option><option value="-10-">Oktoober</option><option value="-11-">November</option><option value="-12-">Detsember</option>
+        </select>
     </div>
-    <div class="table-container"><table class="data-table"><thead><tr><th>MT</th><th>Klient</th><th>Algus</th><th>Lõpp</th><th>AH1</th><th>AH2</th><th>MK</th><th>RK</th><th>ML</th><th>RL</th><th>KO</th><th>%</th><th>Staatus</th><th>🗑️</th></tr></thead><tbody id="table-body"></tbody></table></div>
+    <div class="table-container"><table class="data-table"><thead><tr><th title="Tellimuse number">MT</th><th>Klient</th><th>Algus</th><th>Lõpp</th><th title="Allhange enne (p)">AH1</th><th title="Allhange peale (p)">AH2</th><th title="Must Keevitus (h)">MK</th><th title="RV Keevitus (h)">RK</th><th title="Must Lukksepp (h)">ML</th><th title="RV Lukksepp (h)">RL</th><th title="Koostamine (h)">KO</th><th>%</th><th>Staatus</th><th>🗑️</th></tr></thead><tbody id="table-body"></tbody></table></div>
 </div>
 
 <div id="gantt_mk" class="content"><div class="gantt-outer" id="out-mk"></div></div>
@@ -83,16 +87,14 @@
 <div id="gantt_ml" class="content"><div class="gantt-outer" id="out-ml"></div></div>
 <div id="gantt_rl" class="content"><div class="gantt-outer" id="out-rl"></div></div>
 <div id="gantt_ko" class="content"><div class="gantt-outer" id="out-ko"></div></div>
-
 <div id="paeva_koormus" class="content"><div id="daily-load-container" class="daily-charts-container"></div></div>
-<div id="voimekus_tab" class="content"><div id="cap-box" style="background:white; padding:20px; border-radius:8px; height:100%; overflow:auto;"></div></div>
+<div id="voimekus_tab" class="content"><div id="cap-box" style="background:white; padding:20px; border-radius:8px; overflow-y:auto; height:100%;"></div></div>
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbwFGxkxdlGqW57N4HlB3HI6lCofYLWrQIYlgUEag9KQR2oEFRiVX9vxoQZ4nKa-NlKb6w/exec";
     const CONFIG = { must_k:{l:'Must Keev',c:48, color:'#e67e22', order:2}, rv_k:{l:'RV Keev',c:24, color:'#f39c12', order:2}, must_l:{l:'Must Lukk',c:24, color:'#3498db', order:1}, rv_l:{l:'RV Lukk',c:8, color:'#2980b9', order:1}, kooste:{l:'Kooste',c:16, color:'#27ae60', order:3} };
-    const START_VIEW = new Date("2026-01-01");
-    const TODAY = new Date();
-    let orders = [];
+    const START_VIEW = new Date("2026-01-01"), TODAY = new Date();
+    let orders = [], customCap = JSON.parse(localStorage.getItem('prod_cap_v68')) || {};
 
     const f = (v) => parseFloat(v) || 0;
     function getUTCDate(d) { const dt = new Date(d); return isNaN(dt.getTime()) ? null : Date.UTC(dt.getFullYear(), dt.getMonth(), dt.getDate()); }
@@ -107,8 +109,7 @@
             const d = await r.json();
             if(Array.isArray(d)) {
                 orders = d.map(o => ({...o, must_k:f(o.must_k), rv_k:f(o.rv_k), must_l:f(o.must_l), rv_l:f(o.rv_l), kooste:f(o.kooste), progress:f(o.progress), sub1:f(o.sub1), sub2:f(o.sub2), status: o.status || 'Töös'}));
-                renderTable();
-                document.getElementById('syncStatus').innerText = "Andmed OK";
+                renderTable(); document.getElementById('syncStatus').innerText = "Andmed OK";
             }
         } catch(e) { document.getElementById('syncStatus').innerText = "Viga!"; }
     }
@@ -123,7 +124,7 @@
         }
         let bodyHtml = `<div class="gantt-body" id="b-s-${key}">`;
         orders.filter(o => o[key] > 0 && o.status === 'Töös').forEach((o) => {
-            let gIdx = orders.indexOf(o), sIdx = getDayIndex(o.start), eIdx = getDayIndex(o.end);
+            let gIdx = orders.indexOf(o), sIdx = Math.round((getUTCDate(o.start) - getUTCDate(START_VIEW)) / 86400000), eIdx = Math.round((getUTCDate(o.end) - getUTCDate(START_VIEW)) / 86400000);
             let totalRange = eIdx - sIdx + 1, kD = Math.max(1, Math.ceil(o.kooste / 8)), prodD = Math.max(1, totalRange - kD - o.sub2);
             let lH = o.must_l + o.rv_l, kH = o.must_k + o.rv_k, tH = lH + kH || 1;
             let fLeft = 0, tDur = 0;
@@ -131,14 +132,14 @@
             else if (CONFIG[key].order === 1) { tDur = Math.ceil((lH/tH)*prodD); fLeft = sIdx * 45; }
             else if (CONFIG[key].order === 2) { let lD = Math.floor((lH/tH)*prodD); tDur = Math.max(1, prodD - lD); fLeft = (sIdx + lD) * 45; }
 
-            bodyHtml += `<div class="gantt-row"><div class="gantt-info"><b>${o.mt}</b><small>${o.client}</small><div><input type="date" value="${safeISO(o.start)}" onchange="u(${gIdx},'start',this.value)"></div></div><div class="gantt-bars-area"><div class="today-line" style="left:${tIdx * 45}px"></div>`;
+            bodyHtml += `<div class="gantt-row"><div class="gantt-info"><b>${o.mt}</b><small>${o.client}</small><div><input type="date" value="${safeISO(o.start)}" onchange="u(${gIdx},'start',this.value)"></div><div><input type="date" value="${safeISO(o.end)}" onchange="u(${gIdx},'end',this.value)"></div></div><div class="gantt-bars-area"><div class="today-line" style="left:${tIdx * 45}px"></div>`;
             if(o.sub1 > 0) bodyHtml += `<div class="sub-bar sub-pre" style="left:${(sIdx - o.sub1)*45}px; width:${o.sub1*45 - 2}px">AH1</div>`;
             bodyHtml += `<div class="task-bar" title="MT: ${o.mt}\n${o[key]}h" style="left:${fLeft}px; width:${tDur * 45 - 5}px; background:${CONFIG[key].color}"><div class="progress-fill" style="width:${o.progress}%"></div><span>${o.mt}</span></div>`;
             if(o.sub2 > 0) bodyHtml += `<div class="sub-bar sub-post" style="left:${(eIdx - kD - o.sub2 + 1) * 45}px; width:${o.sub2*45 - 2}px">AH2</div>`;
             for(let d=0; d<dayCount; d++) bodyHtml += `<div class="day-cell-bg"></div>`;
             bodyHtml += `</div></div>`;
         });
-        outer.innerHTML = `<div class="gantt-header-wrapper"><div class="header-corner">MT / Klient</div><div class="header-scroll" id="h-s-${key}"><div class="header-grid">${hCols}</div></div></div>` + bodyHtml + `</div>`;
+        outer.innerHTML = `<div class="gantt-header-wrapper"><div class="header-corner">MT / Klient / Aeg</div><div class="header-scroll" id="h-s-${key}"><div class="header-grid">${headerCols}</div></div></div>` + bodyHtml + `</div>`;
         const hS = document.getElementById(`h-s-${key}`), bS = document.getElementById(`b-s-${key}`);
         if(bS) { bS.onscroll = () => hS.scrollLeft = bS.scrollLeft; bS.scrollLeft = (tIdx * 45) - 400; }
     }
@@ -167,20 +168,21 @@
     }
 
     function renderCapacity() {
-        let h = `<table class="data-table"><thead><tr><th>Osakond</th>` + Array.from({length:15},(_,i)=>`<th>W${i+1}</th>`).join('') + `</tr></thead><tbody>`;
-        h += Object.keys(CONFIG).map(k => `<tr><td><b>${CONFIG[k].l}</b></td>` + Array.from({length:15},(_,i)=>`<td><input type="number" class="num-in" value="${CONFIG[k].c}"></td>`).join('') + `</tr>`).join('');
+        let h = `<table class="data-table"><thead><tr><th>Osakond</th>` + Array.from({length:52},(_,i)=>`<th>W${i+1}</th>`).join('') + `</tr></thead><tbody>`;
+        h += Object.keys(CONFIG).map(k => `<tr><td><b>${CONFIG[k].l}</b></td>` + Array.from({length:52},(_,i)=>`<td><input type="number" class="num-in" value="${CONFIG[k].c}"></td>`).join('') + `</tr>`).join('');
         document.getElementById('cap-box').innerHTML = h + `</tbody></table>`;
     }
 
     function renderTable() {
-        const b = document.getElementById('table-body'); b.innerHTML = '';
+        const mV = document.getElementById('monthFilter').value, mtV = document.getElementById('mtFilter').value.toLowerCase(), b = document.getElementById('table-body'); b.innerHTML = '';
         orders.forEach((o, i) => {
-            const sCl = o.status === 'Valmis' ? 'status-valmis' : o.status === 'Töös' ? 'status-toos' : 'status-ootel';
-            b.innerHTML += `<tr class="${sCl}"><td><input class="data-in" value="${o.mt}" onchange="u(${i},'mt',this.value)"></td><td><input class="data-in" value="${o.client}" onchange="u(${i},'client',this.value)"></td><td><input type="date" value="${safeISO(o.start)}" onchange="u(${i},'start',this.value)"></td><td><input type="date" value="${safeISO(o.end)}" onchange="u(${i},'end',this.value)"></td><td><input class="num-in" value="${o.sub1}" onchange="u(${i},'sub1',this.value)"></td><td><input class="num-in" value="${o.sub2}" onchange="u(${i},'sub2',this.value)"><td><input class="num-in" value="${o.must_k}" onchange="u(${i},'must_k',this.value)"></td><td><input class="num-in" value="${o.rv_k}" onchange="u(${i},'rv_k',this.value)"></td><td><input class="num-in" value="${o.must_l}" onchange="u(${i},'must_l',this.value)"></td><td><input class="num-in" value="${o.rv_l}" onchange="u(${i},'rv_l',this.value)"></td><td><input class="num-in" value="${o.kooste}" onchange="u(${i},'kooste',this.value)"></td><td><input class="num-in" value="${o.progress}" onchange="u(${i},'progress',this.value)"></td><td><select onchange="u(${i},'status',this.value);renderTable()"><option ${o.status==='Ootel'?'selected':''}>Ootel</option><option ${o.status==='Töös'?'selected':''}>Töös</option><option ${o.status==='Valmis'?'selected':''}>Valmis</option></select></td><td><button onclick="del(${i})">🗑️</button></td></tr>`;
+            if ((!mV || safeISO(o.start).includes(mV)) && (!mtV || (o.mt && String(o.mt).toLowerCase().includes(mtV)))) {
+                const sCl = o.status === 'Valmis' ? 'status-valmis' : o.status === 'Töös' ? 'status-toos' : 'status-ootel';
+                b.innerHTML += `<tr class="${sCl}"><td><input class="data-in" value="${o.mt}" onchange="u(${i},'mt',this.value)"></td><td><input class="data-in" value="${o.client}" onchange="u(${i},'client',this.value)"></td><td><input type="date" value="${safeISO(o.start)}" onchange="u(${i},'start',this.value)"></td><td><input type="date" value="${safeISO(o.end)}" onchange="u(${i},'end',this.value)"></td><td><input class="num-in" value="${o.sub1}" onchange="u(${i},'sub1',this.value)"></td><td><input class="num-in" value="${o.sub2}" onchange="u(${i},'sub2',this.value)"><td><input class="num-in" value="${o.must_k}" onchange="u(${i},'must_k',this.value)"></td><td><input class="num-in" value="${o.rv_k}" onchange="u(${i},'rv_k',this.value)"></td><td><input class="num-in" value="${o.must_l}" onchange="u(${i},'must_l',this.value)"></td><td><input class="num-in" value="${o.rv_l}" onchange="u(${i},'rv_l',this.value)"></td><td><input class="num-in" value="${o.kooste}" onchange="u(${i},'kooste',this.value)"></td><td><input class="num-in" value="${o.progress}" onchange="u(${i},'progress',this.value)"></td><td><select onchange="u(${i},'status',this.value);renderTable()"><option ${o.status==='Ootel'?'selected':''}>Ootel</option><option ${o.status==='Töös'?'selected':''}>Töös</option><option ${o.status==='Valmis'?'selected':''}>Valmis</option></select></td><td><button onclick="del(${i})">🗑️</button></td></tr>`;
+            }
         });
     }
 
-    function getDayIndex(d) { return Math.round((getUTCDate(d) - getUTCDate(START_VIEW)) / 86400000); }
     async function save() { await fetch(API_URL, {method:"POST", body:JSON.stringify(orders), mode:'no-cors'}); fetchData(); }
     function u(i, k, v) { orders[i][k] = v; save(); }
     function del(i) { if(confirm("Kustuta?")) { orders.splice(i,1); save(); } }
