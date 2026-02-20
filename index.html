@@ -2,32 +2,25 @@
 <html lang="et">
 <head>
     <meta charset="UTF-8">
-    <title>TOCI Tootmisplaan V54.0</title>
+    <title>TOCI Tootmisplaan V55.0</title>
     <style>
         :root { --primary: #1a252f; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; --warning: #f1c40f; --bg: #f4f7f6; --today: #ff4757; --cell-w: 45px; --sub-bg: #95a5a6; }
         *, *:before, *:after { box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); font-size: 12px; overflow: hidden; }
-        
         .top-bar { background: var(--primary); color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; height: 50px; position: sticky; top: 0; z-index: 10000; }
         .tabs { display: flex; background: #2c3e50; border-bottom: 3px solid var(--accent); overflow-x: auto; height: 45px; position: sticky; top: 50px; z-index: 9000; }
         .tab-btn { padding: 0 18px; color: white; cursor: pointer; border: none; background: none; font-weight: bold; white-space: nowrap; height: 100%; opacity: 0.8; transition: 0.2s; }
         .tab-btn.active { opacity: 1; background: rgba(255,255,255,0.15); box-shadow: inset 0 -4px 0 var(--accent); }
-        
         .content { height: calc(100vh - 95px); display: none; padding: 15px; box-sizing: border-box; }
         .content.active { display: block; }
-
         .table-container { height: calc(100% - 60px); overflow-y: auto; background: white; border-radius: 8px; border: 1px solid #ddd; }
         .data-table { width: 100%; border-collapse: collapse; position: relative; }
         .data-table thead th { position: sticky; top: 0; background: #eee; z-index: 10; border-bottom: 2px solid #ccc; padding: 8px; text-align: left; }
         .data-table td { border-bottom: 1px solid #eee; padding: 4px 8px; }
-        
         .row-error { background-color: #ffeaea !important; }
-        .error-marker { color: var(--danger); font-weight: bold; font-size: 10px; display: block; }
-
         .data-in { width: 100%; border: 1px solid transparent; padding: 4px; border-radius: 3px; background: transparent; }
         .data-in:focus { border-color: var(--accent); outline: none; background: #fff; }
         .num-in { width: 45px; text-align: center; }
-
         .gantt-outer { height: 100%; display: flex; flex-direction: column; background: white; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; }
         .gantt-header-wrapper { display: flex; background: #f8f9fa; border-bottom: 2px solid #ccc; overflow: hidden; height: 75px; min-height: 75px; }
         .header-corner { width: 320px; min-width: 320px; background: #eee; border-right: 3px solid #bbb; display: flex; align-items: center; padding-left: 15px; font-weight: bold; position: sticky; left: 0; z-index: 2500; }
@@ -36,33 +29,24 @@
         .h-col { width: var(--cell-w); min-width: var(--cell-w); border-right: 1px solid #ddd; display: flex; flex-direction: column; flex-shrink: 0; }
         .h-week { height: 35px; background: #dfe4ea; border-bottom: 1px solid #ccc; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; }
         .h-day { height: 40px; display: flex; align-items: center; justify-content: center; font-size: 9px; }
-
         .gantt-body { flex-grow: 1; overflow: auto; scroll-behavior: smooth; }
         .gantt-row { display: flex; border-bottom: 1px solid #eee; min-height: 85px; width: max-content; }
         .gantt-info { position: sticky !important; left: 0 !important; width: 320px; min-width: 320px; background: #fff !important; z-index: 1000 !important; border-right: 3px solid #bbb !important; padding: 10px 15px; box-sizing: border-box; box-shadow: 4px 0 8px rgba(0,0,0,0.1); display: flex; flex-direction: column; justify-content: center; gap: 4px; }
         .gantt-bars-area { position: relative; display: flex; background-color: #fff; width: max-content; }
         .day-cell-bg { width: var(--cell-w); min-width: var(--cell-w); border-right: 1px solid #f1f1f1; height: 100%; flex-shrink: 0; }
-        
         .today-line { position: absolute; top: 0; bottom: 0; width: 3px; background: var(--today); z-index: 500; pointer-events: none; box-shadow: 0 0 8px rgba(255, 71, 87, 0.6); }
         .today-col-bg { background: rgba(255, 71, 87, 0.1) !important; }
-
         .task-bar { position: absolute; height: 32px; top: 26px; border-radius: 5px; color: white; display: flex; align-items: center; padding: 0 10px; font-size: 11px; font-weight: bold; z-index: 100; box-shadow: 0 2px 4px rgba(0,0,0,0.2); white-space: nowrap; }
         .progress-fill { position: absolute; left: 0; top: 0; height: 100%; background: rgba(0,0,0,0.25); border-right: 1px solid rgba(255,255,255,0.4); }
         .sub-bar { position: absolute; height: 12px; background: var(--sub-bg); opacity: 0.6; border-radius: 3px; z-index: 90; font-size: 8px; color: white; display: flex; align-items: center; justify-content: center; }
         .sub-pre { top: 12px; }
         .sub-post { top: 60px; }
-
         .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 20px; overflow-y: auto; height: 100%; }
         .chart-card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
     </style>
 </head>
 <body>
-
-<div class="top-bar">
-    <div>🚀 <strong>TOCI LIVE V54.0</strong></div>
-    <div id="syncStatus" style="background:var(--warning); color:black; padding:4px 10px; border-radius:4px; font-weight:bold;">Ühendan...</div>
-</div>
-
+<div class="top-bar"><div>🚀 <strong>TOCI LIVE V55.0</strong></div><div id="syncStatus" style="background:var(--warning); color:black; padding:4px 10px; border-radius:4px; font-weight:bold;">Ühendan...</div></div>
 <div class="tabs">
     <button class="tab-btn active" onclick="openTab(event, 'sisestus')">SISESTUS</button>
     <button class="tab-btn" onclick="openTab(event, 'gantt_mk')">MUST KEEV</button>
@@ -74,43 +58,25 @@
     <button class="tab-btn" onclick="openTab(event, 'voimekus_tab')" style="color:var(--warning)">⚙️ VÕIMEKUS</button>
     <button class="tab-btn" style="background:var(--success)" onclick="fetchData()">🔄 VÄRSKENDA</button>
 </div>
-
 <div id="sisestus" class="content active">
-    <div style="margin-bottom:15px; display:flex; gap:15px; align-items:center;">
-        <button onclick="addNewRow()" style="padding:10px 20px; background:var(--success); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">+ LISA TELLIMUS ÜLES</button>
-        <select id="monthFilter" onchange="renderTable()" style="padding:8px; border-radius:4px; border:1px solid #ccc;">
-            <option value="">Kõik kuud</option>
-            <option value="-01-">Jaanuar</option><option value="-02-">Veebruar</option><option value="-03-">Märts</option>
-            <option value="-04-">Aprill</option><option value="-05-">Mai</option><option value="-06-">Juuni</option>
-            <option value="-07-">Juuli</option><option value="-08-">August</option><option value="-09-">September</option>
-            <option value="-10-">Oktoober</option><option value="-11-">November</option><option value="-12-">Detsember</option>
-        </select>
-    </div>
+    <div style="margin-bottom:15px; display:flex; gap:15px; align-items:center;"><button onclick="addNewRow()" style="padding:10px 20px; background:var(--success); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">+ LISA TELLIMUS ÜLES</button><select id="monthFilter" onchange="renderTable()" style="padding:8px; border-radius:4px; border:1px solid #ccc;"><option value="">Kõik kuud</option><option value="-01-">Jaanuar</option><option value="-02-">Veebruar</option><option value="-03-">Märts</option><option value="-04-">Aprill</option><option value="-05-">Mai</option><option value="-06-">Juuni</option><option value="-07-">Juuli</option><option value="-08-">August</option><option value="-09-">September</option><option value="-10-">Oktoober</option><option value="-11-">November</option><option value="-12-">Detsember</option></select></div>
     <div class="table-container"><table class="data-table"><thead><tr><th>MT</th><th>Klient</th><th>Algus</th><th>Lõpp</th><th>AH1</th><th>AH2</th><th>MK</th><th>RK</th><th>ML</th><th>RL</th><th>KO</th><th>%</th><th>🗑️</th></tr></thead><tbody id="table-body"></tbody></table></div>
 </div>
-
 <div id="gantt_mk" class="content"><div class="gantt-outer" id="out-mk"></div></div>
 <div id="gantt_rk" class="content"><div class="gantt-outer" id="out-rk"></div></div>
 <div id="gantt_ml" class="content"><div class="gantt-outer" id="out-ml"></div></div>
 <div id="gantt_rl" class="content"><div class="gantt-outer" id="out-rl"></div></div>
 <div id="gantt_ko" class="content"><div class="gantt-outer" id="out-ko"></div></div>
-
 <div id="koormus_tab" class="content"><div id="charts-box" class="charts-grid"></div></div>
 <div id="voimekus_tab" class="content"><div id="cap-box" style="background:white; padding:20px; border-radius:8px; height:100%; overflow-y:auto;"></div></div>
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbwFGxkxdlGqW57N4HlB3HI6lCofYLWrQIYlgUEag9KQR2oEFRiVX9vxoQZ4nKa-NlKb6w/exec";
-    const CONFIG = { 
-        must_k:{l:'Must Keev',c:240, color:'#e67e22', order:2}, 
-        rv_k:{l:'RV Keev',c:120, color:'#e67e22', order:2}, 
-        must_l:{l:'Must Lukk',c:120, color:'#3498db', order:1}, 
-        rv_l:{l:'RV Lukk',c:40, color:'#3498db', order:1}, 
-        kooste:{l:'Kooste',c:40, color:'#27ae60', order:3} 
-    };
+    const CONFIG = { must_k:{l:'Must Keev',c:240, color:'#e67e22', order:2}, rv_k:{l:'RV Keev',c:120, color:'#e67e22', order:2}, must_l:{l:'Must Lukk',c:120, color:'#3498db', order:1}, rv_l:{l:'RV Lukk',c:40, color:'#3498db', order:1}, kooste:{l:'Kooste',c:40, color:'#27ae60', order:3} };
     const START_VIEW = new Date("2026-01-01");
     const TODAY = new Date();
     let orders = [];
-    let customCap = JSON.parse(localStorage.getItem('prod_cap_v54')) || {};
+    let customCap = JSON.parse(localStorage.getItem('prod_cap_v55')) || {};
 
     const f = (v) => parseFloat(v) || 0;
     function getUTCDate(d) { const dt = new Date(d); return isNaN(dt.getTime()) ? null : Date.UTC(dt.getFullYear(), dt.getMonth(), dt.getDate()); }
@@ -124,11 +90,12 @@
     }
 
     async function fetchData() {
-        document.getElementById('syncStatus').innerText = "Laadin...";
+        document.getElementById('syncStatus').innerText = "Värskendan...";
         try {
             const r = await fetch(API_URL, { cache: 'no-cache' });
             const d = await r.json();
             if(Array.isArray(d)) {
+                orders = []; // KRIITILINE: Tühjendame massiivi enne uute andmete lisamist
                 orders = d.map(o => ({...o, must_k:f(o.must_k), rv_k:f(o.rv_k), must_l:f(o.must_l), rv_l:f(o.rv_l), kooste:f(o.kooste), progress:f(o.progress), sub1:f(o.sub1), sub2:f(o.sub2)}));
                 renderTable();
                 document.getElementById('syncStatus').innerText = "Andmed OK";
@@ -143,13 +110,11 @@
         const baseDate = START_VIEW;
         const tIdx = getDayIndexUTC(TODAY, baseDate);
         const todayLinePos = (tIdx * 45); 
-
         let headerCols = "";
         for(let d=0; d<dayCount; d++) {
             let cur = new Date(baseDate.getTime() + d * 86400000);
             headerCols += `<div class="h-col"><div class="h-week">${d%7===0?'W'+getWeek(cur):''}</div><div class="h-day" style="${d === tIdx ? 'background:rgba(255,71,87,0.3); font-weight:bold; color:red;' : ''}">${cur.getDate()}.${cur.getMonth()+1}</div></div>`;
         }
-
         let bodyHtml = `<div class="gantt-body" id="b-scroll-${key}">`;
         orders.filter(o => o[key] > 0).forEach((o) => {
             let gIdx = orders.indexOf(o);
@@ -158,33 +123,24 @@
             let totalRange = eIdx - sIdx + 1;
             let isFit = checkFitting(o);
             let koosteDays = Math.max(1, Math.ceil(o.kooste / 8));
-            let ah2Days = o.sub2;
-            let prodDaysAvailable = Math.max(1, totalRange - koosteDays - ah2Days);
-            let lukkHours = o.must_l + o.rv_l, keevHours = o.must_k + o.rv_k, totalProdHours = lukkHours + keevHours || 1;
+            let prodDaysAvailable = Math.max(1, totalRange - koosteDays - o.sub2);
+            let lukkH = o.must_l + o.rv_l, keevH = o.must_k + o.rv_k, totalH = lukkH + keevH || 1;
             let finalLeft = 0, taskDur = 0;
 
-            if (CONFIG[key].order === 3) {
-                taskDur = koosteDays; finalLeft = (eIdx - koosteDays + 1) * 45;
-            } else if (CONFIG[key].order === 1) {
-                taskDur = Math.ceil((lukkHours / totalProdHours) * prodDaysAvailable); finalLeft = sIdx * 45;
-            } else if (CONFIG[key].order === 2) {
-                let lukkDur = Math.floor((lukkHours / totalProdHours) * prodDaysAvailable);
-                taskDur = Math.max(1, prodDaysAvailable - lukkDur); finalLeft = (sIdx + lukkDur) * 45;
-            }
+            if (CONFIG[key].order === 3) { taskDur = koosteDays; finalLeft = (eIdx - koosteDays + 1) * 45; }
+            else if (CONFIG[key].order === 1) { taskDur = Math.ceil((lukkH / totalH) * prodDaysAvailable); finalLeft = sIdx * 45; }
+            else if (CONFIG[key].order === 2) { let lD = Math.floor((lukkH / totalH) * prodDaysAvailable); taskDur = Math.max(1, prodDaysAvailable - lD); finalLeft = (sIdx + lD) * 45; }
 
-            bodyHtml += `<div class="gantt-row ${!isFit ? 'row-error' : ''}"><div class="gantt-info"><b>${o.mt}</b><small>${o.client}</small>${!isFit ? '<span class="error-marker">! AEGA VÄHE</span>' : ''}<div style="display:flex;gap:3px;"><input type="date" value="${safeISO(o.start)}" onchange="u(${gIdx},'start',this.value);renderGantt('${containerId}','${key}')"><input type="date" value="${safeISO(o.end)}" onchange="u(${gIdx},'end',this.value);renderGantt('${containerId}','${key}')"></div></div><div class="gantt-bars-area"><div class="today-line" style="left:${todayLinePos}px"></div>`;
+            bodyHtml += `<div class="gantt-row ${!isFit ? 'row-error' : ''}"><div class="gantt-info"><b>${o.mt}</b><small>${o.client}</small><div style="display:flex;gap:3px;"><input type="date" value="${safeISO(o.start)}" onchange="u(${gIdx},'start',this.value);renderGantt('${containerId}','${key}')"><input type="date" value="${safeISO(o.end)}" onchange="u(${gIdx},'end',this.value);renderGantt('${containerId}','${key}')"></div></div><div class="gantt-bars-area"><div class="today-line" style="left:${todayLinePos}px"></div>`;
             if(o.sub1 > 0) bodyHtml += `<div class="sub-bar sub-pre" style="left:${(sIdx - o.sub1)*45}px; width:${o.sub1*45 - 2}px">AH1</div>`;
             bodyHtml += `<div class="task-bar" style="left:${finalLeft}px; width:${taskDur * 45 - 5}px; background:${!isFit ? 'var(--danger)' : CONFIG[key].color}"><div class="progress-fill" style="width:${o.progress}%"></div><span style="position:relative; padding-left:5px;">${o.mt} (${o[key]}h)</span></div>`;
-            if(o.sub2 > 0) bodyHtml += `<div class="sub-bar sub-post" style="left:${(eIdx - koosteDays - ah2Days + 1) * 45}px; width:${o.sub2*45 - 2}px">AH2</div>`;
+            if(o.sub2 > 0) bodyHtml += `<div class="sub-bar sub-post" style="left:${(eIdx - koosteDays - o.sub2 + 1) * 45}px; width:${o.sub2*45 - 2}px">AH2</div>`;
             for(let d=0; d<dayCount; d++) bodyHtml += `<div class="day-cell-bg ${d === tIdx ? 'today-col-bg' : ''}"></div>`;
             bodyHtml += `</div></div>`;
         });
         outer.innerHTML = `<div class="gantt-header-wrapper"><div class="header-corner">MT / Klient / Aeg</div><div class="header-scroll" id="h-scroll-${key}"><div class="header-grid">${headerCols}</div></div></div>` + bodyHtml + `</div>`;
         const hS = document.getElementById(`h-scroll-${key}`), bS = document.getElementById(`b-scroll-${key}`);
-        if(bS) {
-            bS.onscroll = () => { hS.scrollLeft = bS.scrollLeft; };
-            setTimeout(() => { bS.scrollLeft = (tIdx * 45) - (bS.offsetWidth / 2) + 160; }, 50);
-        }
+        if(bS) { bS.onscroll = () => { hS.scrollLeft = bS.scrollLeft; }; setTimeout(() => { bS.scrollLeft = (tIdx * 45) - (bS.offsetWidth / 2) + 160; }, 50); }
     }
 
     function renderCharts() {
@@ -204,23 +160,15 @@
 
     function renderCapacity() {
         let h = `<table class="data-table"><thead><tr><th>Osakond</th>` + Array.from({length:15},(_,i)=>`<th>W${i+1}</th>`).join('') + `</tr></thead><tbody>`;
-        h += Object.keys(CONFIG).map(k => `<tr><td><b>${CONFIG[k].l}</b></td>` + Array.from({length:15},(_,i)=>{
-            let v = (customCap[k] && customCap[k][i+1]) ? customCap[k][i+1] : CONFIG[k].c;
-            return `<td><input type="number" class="cap-in" data-k="${k}" data-w="${i+1}" value="${v}" style="width:45px"></td>`;
-        }).join('') + `</tr>`).join('');
+        h += Object.keys(CONFIG).map(k => `<tr><td><b>${CONFIG[k].l}</b></td>` + Array.from({length:15},(_,i)=>{ let v = (customCap[k] && customCap[k][i+1]) ? customCap[k][i+1] : CONFIG[k].c; return `<td><input type="number" class="cap-in" data-k="${k}" data-w="${i+1}" value="${v}" style="width:45px"></td>`; }).join('') + `</tr>`).join('');
         document.getElementById('cap-box').innerHTML = h + `</tbody></table><br><button onclick="saveCap()" style="padding:10px 20px; background:var(--accent); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">SALVESTA VÕIMEKUS</button>`;
     }
 
-    function saveCap() { document.querySelectorAll('.cap-in').forEach(i => { if(!customCap[i.dataset.k]) customCap[i.dataset.k] = {}; customCap[i.dataset.k][i.dataset.w] = parseInt(i.value); }); localStorage.setItem('prod_cap_v54', JSON.stringify(customCap)); alert("Võimekus salvestatud!"); fetchData(); }
+    function saveCap() { document.querySelectorAll('.cap-in').forEach(i => { if(!customCap[i.dataset.k]) customCap[i.dataset.k] = {}; customCap[i.dataset.k][i.dataset.w] = parseInt(i.value); }); localStorage.setItem('prod_cap_v55', JSON.stringify(customCap)); alert("Võimekus salvestatud!"); fetchData(); }
     async function save() { try { await fetch(API_URL, {method:"POST", body:JSON.stringify(orders), mode: 'no-cors'}); } catch(e) {} }
     function renderTable() {
-        const filterVal = document.getElementById('monthFilter').value;
-        const b = document.getElementById('table-body'); b.innerHTML = '';
-        orders.forEach((o, i) => {
-            if (filterVal && !safeISO(o.start).includes(filterVal)) return;
-            const isFit = checkFitting(o);
-            b.innerHTML += `<tr class="${!isFit ? 'row-error' : ''}"><td><input class="data-in" value="${o.mt||''}" onchange="u(${i},'mt',this.value)"></td><td><input class="data-in" value="${o.client||''}" onchange="u(${i},'client',this.value)"></td><td><input type="date" class="data-in" value="${safeISO(o.start)}" onchange="u(${i},'start',this.value)"></td><td><input type="date" class="data-in" value="${safeISO(o.end)}" onchange="u(${i},'end',this.value)"></td><td><input type="number" class="data-in num-in" value="${o.sub1||0}" onchange="u(${i},'sub1',this.value)"></td><td><input type="number" class="data-in num-in" value="${o.sub2||0}" onchange="u(${i},'sub2',this.value)"></td><td><input type="number" class="data-in num-in" value="${o.must_k}" onchange="u(${i},'must_k',this.value)"></td><td><input type="number" class="data-in num-in" value="${o.rv_k}" onchange="u(${i},'rv_k',this.value)"></td><td><input type="number" class="data-in num-in" value="${o.must_l}" onchange="u(${i},'must_l',this.value)"></td><td><input type="number" class="data-in num-in" value="${o.rv_l}" onchange="u(${i},'rv_l',this.value)"></td><td><input type="number" class="data-in num-in" value="${o.kooste}" onchange="u(${i},'kooste',this.value)"></td><td><input type="number" class="data-in num-in" value="${o.progress}" onchange="u(${i},'progress',this.value)"></td><td><button onclick="del(${i})">🗑️</button></td></tr>`;
-        });
+        const fV = document.getElementById('monthFilter').value; const b = document.getElementById('table-body'); b.innerHTML = '';
+        orders.forEach((o, i) => { if (fV && !safeISO(o.start).includes(fV)) return; const isFit = checkFitting(o); b.innerHTML += `<tr class="${!isFit ? 'row-error' : ''}"><td><input class="data-in" value="${o.mt||''}" onchange="u(${i},'mt',this.value)"></td><td><input class="data-in" value="${o.client||''}" onchange="u(${i},'client',this.value)"></td><td><input type="date" class="data-in" value="${safeISO(o.start)}" onchange="u(${i},'start',this.value)"></td><td><input type="date" class="data-in" value="${safeISO(o.end)}" onchange="u(${i},'end',this.value)"></td><td><input type="number" class="data-in num-in" value="${o.sub1||0}" onchange="u(${i},'sub1',this.value)"></td><td><input type="number" class="data-in num-in" value="${o.sub2||0}" onchange="u(${i},'sub2',this.value)"></td><td><input type="number" class="data-in num-in" value="${o.must_k}" onchange="u(${i},'must_k',this.value)"></td><td><input type="number" class="data-in num-in" value="${o.rv_k}" onchange="u(${i},'rv_k',this.value)"></td><td><input type="number" class="data-in num-in" value="${o.must_l}" onchange="u(${i},'must_l',this.value)"></td><td><input type="number" class="data-in num-in" value="${o.rv_l}" onchange="u(${i},'rv_l',this.value)"></td><td><input type="number" class="data-in num-in" value="${o.kooste}" onchange="u(${i},'kooste',this.value)"></td><td><input type="number" class="data-in num-in" value="${o.progress}" onchange="u(${i},'progress',this.value)"></td><td><button onclick="del(${i})">🗑️</button></td></tr>`; });
     }
     function u(i, k, v) { orders[i][k] = v; save(); }
     function getWeek(d) { d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7)); return Math.ceil((((d - new Date(Date.UTC(d.getUTCFullYear(),0,1))) / 86400000) + 1)/7); }
