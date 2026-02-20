@@ -2,13 +2,10 @@
 <html lang="et">
 <head>
     <meta charset="UTF-8">
-    <title>TOCI Tootmisplaan V41.0</title>
+    <title>TOCI Tootmisplaan V42.0</title>
     <style>
         :root { --primary: #1a252f; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; --warning: #f1c40f; --bg: #f4f7f6; --today: #ff4757; --cell-w: 45px; }
-        
-        /* Kriitiline parandus: Kõik elemendid arvestavad piirjooni laiusse sisse */
         *, *:before, *:after { box-sizing: border-box; }
-        
         body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); font-size: 12px; overflow: hidden; }
         
         .top-bar { background: var(--primary); color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; height: 50px; position: sticky; top: 0; z-index: 10000; }
@@ -19,10 +16,8 @@
         .content { height: calc(100vh - 95px); display: none; padding: 15px; box-sizing: border-box; }
         .content.active { display: block; }
 
-        /* GANTT RAAMISTIK */
         .gantt-outer { height: 100%; display: flex; flex-direction: column; background: white; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; }
         
-        /* PÄIS - FIKSEERITUD */
         .gantt-header-wrapper { display: flex; background: #f8f9fa; border-bottom: 2px solid #ccc; overflow: hidden; height: 75px; min-height: 75px; }
         .header-corner { width: 320px; min-width: 320px; background: #eee; border-right: 3px solid #bbb; display: flex; align-items: center; padding-left: 15px; font-weight: bold; position: sticky; left: 0; z-index: 2500; }
         .header-scroll { flex-grow: 1; overflow: hidden; }
@@ -32,7 +27,6 @@
         .h-week { height: 35px; background: #dfe4ea; border-bottom: 1px solid #ccc; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; }
         .h-day { height: 40px; display: flex; align-items: center; justify-content: center; font-size: 9px; }
 
-        /* SISU OSA */
         .gantt-body { flex-grow: 1; overflow: auto; scroll-behavior: smooth; }
         .gantt-row { display: flex; border-bottom: 1px solid #eee; min-height: 85px; width: max-content; }
         
@@ -47,28 +41,25 @@
         .gantt-bars-area { position: relative; display: flex; background-color: #fff; width: max-content; }
         .day-cell-bg { width: var(--cell-w); min-width: var(--cell-w); border-right: 1px solid #f1f1f1; height: 100%; flex-shrink: 0; }
         
-        /* PUNANE JOON - JOONDATUD PÄEVA ALGUSEGA */
         .today-line { position: absolute; top: 0; bottom: 0; width: 3px; background: var(--today); z-index: 500; pointer-events: none; box-shadow: 0 0 8px rgba(255, 71, 87, 0.6); }
         .today-col-bg { background: rgba(255, 71, 87, 0.1) !important; }
 
         .task-bar { 
             position: absolute; height: 32px; top: 26px; background: var(--accent); 
             border-radius: 5px; color: white; display: flex; align-items: center; 
-            padding: 0 10px; font-size: 11px; font-weight: bold; z-index: 100; 
+            padding: 0 : 10px; font-size: 11px; font-weight: bold; z-index: 100; 
             box-shadow: 0 2px 4px rgba(0,0,0,0.2); white-space: nowrap; overflow: hidden;
         }
         .progress-fill { position: absolute; left: 0; top: 0; height: 100%; background: rgba(0,0,0,0.25); border-right: 1px solid rgba(255,255,255,0.4); }
 
-        /* TABELID JA GRAAFIKUD */
         .data-table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; }
         .data-table th, .data-table td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-        .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 20px; overflow-y: auto; height: 100%; }
     </style>
 </head>
 <body>
 
 <div class="top-bar">
-    <div>🚀 <strong>TOCI LIVE V41.0</strong></div>
+    <div>🚀 <strong>TOCI LIVE V42.0</strong></div>
     <div id="syncStatus" style="background:var(--warning); color:black; padding:4px 10px; border-radius:4px; font-weight:bold;">Ühendan...</div>
 </div>
 
@@ -98,22 +89,29 @@
 <div id="gantt_rl" class="content"><div class="gantt-outer" id="out-rl"></div></div>
 <div id="gantt_ko" class="content"><div class="gantt-outer" id="out-ko"></div></div>
 
-<div id="koormus_tab" class="content"><div id="charts-box" class="charts-grid"></div></div>
+<div id="koormus_tab" class="content"><div id="charts-box" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 20px; overflow-y: auto; height: 100%;"></div></div>
 <div id="voimekus_tab" class="content"><div id="cap-box" style="background:white; padding:20px; border-radius:8px; height:100%; overflow-y:auto;"></div></div>
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbwFGxkxdlGqW57N4HlB3HI6lCofYLWrQIYlgUEag9KQR2oEFRiVX9vxoQZ4nKa-NlKb6w/exec";
     const CONFIG = { must_k:{l:'Must Keev',c:240}, rv_k:{l:'RV Keev',c:120}, must_l:{l:'Must Lukk',c:120}, rv_l:{l:'RV Lukk',c:40}, kooste:{l:'Kooste',c:40} };
     const START_VIEW = new Date("2026-01-01");
-    // Tänane kuupäev fikseeritud reaalajas
     const TODAY = new Date();
     
     let orders = [];
-    let customCap = JSON.parse(localStorage.getItem('prod_cap_v41')) || {};
+    let customCap = JSON.parse(localStorage.getItem('prod_cap_v42')) || {};
 
+    // --- KRIITILINE: PARANDATUD KUUPÄEVA TÖÖTLUS ---
     function parseToMidday(d) {
         if (!d) return null;
-        const date = new Date(d);
+        let date;
+        if (typeof d === 'string') {
+            // Asendame sidekriipsud kaldkriipsudega, et vältida ajavööndi probleeme brauserites
+            date = new Date(d.replace(/-/g, '/'));
+        } else {
+            date = new Date(d);
+        }
+        // Sunnime kellaaja päeva keskele (12:00), et elimineerida +/- 1 päeva nihe
         return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0);
     }
 
@@ -121,7 +119,8 @@
         const d1 = parseToMidday(targetDate);
         const d2 = parseToMidday(baseDate);
         if (!d1 || !d2) return 0;
-        return Math.round((d1.getTime() - d2.getTime()) / 86400000);
+        const diffTime = d1.getTime() - d2.getTime();
+        return Math.round(diffTime / (1000 * 60 * 60 * 24));
     }
 
     async function fetchData() {
@@ -183,7 +182,6 @@
                     <div class="today-line" style="left:${todayLineLeftPos}px"></div>`;
             
             if(sIdx >= 0 && sIdx < dayCount) {
-                // Laius on täpselt dur * 45px
                 bodyHtml += `<div class="task-bar" style="left:${sIdx * 45}px; width:${dur * 45 - 5}px">
                     <div class="progress-fill" style="width:${o.progress}%"></div>
                     <span style="position:relative; padding-left:5px;">${o.mt} (${o.progress}%)</span>
@@ -200,7 +198,7 @@
         const hScroll = document.getElementById(`h-scroll-${key}`);
         const bScroll = document.getElementById(`b-scroll-${key}`);
         bScroll.onscroll = () => { hScroll.scrollLeft = bScroll.scrollLeft; };
-        setTimeout(() => { bScroll.scrollLeft = (tIdx * 45) - (bScroll.offsetWidth / 2) + 160; }, 150);
+        setTimeout(() => { bScroll.scrollLeft = (tIdx * 45) - (bScroll.offsetWidth / 2) + 160; }, 50);
     }
 
     async function save() { await fetch(API_URL, {method:"POST", body:JSON.stringify(orders)}); fetchData(); }
@@ -240,11 +238,11 @@
             if(!customCap[i.dataset.k]) customCap[i.dataset.k] = {};
             customCap[i.dataset.k][i.dataset.w] = parseInt(i.value);
         });
-        localStorage.setItem('prod_cap_v41', JSON.stringify(customCap)); alert("Võimekus salvestatud!"); fetchData();
+        localStorage.setItem('prod_cap_v42', JSON.stringify(customCap)); alert("Võimekus salvestatud!"); fetchData();
     }
 
     function u(i, k, v) { orders[i][k] = v; save(); }
-    function cd(d) { if(!d) return ""; const dt = new Date(d); return dt.toISOString().split('T')[0]; }
+    function cd(d) { if(!d) return ""; const dt = parseToMidday(d); return dt.toISOString().split('T')[0]; }
     function getWeek(d) { d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7)); return Math.ceil((((d - new Date(Date.UTC(d.getUTCFullYear(),0,1))) / 86400000) + 1)/7); }
     function addNewRow() { orders.push({mt:"UUS", client:"", start:new Date().toISOString().split('T')[0], end:new Date().toISOString().split('T')[0], must_k:0, rv_k:0, must_l:0, rv_l:0, kooste:0, progress:0}); renderTable(); save(); }
     function del(i) { if(confirm("Kustuta?")) { orders.splice(i,1); renderTable(); save(); } }
