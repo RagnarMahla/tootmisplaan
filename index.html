@@ -2,7 +2,7 @@
 <html lang="et">
 <head>
     <meta charset="UTF-8">
-    <title>TOCI Tootmisplaan V56.0</title>
+    <title>TOCI Tootmisplaan V57.0</title>
     <style>
         :root { --primary: #1a252f; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; --warning: #f1c40f; --bg: #f4f7f6; --today: #ff4757; --cell-w: 45px; --sub-bg: #95a5a6; }
         *, *:before, *:after { box-sizing: border-box; }
@@ -13,20 +13,14 @@
         .tab-btn.active { opacity: 1; background: rgba(255,255,255,0.15); box-shadow: inset 0 -4px 0 var(--accent); }
         .content { height: calc(100vh - 95px); display: none; padding: 15px; box-sizing: border-box; }
         .content.active { display: block; }
-
-        /* TABELID */
         .table-container { height: calc(100% - 60px); overflow-y: auto; background: white; border-radius: 8px; border: 1px solid #ddd; }
         .data-table { width: 100%; border-collapse: collapse; position: relative; }
-        .data-table thead th { position: sticky; top: 0; background: #eee; z-index: 10; border-bottom: 2px solid #ccc; padding: 10px 5px; text-align: left; cursor: help; }
+        .data-table thead th { position: sticky; top: 0; background: #eee; z-index: 10; border-bottom: 2px solid #ccc; padding: 10px 5px; text-align: left; }
         .data-table td { border-bottom: 1px solid #eee; padding: 4px 5px; }
+        .row-error { background-color: #ffeaea !important; }
         .data-in { width: 100%; border: 1px solid transparent; padding: 4px; border-radius: 3px; background: transparent; }
         .data-in:focus { border-color: var(--accent); outline: none; background: #fff; }
-        .num-in { width: 45px; text-align: center; font-size: 11px; }
-
-        /* SPIKKER / TOOLTIP */
-        .info-icon { background: #3498db; color: white; border-radius: 50%; width: 16px; height: 16px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; cursor: pointer; margin-left: 5px; }
-        
-        /* GANTT */
+        .num-in { width: 45px; text-align: center; }
         .gantt-outer { height: 100%; display: flex; flex-direction: column; background: white; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; }
         .gantt-header-wrapper { display: flex; background: #f8f9fa; border-bottom: 2px solid #ccc; overflow: hidden; height: 75px; min-height: 75px; }
         .header-corner { width: 320px; min-width: 320px; background: #eee; border-right: 3px solid #bbb; display: flex; align-items: center; padding-left: 15px; font-weight: bold; position: sticky; left: 0; z-index: 2500; }
@@ -38,8 +32,7 @@
         .gantt-body { flex-grow: 1; overflow: auto; scroll-behavior: smooth; }
         .gantt-row { display: flex; border-bottom: 1px solid #eee; min-height: 85px; width: max-content; }
         .gantt-info { position: sticky !important; left: 0 !important; width: 320px; min-width: 320px; background: #fff !important; z-index: 1000 !important; border-right: 3px solid #bbb !important; padding: 10px 15px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; }
-        .today-line { position: absolute; top: 0; bottom: 0; width: 3px; background: var(--today); z-index: 500; pointer-events: none; box-shadow: 0 0 8px rgba(255, 71, 87, 0.6); }
-        .today-col-bg { background: rgba(255, 71, 87, 0.1) !important; }
+        .today-line { position: absolute; top: 0; bottom: 0; width: 3px; background: var(--today); z-index: 500; pointer-events: none; }
         .task-bar { position: absolute; height: 32px; top: 26px; border-radius: 5px; color: white; display: flex; align-items: center; padding: 0 10px; font-size: 11px; font-weight: bold; z-index: 100; }
         .progress-fill { position: absolute; left: 0; top: 0; height: 100%; background: rgba(0,0,0,0.25); border-right: 1px solid rgba(255,255,255,0.4); }
         .sub-bar { position: absolute; height: 12px; background: var(--sub-bg); opacity: 0.6; border-radius: 3px; z-index: 90; font-size: 8px; color: white; display: flex; align-items: center; justify-content: center; }
@@ -49,7 +42,7 @@
     </style>
 </head>
 <body>
-<div class="top-bar"><div>🚀 <strong>TOCI LIVE V56.0</strong></div><div id="syncStatus" style="background:var(--warning); color:black; padding:4px 10px; border-radius:4px; font-weight:bold;">Ühendan...</div></div>
+<div class="top-bar"><div>🚀 <strong>TOCI LIVE V57.0</strong></div><div id="syncStatus" style="background:var(--warning); color:black; padding:4px 10px; border-radius:4px; font-weight:bold;">Ühendan...</div></div>
 <div class="tabs">
     <button class="tab-btn active" onclick="openTab(event, 'sisestus')">SISESTUS</button>
     <button class="tab-btn" onclick="openTab(event, 'gantt_mk')">MUST KEEV</button>
@@ -65,32 +58,14 @@
 <div id="sisestus" class="content active">
     <div style="margin-bottom:15px; display:flex; gap:15px; align-items:center;">
         <button onclick="addNewRow()" style="padding:10px 20px; background:var(--success); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">+ LISA TELLIMUS</button>
-        <div style="font-size: 11px; background: #eee; padding: 5px 10px; border-radius: 4px;">
-            <strong>Spikker:</strong> AH1: Allhange 1 | AH2: Allhange 2 | MK/RK: Must/RV Keev | ML/RL: Must/RV Lukk | KO: Kooste
-        </div>
+        <input type="text" id="mtFilter" placeholder="Otsi MT-numbrit..." oninput="renderTable()" style="padding:8px; border-radius:4px; border:1px solid #ccc; width: 150px;">
+        <select id="monthFilter" onchange="renderTable()" style="padding:8px; border-radius:4px; border:1px solid #ccc;">
+            <option value="">Kõik kuud</option>
+            <option value="-01-">Jaanuar</option><option value="-02-">Veebruar</option><option value="-03-">Märts</option><option value="-04-">Aprill</option><option value="-05-">Mai</option><option value="-06-">Juuni</option><option value="-07-">Juuli</option><option value="-08-">August</option><option value="-09-">September</option><option value="-10-">Oktoober</option><option value="-11-">November</option><option value="-12-">Detsember</option>
+        </select>
+        <div style="font-size: 11px; background: #eee; padding: 5px 10px; border-radius: 4px;">AH1/2: Allhange | MK/RK: Keev | ML/RL: Lukk | KO: Kooste</div>
     </div>
-    <div class="table-container">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th title="Tellimuse number">MT <span class="info-icon" onclick="alert('MT - Tellimuse number\nAH1 - Allhange enne keevitust (p)\nAH2 - Allhange peale keevitust (p)\nMK - Must Keevitus (h)\nRK - RV Keevitus (h)\nML - Must Lukksepp (h)\nRL - RV Lukksepp (h)\nKO - Kooste (h)')">?</span></th>
-                    <th>Klient</th>
-                    <th>Algus</th>
-                    <th>Lõpp</th>
-                    <th title="Allhange enne keevitust (päevades)">AH1</th>
-                    <th title="Allhange peale keevitust (päevades)">AH2</th>
-                    <th title="Must Keevitus (tundides)">MK</th>
-                    <th title="RV Keevitus (tundides)">RK</th>
-                    <th title="Must Lukksepp (tundides)">ML</th>
-                    <th title="RV Lukksepp (tundides)">RL</th>
-                    <th title="Kooste (tundides)">KO</th>
-                    <th>%</th>
-                    <th>🗑️</th>
-                </tr>
-            </thead>
-            <tbody id="table-body"></tbody>
-        </table>
-    </div>
+    <div class="table-container"><table class="data-table"><thead><tr><th>MT</th><th>Klient</th><th>Algus</th><th>Lõpp</th><th>AH1</th><th>AH2</th><th>MK</th><th>RK</th><th>ML</th><th>RL</th><th>KO</th><th>%</th><th>🗑️</th></tr></thead><tbody id="table-body"></tbody></table></div>
 </div>
 
 <div id="gantt_mk" class="content"><div class="gantt-outer" id="out-mk"></div></div>
@@ -103,17 +78,11 @@
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbwFGxkxdlGqW57N4HlB3HI6lCofYLWrQIYlgUEag9KQR2oEFRiVX9vxoQZ4nKa-NlKb6w/exec";
-    const CONFIG = { 
-        must_k:{l:'Must Keevitus',c:240, color:'#e67e22', order:2}, 
-        rv_k:{l:'RV Keevitus',c:120, color:'#e67e22', order:2}, 
-        must_l:{l:'Must Lukksepp',c:120, color:'#3498db', order:1}, 
-        rv_l:{l:'RV Lukksepp',c:40, color:'#3498db', order:1}, 
-        kooste:{l:'Kooste',c:40, color:'#27ae60', order:3} 
-    };
+    const CONFIG = { must_k:{l:'Must Keev',c:240, color:'#e67e22', order:2}, rv_k:{l:'RV Keev',c:120, color:'#e67e22', order:2}, must_l:{l:'Must Lukk',c:120, color:'#3498db', order:1}, rv_l:{l:'RV Lukk',c:40, color:'#3498db', order:1}, kooste:{l:'Kooste',c:40, color:'#27ae60', order:3} };
     const START_VIEW = new Date("2026-01-01");
     const TODAY = new Date();
     let orders = [];
-    let customCap = JSON.parse(localStorage.getItem('prod_cap_v56')) || {};
+    let customCap = JSON.parse(localStorage.getItem('prod_cap_v57')) || {};
 
     const f = (v) => parseFloat(v) || 0;
     function getUTCDate(d) { const dt = new Date(d); return isNaN(dt.getTime()) ? null : Date.UTC(dt.getFullYear(), dt.getMonth(), dt.getDate()); }
@@ -121,11 +90,12 @@
     function safeISO(d) { const dt = new Date(d); return isNaN(dt.getTime()) ? new Date().toISOString().split('T')[0] : dt.toISOString().split('T')[0]; }
 
     async function fetchData() {
-        document.getElementById('syncStatus').innerText = "Laadin...";
+        document.getElementById('syncStatus').innerText = "Värskendan...";
         try {
             const r = await fetch(API_URL, { cache: 'no-cache' });
             const d = await r.json();
             if(Array.isArray(d)) {
+                orders = [];
                 orders = d.map(o => ({...o, must_k:f(o.must_k), rv_k:f(o.rv_k), must_l:f(o.must_l), rv_l:f(o.rv_l), kooste:f(o.kooste), progress:f(o.progress), sub1:f(o.sub1), sub2:f(o.sub2)}));
                 renderTable();
                 document.getElementById('syncStatus').innerText = "Andmed OK";
@@ -136,10 +106,7 @@
 
     function renderGantt(containerId, key) {
         const outer = document.getElementById(containerId); if(!outer) return;
-        const dayCount = 200;
-        const tIdx = getDayIndexUTC(TODAY, START_VIEW);
-        const todayLinePos = (tIdx * 45); 
-
+        const dayCount = 200, tIdx = getDayIndexUTC(TODAY, START_VIEW);
         let headerCols = "";
         for(let d=0; d<dayCount; d++) {
             let cur = new Date(START_VIEW.getTime() + d * 86400000);
@@ -147,17 +114,15 @@
         }
         let bodyHtml = `<div class="gantt-body" id="b-scroll-${key}">`;
         orders.filter(o => o[key] > 0).forEach((o) => {
-            let gIdx = orders.indexOf(o);
-            let sIdx = getDayIndexUTC(o.start, START_VIEW), eIdx = getDayIndexUTC(o.end, START_VIEW);
-            let totalRange = eIdx - sIdx + 1;
-            let kD = Math.max(1, Math.ceil(o.kooste / 8)), prodD = Math.max(1, totalRange - kD - o.sub2);
+            let gIdx = orders.indexOf(o), sIdx = getDayIndexUTC(o.start, START_VIEW), eIdx = getDayIndexUTC(o.end, START_VIEW);
+            let totalRange = eIdx - sIdx + 1, kD = Math.max(1, Math.ceil(o.kooste / 8)), prodD = Math.max(1, totalRange - kD - o.sub2);
             let lH = o.must_l + o.rv_l, kH = o.must_k + o.rv_k, tH = lH + kH || 1;
             let fLeft = 0, tDur = 0;
             if (CONFIG[key].order === 3) { tDur = kD; fLeft = (eIdx - kD + 1) * 45; }
             else if (CONFIG[key].order === 1) { tDur = Math.ceil((lH / tH) * prodD); fLeft = sIdx * 45; }
             else if (CONFIG[key].order === 2) { let lD = Math.floor((lH / tH) * prodD); tDur = Math.max(1, prodD - lD); fLeft = (sIdx + lD) * 45; }
 
-            bodyHtml += `<div class="gantt-row"><div class="gantt-info"><b>${o.mt}</b><small>${o.client}</small><div style="display:flex;gap:3px;"><input type="date" value="${safeISO(o.start)}" onchange="u(${gIdx},'start',this.value);renderGantt('${containerId}','${key}')"><input type="date" value="${safeISO(o.end)}" onchange="u(${gIdx},'end',this.value);renderGantt('${containerId}','${key}')"></div></div><div class="gantt-bars-area"><div class="today-line" style="left:${todayLinePos}px"></div>`;
+            bodyHtml += `<div class="gantt-row"><div class="gantt-info"><b>${o.mt}</b><small>${o.client}</small><div style="display:flex;gap:3px;"><input type="date" value="${safeISO(o.start)}" onchange="u(${gIdx},'start',this.value);renderGantt('${containerId}','${key}')"><input type="date" value="${safeISO(o.end)}" onchange="u(${gIdx},'end',this.value);renderGantt('${containerId}','${key}')"></div></div><div class="gantt-bars-area"><div class="today-line" style="left:${tIdx * 45}px"></div>`;
             if(o.sub1 > 0) bodyHtml += `<div class="sub-bar sub-pre" style="left:${(sIdx - o.sub1)*45}px; width:${o.sub1*45 - 2}px">AH1</div>`;
             bodyHtml += `<div class="task-bar" style="left:${fLeft}px; width:${tDur * 45 - 5}px; background:${CONFIG[key].color}"><div class="progress-fill" style="width:${o.progress}%"></div><span style="position:relative; padding-left:5px;">${o.mt} (${o[key]}h)</span></div>`;
             if(o.sub2 > 0) bodyHtml += `<div class="sub-bar sub-post" style="left:${(eIdx - kD - o.sub2 + 1) * 45}px; width:${o.sub2*45 - 2}px">AH2</div>`;
@@ -170,8 +135,16 @@
     }
 
     function renderTable() {
+        const mV = document.getElementById('monthFilter').value;
+        const mtV = document.getElementById('mtFilter').value.toLowerCase();
         const b = document.getElementById('table-body'); b.innerHTML = '';
-        orders.forEach((o, i) => { b.innerHTML += `<tr><td><input class="data-in" value="${o.mt||''}" onchange="u(${i},'mt',this.value)"></td><td><input class="data-in" value="${o.client||''}" onchange="u(${i},'client',this.value)"></td><td><input type="date" class="data-in" value="${safeISO(o.start)}" onchange="u(${i},'start',this.value)"></td><td><input type="date" class="data-in" value="${safeISO(o.end)}" onchange="u(${i},'end',this.value)"></td><td><input type="number" class="data-in num-in" value="${o.sub1||0}" onchange="u(${i},'sub1',this.value)"></td><td><input type="number" class="data-in num-in" value="${o.sub2||0}" onchange="u(${i},'sub2',this.value)"></td><td><input type="number" class="data-in num-in" value="${o.must_k}" onchange="u(${i},'must_k',this.value)"></td><td><input type="number" class="data-in num-in" value="${o.rv_k}" onchange="u(${i},'rv_k',this.value)"></td><td><input type="number" class="data-in num-in" value="${o.must_l}" onchange="u(${i},'must_l',this.value)"></td><td><input type="number" class="data-in num-in" value="${o.rv_l}" onchange="u(${i},'rv_l',this.value)"></td><td><input type="number" class="data-in num-in" value="${o.kooste}" onchange="u(${i},'kooste',this.value)"></td><td><input type="number" class="data-in num-in" value="${o.progress}" onchange="u(${i},'progress',this.value)"></td><td><button onclick="del(${i})">🗑️</button></td></tr>`; });
+        orders.forEach((o, i) => {
+            const matchesMonth = !mV || safeISO(o.start).includes(mV);
+            const matchesMT = !mtV || (o.mt && String(o.mt).toLowerCase().includes(mtV));
+            if (matchesMonth && matchesMT) {
+                b.innerHTML += `<tr><td><input class="data-in" value="${o.mt||''}" onchange="u(${i},'mt',this.value)"></td><td><input class="data-in" value="${o.client||''}" onchange="u(${i},'client',this.value)"></td><td><input type="date" class="data-in" value="${safeISO(o.start)}" onchange="u(${i},'start',this.value)"></td><td><input type="date" class="data-in" value="${safeISO(o.end)}" onchange="u(${i},'end',this.value)"></td><td><input type="number" class="data-in num-in" value="${o.sub1||0}" onchange="u(${i},'sub1',this.value)"></td><td><input type="number" class="data-in num-in" value="${o.sub2||0}" onchange="u(${i},'sub2',this.value)"></td><td><input type="number" class="data-in num-in" value="${o.must_k}" onchange="u(${i},'must_k',this.value)"></td><td><input type="number" class="data-in num-in" value="${o.rv_k}" onchange="u(${i},'rv_k',this.value)"></td><td><input type="number" class="data-in num-in" value="${o.must_l}" onchange="u(${i},'must_l',this.value)"></td><td><input type="number" class="data-in num-in" value="${o.rv_l}" onchange="u(${i},'rv_l',this.value)"></td><td><input type="number" class="data-in num-in" value="${o.kooste}" onchange="u(${i},'kooste',this.value)"></td><td><input type="number" class="data-in num-in" value="${o.progress}" onchange="u(${i},'progress',this.value)"></td><td><button onclick="del(${i})">🗑️</button></td></tr>`;
+            }
+        });
     }
 
     function renderCharts() {
@@ -195,7 +168,7 @@
         document.getElementById('cap-box').innerHTML = h + `</tbody></table><br><button onclick="saveCap()" style="padding:10px 20px; background:var(--accent); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">SALVESTA VÕIMEKUS</button>`;
     }
 
-    async function save() { try { await fetch(API_URL, {method:"POST", body:JSON.stringify(orders), mode: 'no-cors'}); } catch(e) {} }
+    async function save() { try { await fetch(API_URL, {method:"POST", body:JSON.stringify(orders), mode: 'no-cors'}); fetchData(); } catch(e) {} }
     function u(i, k, v) { orders[i][k] = v; save(); }
     function getWeek(d) { d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7)); return Math.ceil((((d - new Date(Date.UTC(d.getUTCFullYear(),0,1))) / 86400000) + 1)/7); }
     function addNewRow() { orders.unshift({mt:"UUS", client:"", start:new Date().toISOString().split('T')[0], end:new Date().toISOString().split('T')[0], sub1:0, sub2:0, must_k:0, rv_k:0, must_l:0, rv_l:0, kooste:0, progress:0}); renderTable(); save(); }
