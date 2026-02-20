@@ -2,9 +2,9 @@
 <html lang="et">
 <head>
     <meta charset="UTF-8">
-    <title>TOCI Tootmisplaan V48.0</title>
+    <title>TOCI Tootmisplaan V49.0</title>
     <style>
-        :root { --primary: #1a252f; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; --warning: #f1c40f; --bg: #f4f7f6; --today: #ff4757; --cell-w: 45px; }
+        :root { --primary: #1a252f; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; --warning: #f1c40f; --bg: #f4f7f6; --today: #ff4757; --cell-w: 45px; --sub-bg: #95a5a6; }
         *, *:before, *:after { box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); font-size: 12px; overflow: hidden; }
         
@@ -16,15 +16,14 @@
         .content { height: calc(100vh - 95px); display: none; padding: 15px; box-sizing: border-box; }
         .content.active { display: block; }
 
-        /* TABELID */
         .table-container { height: calc(100% - 60px); overflow-y: auto; background: white; border-radius: 8px; border: 1px solid #ddd; }
         .data-table { width: 100%; border-collapse: collapse; position: relative; }
         .data-table thead th { position: sticky; top: 0; background: #eee; z-index: 10; border-bottom: 2px solid #ccc; padding: 8px; text-align: left; }
-        .data-table td { border-bottom: 1px solid #eee; padding: 6px 10px; }
+        .data-table td { border-bottom: 1px solid #eee; padding: 4px 8px; }
         .data-in { width: 100%; border: 1px solid transparent; padding: 4px; border-radius: 3px; }
         .data-in:focus { border-color: var(--accent); outline: none; }
+        .num-in { width: 45px; text-align: center; }
 
-        /* GANTT */
         .gantt-outer { height: 100%; display: flex; flex-direction: column; background: white; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; }
         .gantt-header-wrapper { display: flex; background: #f8f9fa; border-bottom: 2px solid #ccc; overflow: hidden; height: 75px; min-height: 75px; }
         .header-corner { width: 320px; min-width: 320px; background: #eee; border-right: 3px solid #bbb; display: flex; align-items: center; padding-left: 15px; font-weight: bold; position: sticky; left: 0; z-index: 2500; }
@@ -43,8 +42,14 @@
         .today-line { position: absolute; top: 0; bottom: 0; width: 3px; background: var(--today); z-index: 500; pointer-events: none; box-shadow: 0 0 8px rgba(255, 71, 87, 0.6); }
         .today-col-bg { background: rgba(255, 71, 87, 0.1) !important; }
 
-        .task-bar { position: absolute; height: 32px; top: 26px; background: var(--accent); border-radius: 5px; color: white; display: flex; align-items: center; padding: 0 10px; font-size: 11px; font-weight: bold; z-index: 100; box-shadow: 0 2px 4px rgba(0,0,0,0.2); white-space: nowrap; overflow: hidden; }
+        /* GANTT RIBAD */
+        .task-bar { position: absolute; height: 32px; top: 26px; background: var(--accent); border-radius: 5px; color: white; display: flex; align-items: center; padding: 0 10px; font-size: 11px; font-weight: bold; z-index: 100; box-shadow: 0 2px 4px rgba(0,0,0,0.2); white-space: nowrap; }
         .progress-fill { position: absolute; left: 0; top: 0; height: 100%; background: rgba(0,0,0,0.25); border-right: 1px solid rgba(255,255,255,0.4); }
+        
+        /* ALLHANKE RIBAD */
+        .sub-bar { position: absolute; height: 12px; background: var(--sub-bg); opacity: 0.6; border-radius: 3px; z-index: 90; font-size: 8px; color: white; display: flex; align-items: center; justify-content: center; font-weight: normal; }
+        .sub-pre { top: 12px; }
+        .sub-post { top: 60px; }
 
         .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 20px; overflow-y: auto; height: 100%; }
         .chart-card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
@@ -53,7 +58,7 @@
 <body>
 
 <div class="top-bar">
-    <div>🚀 <strong>TOCI TOOTMISJUHTIMINE V48.0</strong></div>
+    <div>🚀 <strong>TOCI LIVE V49.0</strong></div>
     <div id="syncStatus" style="background:var(--warning); color:black; padding:4px 10px; border-radius:4px; font-weight:bold;">Ühendan...</div>
 </div>
 
@@ -74,16 +79,13 @@
         <button onclick="addNewRow()" style="padding:10px 20px; background:var(--success); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">+ LISA TELLIMUS ÜLES</button>
         <select id="monthFilter" onchange="renderTable()" style="padding:8px; border-radius:4px; border:1px solid #ccc;">
             <option value="">Kõik kuud</option>
-            <option value="-01-">Jaanuar</option><option value="-02-">Veebruar</option><option value="-03-">Märts</option>
-            <option value="-04-">Aprill</option><option value="-05-">Mai</option><option value="-06-">Juuni</option>
-            <option value="-07-">Juuli</option><option value="-08-">August</option><option value="-09-">September</option>
-            <option value="-10-">Oktoober</option><option value="-11-">November</option><option value="-12-">Detsember</option>
+            <option value="-01-">Jaanuar</option><option value="-02-">Veebruar</option><option value="-03-">Märts</option><option value="-04-">Aprill</option><option value="-05-">Mai</option><option value="-06-">Juuni</option><option value="-07-">Juuli</option><option value="-08-">August</option><option value="-09-">September</option><option value="-10-">Oktoober</option><option value="-11-">November</option><option value="-12-">Detsember</option>
         </select>
     </div>
     <div class="table-container">
         <table class="data-table">
             <thead>
-                <tr><th>MT</th><th>Klient</th><th>Algus</th><th>Lõpp</th><th>MK</th><th>RK</th><th>ML</th><th>RL</th><th>KO</th><th>%</th><th>🗑️</th></tr>
+                <tr><th>MT</th><th>Klient</th><th>Algus</th><th>Lõpp</th><th>AH1 (p)</th><th>AH2 (p)</th><th>MK</th><th>RK</th><th>ML</th><th>RL</th><th>KO</th><th>%</th><th>🗑️</th></tr>
             </thead>
             <tbody id="table-body"></tbody>
         </table>
@@ -95,7 +97,6 @@
 <div id="gantt_ml" class="content"><div class="gantt-outer" id="out-ml"></div></div>
 <div id="gantt_rl" class="content"><div class="gantt-outer" id="out-rl"></div></div>
 <div id="gantt_ko" class="content"><div class="gantt-outer" id="out-ko"></div></div>
-
 <div id="koormus_tab" class="content"><div id="charts-box" class="charts-grid"></div></div>
 <div id="voimekus_tab" class="content"><div id="cap-box" style="background:white; padding:20px; border-radius:8px; height:100%; overflow-y:auto;"></div></div>
 
@@ -105,7 +106,7 @@
     const START_VIEW = new Date("2026-01-01");
     const TODAY = new Date();
     let orders = [];
-    let customCap = JSON.parse(localStorage.getItem('prod_cap_v48')) || {};
+    let customCap = JSON.parse(localStorage.getItem('prod_cap_v49')) || {};
 
     function getUTCDate(d) {
         if (!d) return null;
@@ -129,7 +130,7 @@
             const r = await fetch(API_URL, { cache: 'no-cache' });
             const d = await r.json();
             if(Array.isArray(d)) {
-                orders = d.map(o => ({...o, must_k:f(o.must_k), rv_k:f(o.rv_k), must_l:f(o.must_l), rv_l:f(o.rv_l), kooste:f(o.kooste), progress:f(o.progress)}));
+                orders = d.map(o => ({...o, must_k:f(o.must_k), rv_k:f(o.rv_k), must_l:f(o.must_l), rv_l:f(o.rv_l), kooste:f(o.kooste), progress:f(o.progress), sub1:f(o.sub1), sub2:f(o.sub2)}));
                 renderTable();
                 document.getElementById('syncStatus').innerText = "Andmed OK";
                 document.getElementById('syncStatus').style.background = "#27ae60"; document.getElementById('syncStatus').style.color = "white";
@@ -158,13 +159,28 @@
             let gIdx = orders.indexOf(o);
             let sIdx = getDayIndexUTC(o.start, START_VIEW);
             let dur = getDayIndexUTC(o.end, o.start) + 1;
+            
             bodyHtml += `<div class="gantt-row">
                 <div class="gantt-info">
                     <b>${o.mt}</b><small>${o.client}</small>
                     <div style="display:flex;gap:3px;"><input type="date" value="${safeISO(o.start)}" onchange="u(${gIdx},'start',this.value);renderGantt('${containerId}','${key}')"><input type="date" value="${safeISO(o.end)}" onchange="u(${gIdx},'end',this.value);renderGantt('${containerId}','${key}')"></div>
                 </div>
-                <div class="gantt-bars-area"><div class="today-line" style="left:${todayLinePos}px"></div>`;
-            if(sIdx >= 0 && sIdx < dayCount) bodyHtml += `<div class="task-bar" style="left:${sIdx * 45}px; width:${dur * 45 - 5}px"><div class="progress-fill" style="width:${o.progress}%"></div><span style="position:relative; padding-left:5px;">${o.mt} (${o.progress}%)</span></div>`;
+                <div class="gantt-bars-area">
+                    <div class="today-line" style="left:${todayLinePos}px"></div>`;
+            
+            // Allhange 1 (Enne keevitust)
+            if(o.sub1 > 0 && sIdx >= o.sub1) {
+                bodyHtml += `<div class="sub-bar sub-pre" style="left:${(sIdx - o.sub1)*45}px; width:${o.sub1*45 - 2}px">Allhange 1</div>`;
+            }
+            // Põhiriba
+            if(sIdx >= 0) {
+                bodyHtml += `<div class="task-bar" style="left:${sIdx * 45}px; width:${dur * 45 - 5}px"><div class="progress-fill" style="width:${o.progress}%"></div><span style="position:relative; padding-left:5px;">${o.mt} (${o.progress}%)</span></div>`;
+            }
+            // Allhange 2 (Peale keevitust)
+            if(o.sub2 > 0) {
+                bodyHtml += `<div class="sub-bar sub-post" style="left:${(sIdx + dur)*45}px; width:${o.sub2*45 - 2}px">Allhange 2</div>`;
+            }
+
             for(let d=0; d<dayCount; d++) bodyHtml += `<div class="day-cell-bg ${d === tIdx ? 'today-col-bg' : ''}"></div>`;
             bodyHtml += `</div></div>`;
         });
@@ -199,7 +215,7 @@
         document.getElementById('cap-box').innerHTML = h + `</tbody></table><br><button onclick="saveCap()" style="padding:10px 20px; background:var(--accent); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">SALVESTA VÕIMEKUS</button>`;
     }
 
-    function saveCap() { document.querySelectorAll('.cap-in').forEach(i => { if(!customCap[i.dataset.k]) customCap[i.dataset.k] = {}; customCap[i.dataset.k][i.dataset.w] = parseInt(i.value); }); localStorage.setItem('prod_cap_v48', JSON.stringify(customCap)); alert("Salvestatud!"); fetchData(); }
+    function saveCap() { document.querySelectorAll('.cap-in').forEach(i => { if(!customCap[i.dataset.k]) customCap[i.dataset.k] = {}; customCap[i.dataset.k][i.dataset.w] = parseInt(i.value); }); localStorage.setItem('prod_cap_v49', JSON.stringify(customCap)); alert("Salvestatud!"); fetchData(); }
     async function save() { try { await fetch(API_URL, {method:"POST", body:JSON.stringify(orders), mode: 'no-cors'}); } catch(e) {} }
     
     function renderTable() {
@@ -212,19 +228,21 @@
                 <td><input class="data-in" value="${o.client||''}" onchange="u(${i},'client',this.value)"></td>
                 <td><input type="date" class="data-in" value="${safeISO(o.start)}" onchange="u(${i},'start',this.value)"></td>
                 <td><input type="date" class="data-in" value="${safeISO(o.end)}" onchange="u(${i},'end',this.value)"></td>
-                <td><input type="number" class="data-in" value="${o.must_k}" onchange="u(${i},'must_k',this.value)"></td>
-                <td><input type="number" class="data-in" value="${o.rv_k}" onchange="u(${i},'rv_k',this.value)"></td>
-                <td><input type="number" class="data-in" value="${o.must_l}" onchange="u(${i},'must_l',this.value)"></td>
-                <td><input type="number" class="data-in" value="${o.rv_l}" onchange="u(${i},'rv_l',this.value)"></td>
-                <td><input type="number" class="data-in" value="${o.kooste}" onchange="u(${i},'kooste',this.value)"></td>
-                <td><input type="number" class="data-in" value="${o.progress}" onchange="u(${i},'progress',this.value)"></td>
+                <td><input type="number" class="data-in num-in" value="${o.sub1||0}" onchange="u(${i},'sub1',this.value)"></td>
+                <td><input type="number" class="data-in num-in" value="${o.sub2||0}" onchange="u(${i},'sub2',this.value)"></td>
+                <td><input type="number" class="data-in num-in" value="${o.must_k}" onchange="u(${i},'must_k',this.value)"></td>
+                <td><input type="number" class="data-in num-in" value="${o.rv_k}" onchange="u(${i},'rv_k',this.value)"></td>
+                <td><input type="number" class="data-in num-in" value="${o.must_l}" onchange="u(${i},'must_l',this.value)"></td>
+                <td><input type="number" class="data-in num-in" value="${o.rv_l}" onchange="u(${i},'rv_l',this.value)"></td>
+                <td><input type="number" class="data-in num-in" value="${o.kooste}" onchange="u(${i},'kooste',this.value)"></td>
+                <td><input type="number" class="data-in num-in" value="${o.progress}" onchange="u(${i},'progress',this.value)"></td>
                 <td><button onclick="del(${i})">🗑️</button></td></tr>`;
         });
     }
 
     function u(i, k, v) { orders[i][k] = v; save(); }
     function getWeek(d) { d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7)); return Math.ceil((((d - new Date(Date.UTC(d.getUTCFullYear(),0,1))) / 86400000) + 1)/7); }
-    function addNewRow() { orders.unshift({mt:"UUS", client:"", start:new Date().toISOString().split('T')[0], end:new Date().toISOString().split('T')[0], must_k:0, rv_k:0, must_l:0, rv_l:0, kooste:0, progress:0}); renderTable(); save(); }
+    function addNewRow() { orders.unshift({mt:"UUS", client:"", start:new Date().toISOString().split('T')[0], end:new Date().toISOString().split('T')[0], sub1:0, sub2:0, must_k:0, rv_k:0, must_l:0, rv_l:0, kooste:0, progress:0}); renderTable(); save(); }
     function del(i) { if(confirm("Kustuta?")) { orders.splice(i,1); renderTable(); save(); } }
 
     function openTab(e, t) {
