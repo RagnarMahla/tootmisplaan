@@ -2,7 +2,7 @@
 <html lang="et">
 <head>
     <meta charset="UTF-8">
-    <title>TOCI Tootmisplaan V70.0</title>
+    <title>TOCI Tootmisplaan V71.0</title>
     <style>
         :root { --primary: #1a252f; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; --warning: #f1c40f; --bg: #f4f7f6; --today: #ff4757; --cell-w: 45px; --sub-bg: #95a5a6; }
         *, *:before, *:after { box-sizing: border-box; }
@@ -24,16 +24,18 @@
         .data-in { width: 100%; border: 1px solid transparent; padding: 4px; border-radius: 3px; background: transparent; font-size: 12px; }
         .data-in:focus { border-color: var(--accent); outline: none; background: #fff; }
         .num-in { width: 42px; text-align: center; font-weight: bold; }
+        .status-select { padding: 4px; border-radius: 4px; border: 1px solid #999; font-weight: bold; font-size: 11px; cursor: pointer; background: white; }
 
         /* PÄEVA KOORMUS */
-        .daily-charts-container { height: 100%; overflow-y: auto; display: flex; flex-direction: column; gap: 40px; }
+        .daily-charts-container { height: 100%; overflow-y: auto; display: flex; flex-direction: column; gap: 40px; padding-bottom: 50px; }
         .daily-chart-wrapper { background: white; padding: 20px; border-radius: 12px; min-width: 1200px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         .daily-chart-area { display: flex; align-items: flex-end; height: 200px; gap: 4px; border-bottom: 2px solid #444; position: relative; margin-top: 30px; }
         .day-column { flex: 1; min-width: 55px; display: flex; flex-direction: column-reverse; position: relative; height: 100%; }
         .day-label { position: absolute; top: 100%; left: 0; width: 100%; text-align: center; font-size: 9px; padding-top: 5px; line-height: 1.2; }
-        .order-segment { width: 100%; border: 1px solid rgba(255,255,255,0.3); border-radius: 2px; display: flex; align-items: center; justify-content: center; overflow: hidden; color: white; font-size: 8px; font-weight: bold; }
+        .order-segment { width: 100%; border: 1px solid rgba(255,255,255,0.3); border-radius: 2px; display: flex; align-items: center; justify-content: center; overflow: hidden; color: white; font-size: 8px; font-weight: bold; cursor: help; }
         .cap-line { position: absolute; width: 100%; border-top: 2px dashed #e74c3c; z-index: 10; pointer-events: none; opacity: 0.7; }
         .today-bg { background: rgba(255,71,87,0.05); }
+        .weekend-label { color: #999; }
 
         /* GANTT */
         .gantt-outer { height: 100%; display: flex; flex-direction: column; background: white; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; }
@@ -41,21 +43,26 @@
         .header-corner { width: 320px; min-width: 320px; background: #eee; border-right: 3px solid #bbb; display: flex; align-items: center; padding-left: 15px; font-weight: bold; position: sticky; left: 0; z-index: 2500; }
         .header-scroll { flex-grow: 1; overflow: hidden; }
         .header-grid { display: flex; width: max-content; }
-        .h-col { width: var(--cell-w); border-right: 1px solid #ddd; display: flex; flex-direction: column; }
+        .h-col { width: var(--cell-w); min-width: var(--cell-w); border-right: 1px solid #ddd; display: flex; flex-direction: column; flex-shrink: 0; }
         .h-week { height: 35px; background: #dfe4ea; border-bottom: 1px solid #ccc; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; }
         .h-day { height: 40px; display: flex; align-items: center; justify-content: center; font-size: 9px; }
         .gantt-body { flex-grow: 1; overflow: auto; scroll-behavior: smooth; }
         .gantt-row { display: flex; border-bottom: 1px solid #eee; min-height: 105px; width: max-content; }
         .gantt-info { position: sticky !important; left: 0 !important; width: 320px; min-width: 320px; background: #fff !important; z-index: 1000 !important; border-right: 3px solid #bbb !important; padding: 10px 15px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; gap: 5px; }
+        .gantt-info input[type="date"] { width: 100%; padding: 2px; font-size: 10px; }
+        .gantt-bars-area { position: relative; display: flex; background-color: #fff; width: max-content; }
+        .day-cell-bg { width: var(--cell-w); min-width: var(--cell-w); border-right: 1px solid #f1f1f1; height: 100%; flex-shrink: 0; }
         .today-line { position: absolute; top: 0; bottom: 0; width: 3px; background: var(--today); z-index: 500; pointer-events: none; }
         .task-bar { position: absolute; height: 32px; top: 32px; border-radius: 5px; color: white; display: flex; align-items: center; padding: 0 10px; font-size: 11px; font-weight: bold; z-index: 100; cursor: help; }
         .progress-fill { position: absolute; left: 0; top: 0; height: 100%; background: rgba(0,0,0,0.25); border-right: 1px solid rgba(255,255,255,0.4); }
         .sub-bar { position: absolute; height: 12px; background: var(--sub-bg); opacity: 0.6; border-radius: 3px; z-index: 90; font-size: 8px; color: white; display: flex; align-items: center; justify-content: center; }
         .sub-pre { top: 18px; } .sub-post { top: 66px; }
+        
+        .empty-state { padding: 30px; text-align: center; color: #7f8c8d; font-size: 14px; position: sticky; left: 320px; }
     </style>
 </head>
 <body>
-<div class="top-bar"><div>🚀 <strong>TOCI LIVE V70.0</strong></div><div id="syncStatus" style="background:var(--warning); color:black; padding:4px 10px; border-radius:4px; font-weight:bold;">Ühendan...</div></div>
+<div class="top-bar"><div>🚀 <strong>TOCI LIVE V71.0</strong></div><div id="syncStatus" style="background:var(--warning); color:black; padding:4px 10px; border-radius:4px; font-weight:bold;">Ühendan...</div></div>
 <div class="tabs">
     <button class="tab-btn active" onclick="openTab(event, 'sisestus')">SISESTUS</button>
     <button class="tab-btn" onclick="openTab(event, 'gantt_mk')">MUST KEEV</button>
@@ -99,10 +106,11 @@
     const API_URL = "https://script.google.com/macros/s/AKfycbwFGxkxdlGqW57N4HlB3HI6lCofYLWrQIYlgUEag9KQR2oEFRiVX9vxoQZ4nKa-NlKb6w/exec";
     const CONFIG = { must_k:{l:'Must Keev',c:240, color:'#e67e22', order:2}, rv_k:{l:'RV Keev',c:120, color:'#f39c12', order:2}, must_l:{l:'Must Lukk',c:120, color:'#3498db', order:1}, rv_l:{l:'RV Lukk',c:40, color:'#2980b9', order:1}, kooste:{l:'Kooste',c:80, color:'#27ae60', order:3} };
     const START_VIEW = new Date("2026-01-01"), TODAY = new Date();
-    let orders = [], customCap = JSON.parse(localStorage.getItem('prod_cap_v70')) || {};
+    let orders = [], customCap = JSON.parse(localStorage.getItem('prod_cap_v71')) || {};
 
     const f = (v) => parseFloat(v) || 0;
     function getUTCDate(d) { const dt = new Date(d); return isNaN(dt.getTime()) ? null : Date.UTC(dt.getFullYear(), dt.getMonth(), dt.getDate()); }
+    function getDayIndexUTC(target, base) { const t = getUTCDate(target), b = getUTCDate(base); return (t === null || b === null) ? 0 : Math.round((t - b) / 86400000); }
     function safeISO(d) { const dt = new Date(d); return isNaN(dt.getTime()) ? new Date().toISOString().split('T')[0] : dt.toISOString().split('T')[0]; }
     function getWeek(d) { d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7)); return Math.ceil((((d - new Date(Date.UTC(d.getUTCFullYear(),0,1))) / 86400000) + 1)/7); }
     function getWorkingDays(s, e) { let c = 0, cur = new Date(s); while(cur <= e) { if(cur.getDay()!==0 && cur.getDay()!==6) c++; cur.setDate(cur.getDate()+1); } return c || 1; }
@@ -121,25 +129,64 @@
 
     function renderGantt(containerId, key) {
         const outer = document.getElementById(containerId); if(!outer) return;
-        const dayCount = 250, tIdx = Math.round((getUTCDate(TODAY) - getUTCDate(START_VIEW)) / 86400000);
-        let hCols = "";
+        const dayCount = 250;
+        const tIdx = getDayIndexUTC(TODAY, START_VIEW);
+        
+        let headerCols = "";
         for(let d=0; d<dayCount; d++) {
             let cur = new Date(START_VIEW.getTime() + d * 86400000);
-            hCols += `<div class="h-col"><div class="h-week">${d%7===0?'W'+getWeek(cur):''}</div><div class="h-day" style="${d===tIdx?'color:red;font-weight:bold;':''}">${cur.getDate()}.${cur.getMonth()+1}</div></div>`;
+            headerCols += `<div class="h-col"><div class="h-week">${d%7===0?'W'+getWeek(cur):''}</div><div class="h-day" style="${d===tIdx?'color:red;font-weight:bold;':''}">${cur.getDate()}.${cur.getMonth()+1}</div></div>`;
         }
-        let rows = orders.filter(o => o[key] > 0 && o.status === 'Töös').map((o) => {
-            let gIdx = orders.indexOf(o), sIdx = Math.round((getUTCDate(o.start) - getUTCDate(START_VIEW)) / 86400000), eIdx = Math.round((getUTCDate(o.end) - getUTCDate(START_VIEW)) / 86400000);
-            let totalRange = eIdx - sIdx + 1, kD = Math.max(1, Math.ceil(o.kooste / 8)), prodD = Math.max(1, totalRange - kD - o.sub2);
+
+        let bodyHtml = `<div class="gantt-body" id="b-scroll-${key}">`;
+        let filteredOrders = orders.filter(o => o[key] > 0 && o.status === 'Töös');
+        
+        if (filteredOrders.length === 0) {
+            bodyHtml += `<div class="empty-state">ℹ️ Hetkel ei ole ühtegi tellimust "${CONFIG[key].l}" osakonnas 'Töös' staatusega.</div>`;
+        }
+
+        filteredOrders.forEach((o) => {
+            let gIdx = orders.indexOf(o);
+            let sIdx = getDayIndexUTC(o.start, START_VIEW);
+            let eIdx = getDayIndexUTC(o.end, START_VIEW);
+            let totalRange = eIdx - sIdx + 1;
+            let kD = Math.max(1, Math.ceil(o.kooste / 8));
+            let prodD = Math.max(1, totalRange - kD - o.sub2);
             let lH = o.must_l + o.rv_l, kH = o.must_k + o.rv_k, tH = lH + kH || 1;
-            let fLeft = 0, tDur = 0;
-            if (CONFIG[key].order === 3) { tDur = kD; fLeft = (eIdx - kD + 1) * 45; }
-            else if (CONFIG[key].order === 1) { tDur = Math.ceil((lH/tH)*prodD); fLeft = sIdx * 45; }
-            else if (CONFIG[key].order === 2) { let lD = Math.floor((lH/tH)*prodD); tDur = Math.max(1, prodD - lD); fLeft = (sIdx + lD) * 45; }
-            return `<div class="gantt-row"><div class="gantt-info"><b>${o.mt}</b><small>${o.client}</small><div><input type="date" value="${safeISO(o.start)}" onchange="u(${gIdx},'start',this.value)"></div><div><input type="date" value="${safeISO(o.end)}" onchange="u(${gIdx},'end',this.value)"></div></div><div class="gantt-bars-area"><div class="today-line" style="left:${tIdx * 45}px"></div>${o.sub1 > 0 ? `<div class="sub-bar sub-pre" style="left:${(sIdx-o.sub1)*45}px; width:${o.sub1*45-2}px">AH1</div>`:''}<div class="task-bar" title="MT: ${o.mt}\n${o[key]}h" style="left:${fLeft}px; width:${tDur*45-5}px; background:${CONFIG[key].color}"><div class="progress-fill" style="width:${o.progress}%"></div><span>${o.mt}</span></div>${o.sub2 > 0 ? `<div class="sub-bar sub-post" style="left:${(eIdx-kD-o.sub2+1)*45}px; width:${o.sub2*45-2}px">AH2</div>`:''}${Array.from({length:dayCount}, ()=>`<div class="day-cell-bg"></div>`).join('')}</div></div>`;
-        }).join('');
-        outer.innerHTML = `<div class="gantt-header-wrapper"><div class="header-corner">MT / Klient / Aeg</div><div class="header-scroll" id="h-s-${key}"><div class="header-grid">${hCols}</div></div></div><div class="gantt-body" id="b-s-${key}">${rows}</div>`;
-        const bS = document.getElementById(`b-s-${key}`), hS = document.getElementById(`h-s-${key}`);
-        if(bS) { bS.onscroll = () => hS.scrollLeft = bS.scrollLeft; bS.scrollLeft = (tIdx * 45) - 400; }
+            
+            let finalLeft = 0, taskDur = 0;
+            if (CONFIG[key].order === 3) { taskDur = kD; finalLeft = (eIdx - kD + 1) * 45; }
+            else if (CONFIG[key].order === 1) { taskDur = Math.ceil((lH/tH)*prodD); finalLeft = sIdx * 45; }
+            else if (CONFIG[key].order === 2) { let lD = Math.floor((lH/tH)*prodD); taskDur = Math.max(1, prodD - lD); finalLeft = (sIdx + lD) * 45; }
+
+            bodyHtml += `<div class="gantt-row">
+                <div class="gantt-info">
+                    <b>${o.mt}</b><small>${o.client}</small>
+                    <div style="display:flex;gap:3px;"><input type="date" title="Algus" value="${safeISO(o.start)}" onchange="u(${gIdx},'start',this.value);renderGantt('${containerId}','${key}')"><input type="date" title="Lõpp" value="${safeISO(o.end)}" onchange="u(${gIdx},'end',this.value);renderGantt('${containerId}','${key}')"></div>
+                </div>
+                <div class="gantt-bars-area"><div class="today-line" style="left:${tIdx * 45}px"></div>`;
+            
+            if(o.sub1 > 0) bodyHtml += `<div class="sub-bar sub-pre" style="left:${(sIdx - o.sub1)*45}px; width:${o.sub1*45 - 2}px">AH1</div>`;
+            
+            bodyHtml += `<div class="task-bar" title="MT: ${o.mt}\n${CONFIG[key].l}: ${o[key]}h" style="left:${finalLeft}px; width:${taskDur * 45 - 5}px; background:${CONFIG[key].color}">
+                <div class="progress-fill" style="width:${o.progress}%"></div>
+                <span style="position:relative; padding-left:5px;">${o.mt} (${o.progress}%)</span>
+            </div>`;
+            
+            if(o.sub2 > 0) bodyHtml += `<div class="sub-bar sub-post" style="left:${(eIdx - kD - o.sub2 + 1) * 45}px; width:${o.sub2*45 - 2}px">AH2</div>`;
+            
+            let bgCells = "";
+            for(let d=0; d<dayCount; d++) bgCells += `<div class="day-cell-bg ${d===tIdx?'today-col-bg':''}"></div>`;
+            bodyHtml += bgCells + `</div></div>`;
+        });
+        
+        outer.innerHTML = `<div class="gantt-header-wrapper"><div class="header-corner">MT / Klient / Aeg</div><div class="header-scroll" id="h-scroll-${key}"><div class="header-grid">${headerCols}</div></div></div>` + bodyHtml + `</div>`;
+        
+        const hS = document.getElementById(`h-scroll-${key}`), bS = document.getElementById(`b-scroll-${key}`);
+        if(bS && hS) { 
+            bS.onscroll = () => { hS.scrollLeft = bS.scrollLeft; }; 
+            setTimeout(() => { bS.scrollLeft = (tIdx * 45) - 160; }, 100); 
+        }
     }
 
     function renderDailyLoad() {
@@ -170,7 +217,7 @@
         let h = `<thead><tr><th>Osakond</th>` + Array.from({length:52},(_,i)=>`<th>W${i+1}</th>`).join('') + `</tr></thead><tbody>`;
         h += Object.keys(CONFIG).map(k => `<tr><td style="position:sticky; left:0; background:#eee; z-index:5;"><b>${CONFIG[k].l}</b></td>` + Array.from({length:52},(_,i)=>{
             let v = (customCap[k] && customCap[k][i+1]) ? customCap[k][i+1] : CONFIG[k].c;
-            return `<td><input type="number" class="cap-in" data-k="${k}" data-w="${i+1}" value="${v}"></td>`;
+            return `<td><input type="number" class="cap-in num-in" data-k="${k}" data-w="${i+1}" value="${v}"></td>`;
         }).join('') + `</tr>`).join('');
         document.getElementById('cap-table').innerHTML = h + `</tbody>`;
     }
@@ -180,8 +227,9 @@
             if(!customCap[i.dataset.k]) customCap[i.dataset.k] = {};
             customCap[i.dataset.k][i.dataset.w] = parseInt(i.value);
         });
-        localStorage.setItem('prod_cap_v70', JSON.stringify(customCap));
+        localStorage.setItem('prod_cap_v71', JSON.stringify(customCap));
         alert("Võimekus salvestatud brauseri mällu!");
+        fetchData();
     }
 
     function renderTable() {
@@ -189,7 +237,7 @@
         orders.forEach((o, i) => {
             if ((!mV || safeISO(o.start).includes(mV)) && (!mtV || (o.mt && String(o.mt).toLowerCase().includes(mtV)))) {
                 const sCl = o.status === 'Valmis' ? 'status-valmis' : o.status === 'Töös' ? 'status-toos' : 'status-ootel';
-                b.innerHTML += `<tr class="${sCl}"><td><input class="data-in" value="${o.mt}" onchange="u(${i},'mt',this.value)"></td><td><input class="data-in" value="${o.client}" onchange="u(${i},'client',this.value)"></td><td><input type="date" value="${safeISO(o.start)}" onchange="u(${i},'start',this.value)"></td><td><input type="date" value="${safeISO(o.end)}" onchange="u(${i},'end',this.value)"></td><td><input class="num-in" title="AH1" value="${o.sub1}" onchange="u(${i},'sub1',this.value)"></td><td><input class="num-in" title="AH2" value="${o.sub2}" onchange="u(${i},'sub2',this.value)"><td><input class="num-in" value="${o.must_k}" onchange="u(${i},'must_k',this.value)"></td><td><input class="num-in" value="${o.rv_k}" onchange="u(${i},'rv_k',this.value)"></td><td><input class="num-in" value="${o.must_l}" onchange="u(${i},'must_l',this.value)"></td><td><input class="num-in" value="${o.rv_l}" onchange="u(${i},'rv_l',this.value)"></td><td><input class="num-in" value="${o.kooste}" onchange="u(${i},'kooste',this.value)"></td><td><input class="num-in" value="${o.progress}" onchange="u(${i},'progress',this.value)"></td><td><select onchange="u(${i},'status',this.value);renderTable()"><option ${o.status==='Ootel'?'selected':''}>Ootel</option><option ${o.status==='Töös'?'selected':''}>Töös</option><option ${o.status==='Valmis'?'selected':''}>Valmis</option></select></td><td><button onclick="del(${i})">🗑️</button></td></tr>`;
+                b.innerHTML += `<tr class="${sCl}"><td><input class="data-in" value="${o.mt}" onchange="u(${i},'mt',this.value)"></td><td><input class="data-in" value="${o.client}" onchange="u(${i},'client',this.value)"></td><td><input type="date" value="${safeISO(o.start)}" onchange="u(${i},'start',this.value)"></td><td><input type="date" value="${safeISO(o.end)}" onchange="u(${i},'end',this.value)"></td><td><input class="num-in" title="AH1" value="${o.sub1}" onchange="u(${i},'sub1',this.value)"></td><td><input class="num-in" title="AH2" value="${o.sub2}" onchange="u(${i},'sub2',this.value)"><td><input class="num-in" value="${o.must_k}" onchange="u(${i},'must_k',this.value)"></td><td><input class="num-in" value="${o.rv_k}" onchange="u(${i},'rv_k',this.value)"></td><td><input class="num-in" value="${o.must_l}" onchange="u(${i},'must_l',this.value)"></td><td><input class="num-in" value="${o.rv_l}" onchange="u(${i},'rv_l',this.value)"></td><td><input class="num-in" value="${o.kooste}" onchange="u(${i},'kooste',this.value)"></td><td><input class="num-in" value="${o.progress}" onchange="u(${i},'progress',this.value)"></td><td><select class="status-select" onchange="u(${i},'status',this.value);renderTable()"><option ${o.status==='Ootel'?'selected':''}>Ootel</option><option ${o.status==='Töös'?'selected':''}>Töös</option><option ${o.status==='Valmis'?'selected':''}>Valmis</option></select></td><td><button onclick="del(${i})" style="border:none; background:none; cursor:pointer;">🗑️</button></td></tr>`;
             }
         });
     }
@@ -203,7 +251,8 @@
         document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(t).classList.add('active'); e.currentTarget.classList.add('active');
-        if(t.startsWith('gantt_')) renderGantt('out-' + t.split('_')[1], {mk:'must_k', rk:'rv_k', ml:'must_l', rl:'rv_l', ko:'kooste'}[t.split('_')[1]]);
+        const m = {mk:'must_k', rk:'rv_k', ml:'must_l', rl:'rv_l', ko:'kooste'};
+        if(t.startsWith('gantt_')) renderGantt('out-' + t.split('_')[1], m[t.split('_')[1]]);
         if(t === 'paeva_koormus') renderDailyLoad();
         if(t === 'voimekus_tab') renderCapacity();
     }
