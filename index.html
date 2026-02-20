@@ -2,7 +2,7 @@
 <html lang="et">
 <head>
     <meta charset="UTF-8">
-    <title>TOCI Tootmisplaan V36.0</title>
+    <title>TOCI Tootmisplaan V37.0</title>
     <style>
         :root { --primary: #1a252f; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; --warning: #f1c40f; --bg: #f4f7f6; --today: #ff4757; }
         body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); font-size: 12px; overflow: hidden; }
@@ -15,8 +15,10 @@
         .content { height: calc(100vh - 95px); display: none; padding: 15px; box-sizing: border-box; }
         .content.active { display: block; }
 
+        /* GANTT STRUKTUUR */
         .gantt-outer { height: 100%; display: flex; flex-direction: column; background: white; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; position: relative; }
         
+        /* PÄIS */
         .gantt-header-wrapper { display: flex; background: #f8f9fa; border-bottom: 2px solid #ccc; overflow: hidden; height: 75px; min-height: 75px; position: relative; z-index: 2000; }
         .header-corner { 
             width: 320px; min-width: 320px; background: #eee; border-right: 3px solid #bbb; 
@@ -26,9 +28,11 @@
         .header-scroll { flex-grow: 1; overflow: hidden; }
         .header-grid { display: grid; grid-template-columns: repeat(180, 45px); }
 
+        /* SISU */
         .gantt-body { flex-grow: 1; overflow: auto; scroll-behavior: smooth; }
         .gantt-row { display: flex; border-bottom: 1px solid #eee; min-height: 85px; width: max-content; }
         
+        /* LUKUSTATUD TULP */
         .gantt-info { 
             position: sticky !important; left: 0 !important; width: 320px; min-width: 320px; 
             background: #fff !important; z-index: 1000 !important; 
@@ -39,23 +43,34 @@
         .gantt-info b { color: var(--primary); font-size: 13px; }
         .gantt-info input { width: 95px; font-size: 10px; padding: 2px; border: 1px solid #ddd; border-radius: 3px; }
 
+        /* GRAAFIK */
         .gantt-bars-wrapper { position: relative; display: grid; grid-template-columns: repeat(180, 45px); background-color: #fff; }
         .grid-cell { border-right: 1px solid #f1f1f1; height: 100%; position: relative; }
         
+        /* TÄNANE PÄEV JOON */
         .today-line { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--today); z-index: 500; pointer-events: none; box-shadow: 0 0 5px rgba(255, 71, 87, 0.5); }
         .today-col { background: rgba(255, 71, 87, 0.05) !important; }
 
-        .task-bar { position: absolute; height: 32px; top: 26px; background: var(--accent); border-radius: 5px; color: white; display: flex; align-items: center; padding: 0 10px; font-size: 11px; font-weight: bold; z-index: 100; box-shadow: 0 2px 4px rgba(0,0,0,0.2); white-space: nowrap; overflow: hidden; }
+        /* RIBA JA PROGRESS */
+        .task-bar { 
+            position: absolute; height: 32px; top: 26px; background: var(--accent); 
+            border-radius: 5px; color: white; display: flex; align-items: center; 
+            padding: 0 10px; font-size: 11px; font-weight: bold; z-index: 100; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2); white-space: nowrap; overflow: hidden;
+        }
         .progress-fill { position: absolute; left: 0; top: 0; height: 100%; background: rgba(0,0,0,0.25); border-right: 1px solid rgba(255,255,255,0.4); }
 
+        /* TABELID JA GRAAFIKUD */
         .data-table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; }
         .data-table th, .data-table td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 20px; overflow-y: auto; max-height: 100%; }
+        .chart-card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
     </style>
 </head>
 <body>
 
 <div class="top-bar">
-    <div>🚀 <strong>TOCI LIVE V36.0</strong></div>
+    <div>🚀 <strong>TOCI LIVE V37.0</strong></div>
     <div id="syncStatus" style="background:var(--warning); color:black; padding:4px 10px; border-radius:4px; font-weight:bold;">Ühendan...</div>
 </div>
 
@@ -85,7 +100,7 @@
 <div id="gantt_rl" class="content"><div class="gantt-outer" id="out-rl"></div></div>
 <div id="gantt_ko" class="content"><div class="gantt-outer" id="out-ko"></div></div>
 
-<div id="koormus_tab" class="content"><div id="charts-box" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 20px; overflow-y: auto; height: 100%;"></div></div>
+<div id="koormus_tab" class="content"><div id="charts-box" class="charts-grid"></div></div>
 <div id="voimekus_tab" class="content"><div id="cap-box" style="background:white; padding:20px; border-radius:8px; height:100%; overflow-y:auto;"></div></div>
 
 <script>
@@ -94,15 +109,23 @@
     const START_VIEW = new Date("2026-01-01");
     const TODAY = new Date();
     let orders = [];
-    let customCap = JSON.parse(localStorage.getItem('prod_cap_v36')) || {};
+    let customCap = JSON.parse(localStorage.getItem('prod_cap_v37')) || {};
 
-    // --- TÄPNE KUUPÄEVA PARSIMINE (Nihke vältimiseks) ---
-    function parseDate(d) {
+    // --- TÄPNE KUUPÄEVA PARSIMINE NING NIHKE VÄLTIMINE ---
+    function parseToMidday(d) {
+        if (!d) return null;
         const date = new Date(d);
+        if (isNaN(date.getTime())) return null;
+        // Sunnime kellaaja kella 12-ks, et vältida ajavööndi ja suveaja nihkeid
         return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0);
     }
-    function getDayDiff(d1, d2) {
-        return Math.round((parseDate(d1).getTime() - parseDate(d2).getTime()) / 86400000);
+
+    function getDayIndex(targetDate, baseDate) {
+        const d1 = parseToMidday(targetDate);
+        const d2 = parseToMidday(baseDate);
+        if (!d1 || !d2) return 0;
+        // Arvutame täpse vahe päevades
+        return Math.round((d1.getTime() - d2.getTime()) / 86400000);
     }
 
     async function fetchData() {
@@ -123,28 +146,31 @@
     function renderGantt(containerId, key) {
         const outer = document.getElementById(containerId);
         const dayCount = 180;
-        const startFixed = parseDate(START_VIEW);
+        const baseDate = parseToMidday(START_VIEW);
         
         let headerHtml = `<div class="gantt-header-wrapper">
             <div class="header-corner">MT / Klient / Aeg</div>
             <div class="header-scroll" id="h-scroll-${key}">
                 <div class="header-grid">`;
-        for(let d=0; d<dayCount; d+=7) headerHtml += `<div style="grid-column:span 7; background:#dfe4ea; text-align:center; font-size:11px; border-bottom:1px solid #ccc; padding:3px 0; border-right:1px solid #ccc;">W${getWeek(new Date(startFixed.getTime() + d*86400000))}</div>`;
+        for(let d=0; d<dayCount; d+=7) {
+            let weekDate = new Date(baseDate.getTime() + d * 86400000);
+            headerHtml += `<div style="grid-column:span 7; background:#dfe4ea; text-align:center; font-size:11px; border-bottom:1px solid #ccc; padding:3px 0; border-right:1px solid #ccc;">W${getWeek(weekDate)}</div>`;
+        }
         for(let d=0; d<dayCount; d++) {
-            let cur = new Date(startFixed.getTime() + d*86400000);
+            let cur = new Date(baseDate.getTime() + d * 86400000);
             let isT = cur.toDateString() === TODAY.toDateString();
             headerHtml += `<div style="text-align:center; font-size:9px; padding:5px 0; border-right:1px solid #eee; ${isT?'background:rgba(255,71,87,0.3); font-weight:bold;':''}">${cur.getDate()}.${cur.getMonth()+1}</div>`;
         }
         headerHtml += `</div></div></div>`;
 
         let bodyHtml = `<div class="gantt-body" id="b-scroll-${key}">`;
-        let tIdx = getDayDiff(TODAY, startFixed);
+        let tIdx = getDayIndex(TODAY, START_VIEW);
         let todayLineLeft = (tIdx * 45) + 22;
 
         orders.filter(o => o[key] > 0).forEach((o) => {
             let gIdx = orders.indexOf(o);
-            let sIdx = getDayDiff(o.start, startFixed);
-            let dur = getDayDiff(o.end, o.start) + 1;
+            let sIdx = getDayIndex(o.start, START_VIEW);
+            let dur = getDayIndex(o.end, o.start) + 1;
 
             bodyHtml += `<div class="gantt-row">
                 <div class="gantt-info">
@@ -156,14 +182,17 @@
                 </div>
                 <div class="gantt-bars-wrapper">
                     <div class="today-line" style="left:${todayLineLeft}px"></div>`;
+            
             if(sIdx >= 0 && sIdx < dayCount) {
+                // Arvutame laiuse piksli täpsusega: dur * 45px
                 bodyHtml += `<div class="task-bar" style="left:${sIdx * 45}px; width:${dur * 45 - 5}px">
                     <div class="progress-fill" style="width:${o.progress}%"></div>
                     <span style="position:relative; padding-left:5px;">${o.mt} (${o.progress}%)</span>
                 </div>`;
             }
+
             for(let d=0; d<dayCount; d++) {
-                let cur = new Date(startFixed.getTime() + d*86400000);
+                let cur = new Date(baseDate.getTime() + d * 86400000);
                 bodyHtml += `<div class="grid-cell ${cur.toDateString()===TODAY.toDateString()?'today-col':''}"></div>`;
             }
             bodyHtml += `</div></div>`;
@@ -187,10 +216,13 @@
     function renderCharts() {
         const box = document.getElementById('charts-box'); box.innerHTML = '';
         Object.keys(CONFIG).forEach(k => {
-            let h = `<div style="background:white; padding:20px; border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,0.05);"><h3>${CONFIG[k].l}</h3><div style="display:flex; align-items:flex-end; height:160px; gap:5px; border-bottom:2px solid #333; margin-top:25px; position:relative;">`;
+            let h = `<div class="chart-card"><h3>${CONFIG[k].l}</h3><div style="display:flex; align-items:flex-end; height:160px; gap:5px; border-bottom:2px solid #333; margin-top:25px; position:relative;">`;
             for(let w=1; w<=15; w++) {
                 let ws = new Date(START_VIEW.getTime() + (w-1)*7*86400000), we = new Date(ws.getTime() + 7*86400000);
-                let tot = orders.filter(o => new Date(o.start) >= ws && new Date(o.start) < we).reduce((s, o) => s + (o[k]||0), 0);
+                let tot = orders.filter(o => {
+                    let d = parseToMidday(o.start);
+                    return d >= ws && d < we;
+                }).reduce((s, o) => s + (o[k]||0), 0);
                 let cap = (customCap[k] && customCap[k][w]) ? customCap[k][w] : CONFIG[k].c;
                 let height = Math.min(150, (tot / Math.max(tot, cap, 10)) * 150), line = (cap / Math.max(tot, cap, 10)) * 150;
                 h += `<div style="flex:1; display:flex; flex-direction:column; align-items:center;"><span style="font-size:10px; font-weight:bold;">${tot||''}</span><div style="width:80%; height:${height}px; background:${tot>cap?'var(--danger)':'var(--success)'}; position:relative; border-radius:3px;"><div style="position:absolute; width:100%; border-top:2px dashed red; bottom:${line}px; opacity:0.6;"></div></div><span style="font-size:9px">W${w}</span></div>`;
@@ -213,11 +245,11 @@
             if(!customCap[i.dataset.k]) customCap[i.dataset.k] = {};
             customCap[i.dataset.k][i.dataset.w] = parseInt(i.value);
         });
-        localStorage.setItem('prod_cap_v36', JSON.stringify(customCap)); alert("Võimekus salvestatud!"); fetchData();
+        localStorage.setItem('prod_cap_v37', JSON.stringify(customCap)); alert("Võimekus salvestatud!"); fetchData();
     }
 
     function u(i, k, v) { orders[i][k] = v; save(); }
-    function cd(d) { if(!d) return ""; return new Date(d).toISOString().split('T')[0]; }
+    function cd(d) { if(!d) return ""; const dt = new Date(d); return dt.toISOString().split('T')[0]; }
     function getWeek(d) { d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7)); return Math.ceil((((d - new Date(Date.UTC(d.getUTCFullYear(),0,1))) / 86400000) + 1)/7); }
     function addNewRow() { orders.push({mt:"UUS", client:"", start:new Date().toISOString().split('T')[0], end:new Date().toISOString().split('T')[0], must_k:0, rv_k:0, must_l:0, rv_l:0, kooste:0, progress:0}); renderTable(); save(); }
     function del(i) { if(confirm("Kustuta?")) { orders.splice(i,1); renderTable(); save(); } }
