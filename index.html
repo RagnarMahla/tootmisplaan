@@ -2,7 +2,7 @@
 <html lang="et">
 <head>
     <meta charset="UTF-8">
-    <title>TOCI Tootmisplaan V44.0</title>
+    <title>TOCI Tootmisplaan V45.0</title>
     <style>
         :root { --primary: #1a252f; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; --warning: #f1c40f; --bg: #f4f7f6; --today: #ff4757; --cell-w: 45px; }
         *, *:before, *:after { box-sizing: border-box; }
@@ -16,6 +16,7 @@
         .content { height: calc(100vh - 95px); display: none; padding: 15px; box-sizing: border-box; }
         .content.active { display: block; }
 
+        /* GANTT RAAMISTIK */
         .gantt-outer { height: 100%; display: flex; flex-direction: column; background: white; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; }
         .gantt-header-wrapper { display: flex; background: #f8f9fa; border-bottom: 2px solid #ccc; overflow: hidden; height: 75px; min-height: 75px; }
         .header-corner { width: 320px; min-width: 320px; background: #eee; border-right: 3px solid #bbb; display: flex; align-items: center; padding-left: 15px; font-weight: bold; position: sticky; left: 0; z-index: 2500; }
@@ -41,14 +42,17 @@
         .task-bar { position: absolute; height: 32px; top: 26px; background: var(--accent); border-radius: 5px; color: white; display: flex; align-items: center; padding: 0 10px; font-size: 11px; font-weight: bold; z-index: 100; box-shadow: 0 2px 4px rgba(0,0,0,0.2); white-space: nowrap; overflow: hidden; }
         .progress-fill { position: absolute; left: 0; top: 0; height: 100%; background: rgba(0,0,0,0.25); border-right: 1px solid rgba(255,255,255,0.4); }
 
+        /* TABELID JA GRAAFIKUD */
         .data-table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; }
         .data-table th, .data-table td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 20px; overflow-y: auto; height: 100%; }
+        .chart-card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
     </style>
 </head>
 <body>
 
 <div class="top-bar">
-    <div>🚀 <strong>TOCI LIVE V44.0</strong></div>
+    <div>🚀 <strong>TOCI LIVE V45.0</strong></div>
     <div id="syncStatus" style="background:var(--warning); color:black; padding:4px 10px; border-radius:4px; font-weight:bold;">Ühendan...</div>
 </div>
 
@@ -78,7 +82,7 @@
 <div id="gantt_rl" class="content"><div class="gantt-outer" id="out-rl"></div></div>
 <div id="gantt_ko" class="content"><div class="gantt-outer" id="out-ko"></div></div>
 
-<div id="koormus_tab" class="content"><div id="charts-box" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 20px; overflow-y: auto; height: 100%;"></div></div>
+<div id="koormus_tab" class="content"><div id="charts-box" class="charts-grid"></div></div>
 <div id="voimekus_tab" class="content"><div id="cap-box" style="background:white; padding:20px; border-radius:8px; height:100%; overflow-y:auto;"></div></div>
 
 <script>
@@ -86,10 +90,9 @@
     const CONFIG = { must_k:{l:'Must Keev',c:240}, rv_k:{l:'RV Keev',c:120}, must_l:{l:'Must Lukk',c:120}, rv_l:{l:'RV Lukk',c:40}, kooste:{l:'Kooste',c:40} };
     const START_VIEW = new Date("2026-01-01");
     const TODAY = new Date();
-    
     let orders = [];
+    let customCap = JSON.parse(localStorage.getItem('prod_cap_v45')) || {};
 
-    // --- VEAKINDEL UTC ARVUTUS ---
     function getUTCDate(d) {
         if (!d) return null;
         const dt = new Date(d);
@@ -101,7 +104,7 @@
         const t = getUTCDate(target);
         const b = getUTCDate(base);
         if (t === null || b === null) return 0;
-        return Math.round((t - b) / (1000 * 60 * 60 * 24));
+        return Math.floor((t - b) / (1000 * 60 * 60 * 24));
     }
 
     function safeISO(d) {
@@ -120,10 +123,7 @@
                 document.getElementById('syncStatus').innerText = "Andmed OK";
                 document.getElementById('syncStatus').style.background = "#27ae60"; document.getElementById('syncStatus').style.color = "white";
             }
-        } catch(e) { 
-            document.getElementById('syncStatus').innerText = "Viga!"; 
-            console.error("Fetch error:", e);
-        }
+        } catch(e) { document.getElementById('syncStatus').innerText = "Viga!"; }
     }
     const f = (v) => parseFloat(v) || 0;
 
@@ -191,13 +191,39 @@
         setTimeout(() => { if(bScroll) bScroll.scrollLeft = (tIdx * 45) - (bScroll.offsetWidth / 2) + 160; }, 50);
     }
 
-    async function save() { 
-        try {
-            await fetch(API_URL, {method:"POST", body:JSON.stringify(orders), mode: 'no-cors'}); 
-            document.getElementById('syncStatus').innerText = "Salvestatud";
-        } catch(e) { console.error("Save error"); }
+    function renderCharts() {
+        const box = document.getElementById('charts-box'); box.innerHTML = '';
+        Object.keys(CONFIG).forEach(k => {
+            let h = `<div class="chart-card"><h3>${CONFIG[k].l}</h3><div style="display:flex; align-items:flex-end; height:160px; gap:5px; border-bottom:2px solid #333; margin-top:25px; position:relative;">`;
+            for(let w=1; w<=15; w++) {
+                let ws = new Date(START_VIEW.getTime() + (w-1)*7*86400000), we = new Date(ws.getTime() + 7*86400000);
+                let tot = orders.filter(o => { let d = getUTCDate(o.start); return d >= ws.getTime() && d < we.getTime(); }).reduce((s, o) => s + (o[k]||0), 0);
+                let cap = (customCap[k] && customCap[k][w]) ? customCap[k][w] : CONFIG[k].c;
+                let height = Math.min(150, (tot / Math.max(tot, cap, 10)) * 150), line = (cap / Math.max(tot, cap, 10)) * 150;
+                h += `<div style="flex:1; display:flex; flex-direction:column; align-items:center;"><span style="font-size:10px; font-weight:bold;">${tot||''}</span><div style="width:80%; height:${height}px; background:${tot>cap?'var(--danger)':'var(--success)'}; position:relative; border-radius:3px;"><div style="position:absolute; width:100%; border-top:2px dashed red; bottom:${line}px; opacity:0.6;"></div></div><span style="font-size:9px">W${w}</span></div>`;
+            }
+            box.innerHTML += h + `</div></div>`;
+        });
     }
-    
+
+    function renderCapacity() {
+        let h = `<table class="data-table"><thead><tr style="background:#eee;"><th>Osakond</th>` + Array.from({length:15},(_,i)=>`<th>W${i+1}</th>`).join('') + `</tr></thead><tbody>`;
+        h += Object.keys(CONFIG).map(k => `<tr><td><b>${CONFIG[k].l}</b></td>` + Array.from({length:15},(_,i)=>{
+            let v = (customCap[k] && customCap[k][i+1]) ? customCap[k][i+1] : CONFIG[k].c;
+            return `<td><input type="number" class="cap-in" data-k="${k}" data-w="${i+1}" value="${v}" style="width:45px"></td>`;
+        }).join('') + `</tr>`).join('');
+        document.getElementById('cap-box').innerHTML = h + `</tbody></table><br><button onclick="saveCap()" style="padding:10px 20px; background:var(--accent); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">SALVESTA VÕIMEKUS</button>`;
+    }
+
+    function saveCap() {
+        document.querySelectorAll('.cap-in').forEach(i => {
+            if(!customCap[i.dataset.k]) customCap[i.dataset.k] = {};
+            customCap[i.dataset.k][i.dataset.w] = parseInt(i.value);
+        });
+        localStorage.setItem('prod_cap_v45', JSON.stringify(customCap)); alert("Salvestatud!"); fetchData();
+    }
+
+    async function save() { try { await fetch(API_URL, {method:"POST", body:JSON.stringify(orders), mode: 'no-cors'}); } catch(e) {} }
     function renderTable() {
         const b = document.getElementById('table-body'); b.innerHTML = '';
         orders.forEach((o, i) => {
@@ -215,10 +241,9 @@
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(t).classList.add('active'); e.currentTarget.classList.add('active');
         const keyMap = {mk:'must_k', rk:'rv_k', ml:'must_l', rl:'rv_l', ko:'kooste'};
-        if(t.startsWith('gantt_')) {
-            const suffix = t.split('_')[1];
-            renderGantt('out-' + suffix, keyMap[suffix]);
-        }
+        if(t.startsWith('gantt_')) renderGantt('out-' + t.split('_')[1], keyMap[t.split('_')[1]]);
+        if(t === 'koormus_tab') renderCharts();
+        if(t === 'voimekus_tab') renderCapacity();
     }
     fetchData();
 </script>
