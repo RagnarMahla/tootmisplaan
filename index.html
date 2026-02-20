@@ -2,9 +2,9 @@
 <html lang="et">
 <head>
     <meta charset="UTF-8">
-    <title>TOCI Tootmisplaan V64.0</title>
+    <title>TOCI Tootmisplaan V65.0</title>
     <style>
-        :root { --primary: #1a252f; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; --warning: #f1c40f; --bg: #f4f7f6; --today: #ff4757; --cell-w: 45px; --sub-bg: #95a5a6; }
+        :root { --primary: #1a252f; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; --warning: #f1c40f; --bg: #f4f7f6; --today: #ff4757; --cell-w: 45px; }
         *, *:before, *:after { box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); font-size: 12px; overflow: hidden; }
         .top-bar { background: var(--primary); color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; height: 50px; position: sticky; top: 0; z-index: 10000; }
@@ -13,43 +13,46 @@
         .tab-btn.active { opacity: 1; background: rgba(255,255,255,0.15); box-shadow: inset 0 -4px 0 var(--accent); }
         .content { height: calc(100vh - 95px); display: none; padding: 15px; box-sizing: border-box; }
         .content.active { display: block; }
-        .table-container { height: calc(100% - 60px); overflow-y: auto; background: white; border-radius: 8px; border: 1px solid #ddd; }
+
+        /* TABELID */
+        .table-container { height: 100%; overflow: auto; background: white; border-radius: 8px; border: 1px solid #ddd; }
         .data-table { width: 100%; border-collapse: collapse; position: relative; }
         .data-table thead th { position: sticky; top: 0; background: #eee; z-index: 10; border-bottom: 2px solid #ccc; padding: 10px 5px; text-align: left; }
-        .data-table td { border-bottom: 1px solid #eee; padding: 2px 5px; }
-        tr.status-ootel { background-color: #f8f9fa !important; }
-        tr.status-toos { background-color: #e3f2fd !important; }
-        tr.status-valmis { background-color: #e8f5e9 !important; }
-        .status-select { padding: 4px; border-radius: 4px; border: 1px solid #999; font-weight: bold; font-size: 11px; cursor: pointer; background: white; }
-        .data-in { width: 100%; border: 1px solid transparent; padding: 4px; border-radius: 3px; background: transparent; font-size: 12px; }
-        .data-in:focus { border-color: var(--accent); outline: none; background: #fff; }
-        .num-in { width: 45px; text-align: center; font-weight: bold; }
+        .data-table td { border-bottom: 1px solid #eee; padding: 4px 8px; }
+        
+        /* PÄEVA KOORMUSE STIILID */
+        .daily-cell { text-align: center; font-weight: bold; width: 40px; border-right: 1px solid #eee; }
+        .overloaded { background-color: #ffcccc !important; color: #cc0000; }
+        .normal { background-color: #e8f5e9; color: #2e7d32; }
+        .today-col { border-left: 3px solid var(--today) !important; border-right: 3px solid var(--today) !important; background: rgba(255,71,87,0.05); }
+
+        /* SISSESTUS VÄRVID */
+        tr.status-ootel { background-color: #f8f9fa; }
+        tr.status-toos { background-color: #e3f2fd; }
+        tr.status-valmis { background-color: #e8f5e9; }
+        .num-in { width: 45px; text-align: center; font-weight: bold; border: 1px solid #ccc; border-radius: 3px; }
+        .data-in { width: 100%; border: 1px solid transparent; padding: 4px; background: transparent; }
+        
+        /* GANTT */
         .gantt-outer { height: 100%; display: flex; flex-direction: column; background: white; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; }
-        .gantt-header-wrapper { display: flex; background: #f8f9fa; border-bottom: 2px solid #ccc; overflow: hidden; height: 75px; min-height: 75px; }
+        .gantt-header-wrapper { display: flex; background: #f8f9fa; border-bottom: 2px solid #ccc; height: 75px; }
         .header-corner { width: 320px; min-width: 320px; background: #eee; border-right: 3px solid #bbb; display: flex; align-items: center; padding-left: 15px; font-weight: bold; position: sticky; left: 0; z-index: 2500; }
         .header-scroll { flex-grow: 1; overflow: hidden; }
         .header-grid { display: flex; width: max-content; }
-        .h-col { width: var(--cell-w); min-width: var(--cell-w); border-right: 1px solid #ddd; display: flex; flex-direction: column; flex-shrink: 0; }
+        .h-col { width: var(--cell-w); border-right: 1px solid #ddd; display: flex; flex-direction: column; }
         .h-week { height: 35px; background: #dfe4ea; border-bottom: 1px solid #ccc; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; }
         .h-day { height: 40px; display: flex; align-items: center; justify-content: center; font-size: 9px; }
         .gantt-body { flex-grow: 1; overflow: auto; scroll-behavior: smooth; }
         .gantt-row { display: flex; border-bottom: 1px solid #eee; min-height: 95px; width: max-content; }
-        .gantt-info { position: sticky !important; left: 0 !important; width: 320px; min-width: 320px; background: #fff !important; z-index: 1000 !important; border-right: 3px solid #bbb !important; padding: 10px 15px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; gap: 5px; }
-        .gantt-info input[type="date"] { width: 100%; font-size: 10px; padding: 2px; }
+        .gantt-info { position: sticky; left: 0; width: 320px; min-width: 320px; background: #fff; z-index: 1000; border-right: 3px solid #bbb; padding: 10px 15px; display: flex; flex-direction: column; justify-content: center; }
         .gantt-bars-area { position: relative; display: flex; background-color: #fff; width: max-content; }
         .day-cell-bg { width: var(--cell-w); min-width: var(--cell-w); border-right: 1px solid #f1f1f1; height: 100%; flex-shrink: 0; }
-        .today-line { position: absolute; top: 0; bottom: 0; width: 3px; background: var(--today); z-index: 500; pointer-events: none; }
         .task-bar { position: absolute; height: 32px; top: 32px; border-radius: 5px; color: white; display: flex; align-items: center; padding: 0 10px; font-size: 11px; font-weight: bold; z-index: 100; }
-        .progress-fill { position: absolute; left: 0; top: 0; height: 100%; background: rgba(0,0,0,0.25); border-right: 1px solid rgba(255,255,255,0.4); }
-        .sub-bar { position: absolute; height: 12px; background: var(--sub-bg); opacity: 0.6; border-radius: 3px; z-index: 90; font-size: 8px; color: white; display: flex; align-items: center; justify-content: center; }
-        .sub-pre { top: 18px; } .sub-post { top: 66px; }
-        .charts-container { height: 100%; overflow-y: auto; display: flex; flex-direction: column; gap: 30px; }
-        .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 20px; }
-        .chart-card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .today-line { position: absolute; top: 0; bottom: 0; width: 3px; background: var(--today); z-index: 500; pointer-events: none; }
     </style>
 </head>
 <body>
-<div class="top-bar"><div>🚀 <strong>TOCI LIVE V64.0</strong></div><div id="syncStatus" style="background:var(--warning); color:black; padding:4px 10px; border-radius:4px; font-weight:bold;">Ühendan...</div></div>
+<div class="top-bar"><div>🚀 <strong>TOCI LIVE V65.0</strong></div><div id="syncStatus" style="background:var(--warning); color:black; padding:4px 10px; border-radius:4px; font-weight:bold;">Ühendan...</div></div>
 <div class="tabs">
     <button class="tab-btn active" onclick="openTab(event, 'sisestus')">SISESTUS</button>
     <button class="tab-btn" onclick="openTab(event, 'gantt_mk')">MUST KEEV</button>
@@ -57,24 +60,17 @@
     <button class="tab-btn" onclick="openTab(event, 'gantt_ml')">MUST LUKK</button>
     <button class="tab-btn" onclick="openTab(event, 'gantt_rl')">RV LUKK</button>
     <button class="tab-btn" onclick="openTab(event, 'gantt_ko')">KOOSTE</button>
-    <button class="tab-btn" onclick="openTab(event, 'koormus_tab')">KOORMATUS</button>
+    <button class="tab-btn" onclick="openTab(event, 'paeva_koormus')" style="background:var(--accent)">📊 PÄEVA KOORMUS</button>
     <button class="tab-btn" onclick="openTab(event, 'voimekus_tab')" style="color:var(--warning)">⚙️ VÕIMEKUS</button>
     <button class="tab-btn" style="background:var(--success)" onclick="fetchData()">🔄 VÄRSKENDA</button>
 </div>
 
 <div id="sisestus" class="content active">
-    <div style="margin-bottom:15px; display:flex; gap:15px; align-items:center;">
+    <div style="margin-bottom:15px; display:flex; gap:10px;">
         <button onclick="addNewRow()" style="padding:10px 20px; background:var(--success); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">+ LISA TELLIMUS</button>
-        <input type="text" id="mtFilter" placeholder="Otsi MT..." oninput="renderTable()" style="padding:8px; border-radius:4px; border:1px solid #ccc; width: 120px;">
-        <select id="monthFilter" onchange="renderTable()" style="padding:8px; border-radius:4px; border:1px solid #ccc;">
-            <option value="">Kõik kuud</option>
-            <option value="-01-">Jaanuar</option><option value="-02-">Veebruar</option><option value="-03-">Märts</option>
-            <option value="-04-">Aprill</option><option value="-05-">Mai</option><option value="-06-">Juuni</option>
-            <option value="-07-">Juuli</option><option value="-08-">August</option><option value="-09-">September</option>
-            <option value="-10-">Oktoober</option><option value="-11-">November</option><option value="-12-">Detsember</option>
-        </select>
+        <input type="text" id="mtFilter" placeholder="Otsi MT..." oninput="renderTable()" style="padding:8px; border-radius:4px; border:1px solid #ccc;">
     </div>
-    <div class="table-container"><table class="data-table"><thead><tr><th>MT</th><th>Klient</th><th>Algus</th><th>Lõpp</th><th title="AH1 (p)">AH1</th><th title="AH2 (p)">AH2</th><th title="Must Keev (h)">MK</th><th title="RV Keev (h)">RK</th><th title="Must Lukk (h)">ML</th><th title="RV Lukk (h)">RL</th><th title="Kooste (h)">KO</th><th>%</th><th>Staatus</th><th>🗑️</th></tr></thead><tbody id="table-body"></tbody></table></div>
+    <div class="table-container"><table class="data-table"><thead><tr><th>MT</th><th>Klient</th><th>Algus</th><th>Lõpp</th><th>AH1</th><th>AH2</th><th>MK</th><th>RK</th><th>ML</th><th>RL</th><th>KO</th><th>%</th><th>Staatus</th><th>🗑️</th></tr></thead><tbody id="table-body"></tbody></table></div>
 </div>
 
 <div id="gantt_mk" class="content"><div class="gantt-outer" id="out-mk"></div></div>
@@ -83,126 +79,119 @@
 <div id="gantt_rl" class="content"><div class="gantt-outer" id="out-rl"></div></div>
 <div id="gantt_ko" class="content"><div class="gantt-outer" id="out-ko"></div></div>
 
-<div id="koormus_tab" class="content">
-    <div class="charts-container">
-        <div id="charts-box" class="charts-grid"></div>
-        <div class="chart-card">
-            <h3>Nädala tellimuste detailid</h3>
-            <select id="weekDetailSelector" onchange="renderWeeklyOrderTable()" style="padding:10px; border-radius:5px; margin-bottom:15px; width: 100%;">
-                <option value="">Vali nädal täpsema info nägemiseks...</option>
-                <script>for(let i=1; i<=25; i++) document.write(`<option value="${i}">Nädal ${i}</option>`);</script>
-            </select>
-            <table class="data-table">
-                <thead><tr><th>MT</th><th>Klient</th><th>MK</th><th>RK</th><th>ML</th><th>RL</th><th>KO</th><th>Tähtaeg</th></tr></thead>
-                <tbody id="weekly-order-body"></tbody>
-            </table>
-        </div>
+<div id="paeva_koormus" class="content">
+    <div class="table-container">
+        <table class="data-table">
+            <thead id="daily-header"></thead>
+            <tbody id="daily-body"></tbody>
+        </table>
     </div>
 </div>
-<div id="voimekus_tab" class="content"><div id="cap-box" style="background:white; padding:20px; border-radius:8px; height:100%; overflow-y:auto;"></div></div>
+
+<div id="voimekus_tab" class="content"><div id="cap-box" style="background:white; padding:20px; border-radius:8px;"></div></div>
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbwFGxkxdlGqW57N4HlB3HI6lCofYLWrQIYlgUEag9KQR2oEFRiVX9vxoQZ4nKa-NlKb6w/exec";
-    const CONFIG = { must_k:{l:'Must Keev',c:240, color:'#e67e22', order:2}, rv_k:{l:'RV Keev',c:120, color:'#e67e22', order:2}, must_l:{l:'Must Lukk',c:120, color:'#3498db', order:1}, rv_l:{l:'RV Lukk',c:40, color:'#3498db', order:1}, kooste:{l:'Kooste',c:40, color:'#27ae60', order:3} };
+    const CONFIG = { must_k:{l:'Must Keev',c:48, color:'#e67e22', order:2}, rv_k:{l:'RV Keev',c:24, color:'#e67e22', order:2}, must_l:{l:'Must Lukk',c:24, color:'#3498db', order:1}, rv_l:{l:'RV Lukk',c:8, color:'#3498db', order:1}, kooste:{l:'Kooste',c:8, color:'#27ae60', order:3} };
     const START_VIEW = new Date("2026-01-01");
     const TODAY = new Date();
     let orders = [];
-    let customCap = JSON.parse(localStorage.getItem('prod_cap_v64')) || {};
 
     const f = (v) => parseFloat(v) || 0;
     function getUTCDate(d) { const dt = new Date(d); return isNaN(dt.getTime()) ? null : Date.UTC(dt.getFullYear(), dt.getMonth(), dt.getDate()); }
-    function getDayIndexUTC(target, base) { const t = getUTCDate(target), b = getUTCDate(base); return (t === null || b === null) ? 0 : Math.round((t - b) / 86400000); }
     function safeISO(d) { const dt = new Date(d); return isNaN(dt.getTime()) ? new Date().toISOString().split('T')[0] : dt.toISOString().split('T')[0]; }
-    function getWeek(d) { d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7)); return Math.ceil((((d - new Date(Date.UTC(d.getUTCFullYear(),0,1))) / 86400000) + 1)/7); }
 
     async function fetchData() {
         document.getElementById('syncStatus').innerText = "Värskendan...";
         try {
-            const r = await fetch(API_URL, { cache: 'no-cache' });
+            const r = await fetch(API_URL);
             const d = await r.json();
             if(Array.isArray(d)) {
                 orders = d.map(o => ({...o, must_k:f(o.must_k), rv_k:f(o.rv_k), must_l:f(o.must_l), rv_l:f(o.rv_l), kooste:f(o.kooste), progress:f(o.progress), sub1:f(o.sub1), sub2:f(o.sub2), status: o.status || 'Töös'}));
                 renderTable();
                 document.getElementById('syncStatus').innerText = "Andmed OK";
-                document.getElementById('syncStatus').style.background = "#27ae60"; document.getElementById('syncStatus').style.color = "white";
             }
         } catch(e) { document.getElementById('syncStatus').innerText = "Viga!"; }
     }
 
+    function renderDailyLoad() {
+        const head = document.getElementById('daily-header');
+        const body = document.getElementById('daily-body');
+        const daysToShow = 45;
+        const start = new Date(TODAY); start.setDate(start.getDate() - 2); 
+
+        let hRow = "<tr><th>Osakond / Kuupäev</th>";
+        for(let i=0; i<daysToShow; i++) {
+            let cur = new Date(start.getTime() + i*86400000);
+            let isToday = cur.toDateString() === TODAY.toDateString();
+            hRow += `<th class="${isToday?'today-col':''}" style="font-size:10px; min-width:40px; text-align:center;">${cur.getDate()}.${cur.getMonth()+1}<br>${['P','E','T','K','N','R','L'][cur.getDay()]}</th>`;
+        }
+        head.innerHTML = hRow + "</tr>";
+
+        let bHtml = "";
+        Object.keys(CONFIG).forEach(k => {
+            bHtml += `<tr><td style="font-weight:bold; background:#f9f9f9;">${CONFIG[k].l}</td>`;
+            for(let i=0; i<daysToShow; i++) {
+                let curDate = new Date(start.getTime() + i*86400000);
+                let curUTC = getUTCDate(curDate);
+                let totalH = 0;
+
+                orders.filter(o => o.status === 'Töös' && o[k] > 0).forEach(o => {
+                    let s = getUTCDate(o.start), e = getUTCDate(o.end);
+                    if(curUTC >= s && curUTC <= e) {
+                        let days = Math.round((e - s) / 86400000) + 1;
+                        totalH += o[k] / days;
+                    }
+                });
+
+                let cap = CONFIG[k].c / 5; // Päeva võimekus (Nädala võimekus jagatud 5-ga)
+                let cls = totalH > cap ? 'overloaded' : (totalH > 0 ? 'normal' : '');
+                let isToday = curDate.toDateString() === TODAY.toDateString();
+                bHtml += `<td class="daily-cell ${cls} ${isToday?'today-col':''}">${totalH > 0 ? totalH.toFixed(1) : ''}</td>`;
+            }
+            bHtml += "</tr>";
+        });
+        body.innerHTML = bHtml;
+    }
+
     function renderGantt(containerId, key) {
-        const outer = document.getElementById(containerId); if(!outer) return;
-        const dayCount = 250, tIdx = getDayIndexUTC(TODAY, START_VIEW);
+        const outer = document.getElementById(containerId);
+        const dayCount = 200, tIdx = Math.round((getUTCDate(TODAY) - getUTCDate(START_VIEW)) / 86400000);
         let hCols = "";
         for(let d=0; d<dayCount; d++) {
             let cur = new Date(START_VIEW.getTime() + d * 86400000);
-            hCols += `<div class="h-col"><div class="h-week">${d%7===0?'W'+getWeek(cur):''}</div><div class="h-day" style="${d === tIdx ? 'background:rgba(255,71,87,0.3); color:red; font-weight:bold;' : ''}">${cur.getDate()}.${cur.getMonth()+1}</div></div>`;
+            hCols += `<div class="h-col"><div class="h-week">${d%7===0?'W'+Math.ceil((d+1)/7):''}</div><div class="h-day" style="${d===tIdx?'color:red;font-weight:bold;':''}">${cur.getDate()}.${cur.getMonth()+1}</div></div>`;
         }
         let rows = orders.filter(o => o[key] > 0 && o.status === 'Töös').map((o) => {
-            let gIdx = orders.indexOf(o), sIdx = getDayIndexUTC(o.start, START_VIEW), eIdx = getDayIndexUTC(o.end, START_VIEW);
-            let totalRange = eIdx - sIdx + 1, kD = Math.max(1, Math.ceil(o.kooste / 8)), prodD = Math.max(1, totalRange - kD - o.sub2);
-            let lH = o.must_l + o.rv_l, kH = o.must_k + o.rv_k, tH = lH + kH || 1;
-            let fLeft = 0, tDur = 0;
-            if (CONFIG[key].order === 3) { tDur = kD; fLeft = (eIdx - kD + 1) * 45; }
-            else if (CONFIG[key].order === 1) { tDur = Math.ceil((lH / tH) * prodD); fLeft = sIdx * 45; }
-            else if (CONFIG[key].order === 2) { let lD = Math.floor((lH / tH) * prodD); tDur = Math.max(1, prodD - lD); fLeft = (sIdx + lD) * 45; }
-            let tip = `MT: ${o.mt}\nKlient: ${o.client}\n${CONFIG[key].l}: ${o[key]}h\nAlgus: ${o.start}\nLõpp: ${o.end}`;
-            return `<div class="gantt-row"><div class="gantt-info"><b>${o.mt}</b><small>${o.client}</small><div><input type="date" value="${safeISO(o.start)}" onchange="u(${gIdx},'start',this.value);renderGantt('${containerId}','${key}')"><input type="date" value="${safeISO(o.end)}" onchange="u(${gIdx},'end',this.value);renderGantt('${containerId}','${key}')"></div></div><div class="gantt-bars-area"><div class="today-line" style="left:${tIdx * 45}px"></div>${o.sub1 > 0 ? `<div class="sub-bar sub-pre" style="left:${(sIdx - o.sub1)*45}px; width:${o.sub1*45 - 2}px">AH1</div>` : ''}<div class="task-bar" title="${tip}" style="left:${fLeft}px; width:${tDur * 45 - 5}px; background:${CONFIG[key].color}"><div class="progress-fill" style="width:${o.progress}%"></div><span>${o.mt} (${o.progress}%)</span></div>${o.sub2 > 0 ? `<div class="sub-bar sub-post" style="left:${(eIdx - kD - o.sub2 + 1) * 45}px; width:${o.sub2*45 - 2}px">AH2</div>` : ''}${Array.from({length:dayCount}, (_,i)=>`<div class="day-cell-bg ${i===tIdx?'today-col-bg':''}"></div>`).join('')}</div></div>`;
+            let sIdx = Math.round((getUTCDate(o.start) - getUTCDate(START_VIEW)) / 86400000);
+            let eIdx = Math.round((getUTCDate(o.end) - getUTCDate(START_VIEW)) / 86400000);
+            let left = sIdx * 45, width = (eIdx - sIdx + 1) * 45;
+            return `<div class="gantt-row"><div class="gantt-info"><b>${o.mt}</b><small>${o.client}</small></div><div class="gantt-bars-area"><div class="today-line" style="left:${tIdx * 45}px"></div><div class="task-bar" style="left:${left}px; width:${width-5}px; background:${CONFIG[key].color}"><div class="progress-fill" style="width:${o.progress}%"></div><span>${o.mt}</span></div>${Array.from({length:dayCount}, ()=>`<div class="day-cell-bg"></div>`).join('')}</div></div>`;
         }).join('');
-        outer.innerHTML = `<div class="gantt-header-wrapper"><div class="header-corner">MT / Klient / Aeg</div><div class="header-scroll" id="h-scroll-${key}"><div class="header-grid">${hCols}</div></div></div><div class="gantt-body" id="b-scroll-${key}">${rows}</div>`;
+        outer.innerHTML = `<div class="gantt-header-wrapper"><div class="header-corner">MT / Klient</div><div class="header-scroll" id="h-scroll-${key}"><div class="header-grid">${hCols}</div></div></div><div class="gantt-body" id="b-scroll-${key}">${rows}</div>`;
         const hS = document.getElementById(`h-scroll-${key}`), bS = document.getElementById(`b-scroll-${key}`);
-        if(bS) { bS.onscroll = () => { hS.scrollLeft = bS.scrollLeft; }; setTimeout(() => { bS.scrollLeft = (tIdx * 45) - (bS.offsetWidth / 2) + 160; }, 100); }
+        if(bS) { bS.onscroll = () => hS.scrollLeft = bS.scrollLeft; bS.scrollLeft = (tIdx * 45) - 400; }
     }
 
-    function renderCharts() {
-        const box = document.getElementById('charts-box'); box.innerHTML = '';
-        Object.keys(CONFIG).forEach(k => {
-            let h = `<div class="chart-card"><h3>${CONFIG[k].l}</h3><div style="display:flex; align-items:flex-end; height:160px; gap:5px; border-bottom:2px solid #333; margin-top:25px; position:relative;">`;
-            for(let w=1; w<=25; w++) {
-                let ws = new Date(START_VIEW.getTime() + (w-1)*7*86400000), we = new Date(ws.getTime() + 7*86400000);
-                let tot = orders.filter(o => { let d = getUTCDate(o.start); return d >= ws.getTime() && d < we.getTime() && o.status === 'Töös'; }).reduce((s, o) => s + (o[k]||0), 0);
-                let cap = (customCap[k] && customCap[k][w]) ? customCap[k][w] : CONFIG[k].c;
-                let hgt = Math.min(150, (tot / Math.max(tot, cap, 10)) * 150), line = (cap / Math.max(tot, cap, 10)) * 150;
-                h += `<div style="flex:1; display:flex; flex-direction:column; align-items:center;"><span style="font-size:9px; font-weight:bold;">${tot||''}</span><div style="width:80%; height:${hgt}px; background:${tot>cap?'var(--danger)':'var(--success)'}; position:relative; border-radius:2px;"><div style="position:absolute; width:100%; border-top:2px dashed red; bottom:${line}px; opacity:0.5;"></div></div><span style="font-size:8px">W${w}</span></div>`;
-            }
-            box.innerHTML += h + `</div></div>`;
-        });
-    }
-
-    function renderWeeklyOrderTable() {
-        const week = parseInt(document.getElementById('weekDetailSelector').value), body = document.getElementById('weekly-order-body');
-        body.innerHTML = ''; if(!week) return;
-        let ws = new Date(START_VIEW.getTime() + (week-1)*7*86400000), we = new Date(ws.getTime() + 7*86400000);
-        orders.filter(o => { let d = getUTCDate(o.start); return d >= ws.getTime() && d < we.getTime() && o.status === 'Töös'; }).forEach(o => {
-            body.innerHTML += `<tr><td>${o.mt}</td><td>${o.client}</td><td>${o.must_k}h</td><td>${o.rv_k}h</td><td>${o.must_l}h</td><td>${o.rv_l}h</td><td>${o.kooste}h</td><td>${safeISO(o.end)}</td></tr>`;
-        });
-    }
-
-    function renderCapacity() {
-        let h = `<table class="data-table"><thead><tr><th>Osakond</th>` + Array.from({length:20},(_,i)=>`<th>W${i+1}</th>`).join('') + `</tr></thead><tbody>`;
-        h += Object.keys(CONFIG).map(k => `<tr><td><b>${CONFIG[k].l}</b></td>` + Array.from({length:20},(_,i)=>{ let v = (customCap[k] && customCap[k][i+1]) ? customCap[k][i+1] : CONFIG[k].c; return `<td><input type="number" class="cap-in" data-k="${k}" data-w="${i+1}" value="${v}" style="width:40px"></td>`; }).join('') + `</tr>`).join('');
-        document.getElementById('cap-box').innerHTML = h + `</tbody></table><br><button onclick="saveCap()" style="padding:10px 20px; background:var(--accent); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">SALVESTA VÕIMEKUS</button>`;
-    }
-
-    function saveCap() { document.querySelectorAll('.cap-in').forEach(i => { if(!customCap[i.dataset.k]) customCap[i.dataset.k] = {}; customCap[i.dataset.k][i.dataset.w] = parseInt(i.value); }); localStorage.setItem('prod_cap_v64', JSON.stringify(customCap)); alert("Salvestatud!"); fetchData(); }
-    async function save() { try { await fetch(API_URL, {method:"POST", body:JSON.stringify(orders), mode: 'no-cors'}); fetchData(); } catch(e) {} }
-    function u(i, k, v) { orders[i][k] = v; save(); }
-    function addNewRow() { orders.unshift({mt:"UUS", client:"", start:new Date().toISOString().split('T')[0], end:new Date().toISOString().split('T')[0], sub1:0, sub2:0, must_k:0, rv_k:0, must_l:0, rv_l:0, kooste:0, progress:0, status:'Ootel'}); renderTable(); save(); }
-    function del(i) { if(confirm("Kustuta?")) { orders.splice(i,1); renderTable(); save(); } }
     function renderTable() {
-        const mV = document.getElementById('monthFilter').value, mtV = document.getElementById('mtFilter').value.toLowerCase(), b = document.getElementById('table-body'); b.innerHTML = '';
-        orders.forEach((o, i) => { if ((!mV || safeISO(o.start).includes(mV)) && (!mtV || (o.mt && String(o.mt).toLowerCase().includes(mtV)))) {
+        const b = document.getElementById('table-body'); b.innerHTML = '';
+        orders.forEach((o, i) => {
             const sCl = o.status === 'Valmis' ? 'status-valmis' : o.status === 'Töös' ? 'status-toos' : 'status-ootel';
-            b.innerHTML += `<tr class="${sCl}"><td><input class="data-in" value="${o.mt||''}" onchange="u(${i},'mt',this.value)"></td><td><input class="data-in" value="${o.client||''}" onchange="u(${i},'client',this.value)"></td><td><input type="date" class="data-in" value="${safeISO(o.start)}" onchange="u(${i},'start',this.value)"></td><td><input type="date" class="data-in" value="${safeISO(o.end)}" onchange="u(${i},'end',this.value)"></td><td><input type="number" class="data-in num-in" title="AH1 (p)" value="${o.sub1||0}" onchange="u(${i},'sub1',this.value)"></td><td><input type="number" class="data-in num-in" title="AH2 (p)" value="${o.sub2||0}" onchange="u(${i},'sub2',this.value)"></td><td><input type="number" class="data-in num-in" title="MK (h)" value="${o.must_k}" onchange="u(${i},'must_k',this.value)"></td><td><input type="number" class="data-in num-in" title="RK (h)" value="${o.rv_k}" onchange="u(${i},'rv_k',this.value)"></td><td><input type="number" class="data-in num-in" title="ML (h)" value="${o.must_l}" onchange="u(${i},'must_l',this.value)"></td><td><input type="number" class="data-in num-in" title="RL (h)" value="${o.rv_l}" onchange="u(${i},'rv_l',this.value)"></td><td><input type="number" class="data-in num-in" title="KO (h)" value="${o.kooste}" onchange="u(${i},'kooste',this.value)"></td><td><input type="number" class="data-in num-in" title="Progress %" value="${o.progress}" onchange="u(${i},'progress',this.value)"></td><td><select class="status-select" onchange="u(${i},'status',this.value);renderTable()"><option value="Ootel" ${o.status==='Ootel'?'selected':''}>Ootel</option><option value="Töös" ${o.status==='Töös'?'selected':''}>Töös</option><option value="Valmis" ${o.status==='Valmis'?'selected':''}>Valmis</option></select></td><td><button onclick="del(${i})">🗑️</button></td></tr>`;
-        }});
+            b.innerHTML += `<tr class="${sCl}"><td><input class="data-in" value="${o.mt}" onchange="u(${i},'mt',this.value)"></td><td><input class="data-in" value="${o.client}" onchange="u(${i},'client',this.value)"></td><td><input type="date" value="${safeISO(o.start)}" onchange="u(${i},'start',this.value)"></td><td><input type="date" value="${safeISO(o.end)}" onchange="u(${i},'end',this.value)"></td><td><input class="num-in" value="${o.sub1}" onchange="u(${i},'sub1',this.value)"></td><td><input class="num-in" value="${o.sub2}" onchange="u(${i},'sub2',this.value)"><td><input class="num-in" value="${o.must_k}" onchange="u(${i},'must_k',this.value)"></td><td><input class="num-in" value="${o.rv_k}" onchange="u(${i},'rv_k',this.value)"></td><td><input class="num-in" value="${o.must_l}" onchange="u(${i},'must_l',this.value)"></td><td><input class="num-in" value="${o.rv_l}" onchange="u(${i},'rv_l',this.value)"></td><td><input class="num-in" value="${o.kooste}" onchange="u(${i},'kooste',this.value)"></td><td><input class="num-in" value="${o.progress}" onchange="u(${i},'progress',this.value)"></td><td><select onchange="u(${i},'status',this.value);renderTable()"><option ${o.status==='Ootel'?'selected':''}>Ootel</option><option ${o.status==='Töös'?'selected':''}>Töös</option><option ${o.status==='Valmis'?'selected':''}>Valmis</option></select></td><td><button onclick="del(${i})">🗑️</button></td></tr>`;
+        });
     }
+
+    async function save() { await fetch(API_URL, {method:"POST", body:JSON.stringify(orders), mode:'no-cors'}); fetchData(); }
+    function u(i, k, v) { orders[i][k] = v; save(); }
+    function del(i) { if(confirm("Kustuta?")) { orders.splice(i,1); save(); } }
+    function addNewRow() { orders.unshift({mt:"UUS", client:"", start:new Date().toISOString().split('T')[0], end:new Date().toISOString().split('T')[0], sub1:0, sub2:0, must_k:0, rv_k:0, must_l:0, rv_l:0, kooste:0, progress:0, status:'Ootel'}); renderTable(); }
+
     function openTab(e, t) {
         document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(t).classList.add('active'); e.currentTarget.classList.add('active');
-        const m = {mk:'must_k', rk:'rv_k', ml:'must_l', rl:'rv_l', ko:'kooste'};
-        if(t.startsWith('gantt_')) renderGantt('out-' + t.split('_')[1], m[t.split('_')[1]]);
-        if(t === 'koormus_tab') { renderCharts(); renderWeeklyOrderTable(); }
-        if(t === 'voimekus_tab') renderCapacity();
+        if(t.startsWith('gantt_')) renderGantt('out-' + t.split('_')[1], {mk:'must_k', rk:'rv_k', ml:'must_l', rl:'rv_l', ko:'kooste'}[t.split('_')[1]]);
+        if(t === 'paeva_koormus') renderDailyLoad();
     }
     fetchData();
 </script>
