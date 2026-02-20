@@ -2,7 +2,7 @@
 <html lang="et">
 <head>
     <meta charset="UTF-8">
-    <title>TOCI Tootmisplaan V43.0</title>
+    <title>TOCI Tootmisplaan V44.0</title>
     <style>
         :root { --primary: #1a252f; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; --warning: #f1c40f; --bg: #f4f7f6; --today: #ff4757; --cell-w: 45px; }
         *, *:before, *:after { box-sizing: border-box; }
@@ -48,7 +48,7 @@
 <body>
 
 <div class="top-bar">
-    <div>🚀 <strong>TOCI LIVE V43.0</strong></div>
+    <div>🚀 <strong>TOCI LIVE V44.0</strong></div>
     <div id="syncStatus" style="background:var(--warning); color:black; padding:4px 10px; border-radius:4px; font-weight:bold;">Ühendan...</div>
 </div>
 
@@ -82,15 +82,14 @@
 <div id="voimekus_tab" class="content"><div id="cap-box" style="background:white; padding:20px; border-radius:8px; height:100%; overflow-y:auto;"></div></div>
 
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbwFGxkxdlGqW57N4HlB3HI6lCofYLWrQIYlgUEag9KQR2oEFRiVX9vxoQZ4|NlKb6w/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbwFGxkxdlGqW57N4HlB3HI6lCofYLWrQIYlgUEag9KQR2oEFRiVX9vxoQZ4nKa-NlKb6w/exec";
     const CONFIG = { must_k:{l:'Must Keev',c:240}, rv_k:{l:'RV Keev',c:120}, must_l:{l:'Must Lukk',c:120}, rv_l:{l:'RV Lukk',c:40}, kooste:{l:'Kooste',c:40} };
     const START_VIEW = new Date("2026-01-01");
     const TODAY = new Date();
     
     let orders = [];
-    let customCap = JSON.parse(localStorage.getItem('prod_cap_v43')) || {};
 
-    // --- PARANDATUD UTC ARVUTUS (Ei sõltu ajavööndist) ---
+    // --- VEAKINDEL UTC ARVUTUS ---
     function getUTCDate(d) {
         if (!d) return null;
         const dt = new Date(d);
@@ -102,13 +101,18 @@
         const t = getUTCDate(target);
         const b = getUTCDate(base);
         if (t === null || b === null) return 0;
-        return Math.floor((t - b) / (1000 * 60 * 60 * 24));
+        return Math.round((t - b) / (1000 * 60 * 60 * 24));
+    }
+
+    function safeISO(d) {
+        const dt = new Date(d);
+        return isNaN(dt.getTime()) ? new Date().toISOString().split('T')[0] : dt.toISOString().split('T')[0];
     }
 
     async function fetchData() {
         document.getElementById('syncStatus').innerText = "Laadin...";
         try {
-            const r = await fetch(API_URL);
+            const r = await fetch(API_URL, { cache: 'no-cache' });
             const d = await r.json();
             if(Array.isArray(d)) {
                 orders = d.map(o => ({...o, must_k:f(o.must_k), rv_k:f(o.rv_k), must_l:f(o.must_l), rv_l:f(o.rv_l), kooste:f(o.kooste), progress:f(o.progress)}));
@@ -116,12 +120,16 @@
                 document.getElementById('syncStatus').innerText = "Andmed OK";
                 document.getElementById('syncStatus').style.background = "#27ae60"; document.getElementById('syncStatus').style.color = "white";
             }
-        } catch(e) { document.getElementById('syncStatus').innerText = "Viga!"; }
+        } catch(e) { 
+            document.getElementById('syncStatus').innerText = "Viga!"; 
+            console.error("Fetch error:", e);
+        }
     }
     const f = (v) => parseFloat(v) || 0;
 
     function renderGantt(containerId, key) {
         const outer = document.getElementById(containerId);
+        if(!outer) return;
         const dayCount = 200;
         const tIdx = getDayIndexUTC(TODAY, START_VIEW);
         const todayLinePos = (tIdx * 45); 
@@ -155,7 +163,10 @@
             bodyHtml += `<div class="gantt-row">
                 <div class="gantt-info">
                     <b>${o.mt||'MT'}</b><small>${o.client||'-'}</small>
-                    <div style="display:flex;gap:3px;"><input type="date" value="${cd(o.start)}" onchange="u(${gIdx},'start',this.value);renderGantt('${containerId}','${key}')"><input type="date" value="${cd(o.end)}" onchange="u(${gIdx},'end',this.value);renderGantt('${containerId}','${key}')"></div>
+                    <div style="display:flex;gap:3px;">
+                        <input type="date" value="${safeISO(o.start)}" onchange="u(${gIdx},'start',this.value);renderGantt('${containerId}','${key}')">
+                        <input type="date" value="${safeISO(o.end)}" onchange="u(${gIdx},'end',this.value);renderGantt('${containerId}','${key}')">
+                    </div>
                 </div>
                 <div class="gantt-bars-area">
                     <div class="today-line" style="left:${todayLinePos}px"></div>`;
@@ -176,26 +187,25 @@
 
         const hScroll = document.getElementById(`h-scroll-${key}`);
         const bScroll = document.getElementById(`b-scroll-${key}`);
-        if(bScroll) bScroll.onscroll = () => { hScroll.scrollLeft = bScroll.scrollLeft; };
+        if(bScroll && hScroll) bScroll.onscroll = () => { hScroll.scrollLeft = bScroll.scrollLeft; };
         setTimeout(() => { if(bScroll) bScroll.scrollLeft = (tIdx * 45) - (bScroll.offsetWidth / 2) + 160; }, 50);
     }
 
-    async function save() { await fetch(API_URL, {method:"POST", body:JSON.stringify(orders)}); fetchData(); }
+    async function save() { 
+        try {
+            await fetch(API_URL, {method:"POST", body:JSON.stringify(orders), mode: 'no-cors'}); 
+            document.getElementById('syncStatus').innerText = "Salvestatud";
+        } catch(e) { console.error("Save error"); }
+    }
     
     function renderTable() {
         const b = document.getElementById('table-body'); b.innerHTML = '';
         orders.forEach((o, i) => {
-            b.innerHTML += `<tr><td><input value="${o.mt||''}" onchange="u(${i},'mt',this.value)"></td><td><input value="${o.client||''}" onchange="u(${i},'client',this.value)"></td><td><input type="date" value="${cd(o.start)}" onchange="u(${i},'start',this.value)"></td><td><input type="date" value="${cd(o.end)}" onchange="u(${i},'end',this.value)"></td><td><input type="number" value="${o.must_k}" onchange="u(${i},'must_k',this.value)"></td><td><input type="number" value="${o.rv_k}" onchange="u(${i},'rv_k',this.value)"></td><td><input type="number" value="${o.must_l}" onchange="u(${i},'must_l',this.value)"></td><td><input type="number" value="${o.rv_l}" onchange="u(${i},'rv_l',this.value)"></td><td><input type="number" value="${o.kooste}" onchange="u(${i},'kooste',this.value)"></td><td><input type="number" value="${o.progress}" onchange="u(${i},'progress',this.value)"></td><td><button onclick="del(${i})">🗑️</button></td></tr>`;
+            b.innerHTML += `<tr><td><input value="${o.mt||''}" onchange="u(${i},'mt',this.value)"></td><td><input value="${o.client||''}" onchange="u(${i},'client',this.value)"></td><td><input type="date" value="${safeISO(o.start)}" onchange="u(${i},'start',this.value)"></td><td><input type="date" value="${safeISO(o.end)}" onchange="u(${i},'end',this.value)"></td><td><input type="number" value="${o.must_k}" onchange="u(${i},'must_k',this.value)"></td><td><input type="number" value="${o.rv_k}" onchange="u(${i},'rv_k',this.value)"></td><td><input type="number" value="${o.must_l}" onchange="u(${i},'must_l',this.value)"></td><td><input type="number" value="${o.rv_l}" onchange="u(${i},'rv_l',this.value)"></td><td><input type="number" value="${o.kooste}" onchange="u(${i},'kooste',this.value)"></td><td><input type="number" value="${o.progress}" onchange="u(${i},'progress',this.value)"></td><td><button onclick="del(${i})">🗑️</button></td></tr>`;
         });
     }
 
     function u(i, k, v) { orders[i][k] = v; save(); }
-    function cd(d) { 
-        if(!d) return ""; 
-        const dt = new Date(d); 
-        if(isNaN(dt.getTime())) return "";
-        return dt.toISOString().split('T')[0]; 
-    }
     function getWeek(d) { d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7)); return Math.ceil((((d - new Date(Date.UTC(d.getUTCFullYear(),0,1))) / 86400000) + 1)/7); }
     function addNewRow() { orders.push({mt:"UUS", client:"", start:new Date().toISOString().split('T')[0], end:new Date().toISOString().split('T')[0], must_k:0, rv_k:0, must_l:0, rv_l:0, kooste:0, progress:0}); renderTable(); save(); }
     function del(i) { if(confirm("Kustuta?")) { orders.splice(i,1); renderTable(); save(); } }
@@ -204,7 +214,11 @@
         document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(t).classList.add('active'); e.currentTarget.classList.add('active');
-        if(t.startsWith('gantt_')) renderGantt('out-' + t.split('_')[1], t.split('_')[1] === 'mk' ? 'must_k' : t.split('_')[1] === 'rk' ? 'rv_k' : t.split('_')[1] === 'ml' ? 'must_l' : t.split('_')[1] === 'rl' ? 'rv_l' : 'kooste');
+        const keyMap = {mk:'must_k', rk:'rv_k', ml:'must_l', rl:'rv_l', ko:'kooste'};
+        if(t.startsWith('gantt_')) {
+            const suffix = t.split('_')[1];
+            renderGantt('out-' + suffix, keyMap[suffix]);
+        }
     }
     fetchData();
 </script>
