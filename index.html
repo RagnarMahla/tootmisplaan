@@ -2,7 +2,7 @@
 <html lang="et">
 <head>
     <meta charset="UTF-8">
-    <title>TOCI Tootmisplaan V86.0</title>
+    <title>TOCI Tootmisplaan V87.0</title>
     <style>
         :root { --primary: #1a252f; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; --warning: #f1c40f; --bg: #f4f7f6; --today: #ff4757; --cell-w: 45px; --sub-bg: #95a5a6; }
         *, *:before, *:after { box-sizing: border-box; }
@@ -14,7 +14,6 @@
         .content { height: calc(100vh - 95px); display: none; padding: 15px; box-sizing: border-box; }
         .content.active { display: block; }
         
-        /* TABELID JA STAATUSE VÄRVID */
         .table-container { height: calc(100% - 60px); overflow: auto; background: white; border-radius: 8px; border: 1px solid #ddd; }
         .data-table { width: 100%; border-collapse: collapse; position: relative; }
         .data-table thead th { position: sticky; top: 0; background: #eee; z-index: 10; border-bottom: 2px solid #ccc; padding: 10px 5px; text-align: left; }
@@ -32,7 +31,6 @@
         
         .num-in { width: 38px; text-align: center; font-weight: bold; border: 1px solid #ccc; border-radius: 3px; padding: 4px; background: #fff; }
         .num-in:disabled { background: #f0f2f5; border: 1px solid #dcdde1; color: #222; opacity: 1; -webkit-appearance: none; appearance: none; cursor: default; }
-
         .prog-in { width: 38px; text-align: center; font-weight: bold; border: 1px solid #27ae60; border-radius: 3px; padding: 4px; background: #eafff0; color: #1b5e20; }
         .prog-in:disabled { background: #eafff0; border: 1px solid #a5d6a7; color: #1b5e20; opacity: 1; -webkit-appearance: none; appearance: none; cursor: default; }
         
@@ -40,7 +38,6 @@
         .status-select:disabled { border: none; background: transparent; color: #111; opacity: 1; -webkit-appearance: none; appearance: none; cursor: default; }
         .cell-flex { display: flex; gap: 3px; align-items: center; justify-content: center; }
 
-        /* KOKKUVÕTE (DASHBOARD) STIILID */
         .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; padding: 10px; overflow-y: auto; height: 100%; }
         .dash-card { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border-left: 5px solid var(--accent); display: flex; flex-direction: column; justify-content: center; }
         .dash-card.danger { border-left-color: var(--danger); background-color: #fffafa; }
@@ -48,7 +45,7 @@
         .dash-card .value { font-size: 36px; font-weight: bold; color: var(--primary); }
         .dash-card .sub-text { font-size: 11px; color: #888; margin-top: 5px; }
 
-        /* GANTT VAATE OPTIMEERITUD STIILID */
+        /* GANTT */
         .gantt-outer { height: 100%; display: flex; flex-direction: column; background: white; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; }
         .gantt-header-wrapper { display: flex; background: #f8f9fa; border-bottom: 2px solid #ccc; height: 75px; }
         .header-corner { width: 320px; min-width: 320px; background: #eee; border-right: 3px solid #bbb; display: flex; align-items: center; padding-left: 15px; font-weight: bold; position: sticky; left: 0; z-index: 2500; }
@@ -57,13 +54,12 @@
         .h-col { width: var(--cell-w); min-width: var(--cell-w); border-right: 1px solid #ddd; display: flex; flex-direction: column; flex-shrink: 0; }
         .h-week { height: 35px; background: #dfe4ea; border-bottom: 1px solid #ccc; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; }
         .h-day { height: 40px; display: flex; align-items: center; justify-content: center; font-size: 9px; }
-        .gantt-body { flex-grow: 1; overflow: auto; } /* 'scroll-behavior: smooth' EEMALDATUD kiiruse jaoks */
+        .gantt-body { flex-grow: 1; overflow: auto; } 
         .gantt-row { display: flex; border-bottom: 1px solid #eee; min-height: 105px; width: max-content; }
         .gantt-info { position: sticky !important; left: 0 !important; width: 320px; min-width: 320px; background: #fff !important; z-index: 1000 !important; border-right: 3px solid #bbb !important; padding: 10px 15px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; gap: 4px; }
         .gantt-info input[type="date"] { width: 100%; padding: 2px; font-size: 10px; border: 1px solid #ccc; border-radius:3px; }
         .gantt-info input[type="date"]:disabled { border: none; background: transparent; color: black; }
         
-        /* CSS-põhine taustavõrgustik (asendab 18 000 HTML elementi) */
         .gantt-bars-area { position: relative; display: flex; background-color: #fff; background-image: repeating-linear-gradient(to right, transparent, transparent calc(var(--cell-w) - 1px), #f1f1f1 calc(var(--cell-w) - 1px), #f1f1f1 var(--cell-w)); }
         
         .today-line { position: absolute; top: 0; bottom: 0; width: 3px; background: var(--today); z-index: 500; pointer-events: none; }
@@ -71,11 +67,10 @@
         .progress-fill { position: absolute; left: 0; top: 0; height: 100%; background: rgba(0,0,0,0.3); border-right: 2px solid rgba(255,255,255,0.6); }
         .sub-bar { position: absolute; height: 12px; background: var(--sub-bg); opacity: 0.6; border-radius: 3px; z-index: 90; font-size: 8px; color: white; display: flex; align-items: center; justify-content: center; }
         .sub-pre { top: 18px; } .sub-post { top: 66px; }
-        .empty-state { padding: 30px; text-align: center; color: #7f8c8d; font-size: 14px; position: sticky; left: 320px; }
 
         /* PÄEVA KOORMUSE GRAAFIKUD */
         .daily-charts-container { height: 100%; overflow-y: auto; display: block; padding-bottom: 50px; }
-        .daily-chart-wrapper { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); overflow-x: auto; margin-bottom: 40px; flex-shrink: 0; } /* smooth scroll eemaldatud */
+        .daily-chart-wrapper { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); overflow-x: auto; margin-bottom: 40px; flex-shrink: 0; }
         .daily-chart-area { display: flex; align-items: flex-end; height: 280px; min-height: 280px; gap: 4px; border-bottom: 2px solid #444; position: relative; margin-top: 40px; width: max-content; padding-right: 20px; }
         .day-column { flex: 1; min-width: 55px; display: flex; flex-direction: column-reverse; position: relative; height: 100%; }
         .day-label { position: absolute; top: 100%; left: 0; width: 100%; text-align: center; font-size: 9px; padding-top: 5px; line-height: 1.2; }
@@ -86,7 +81,7 @@
 </head>
 <body>
 <div class="top-bar">
-    <div>🚀 <strong>TOCI LIVE V86.0 (Optimized Engine)</strong></div>
+    <div>🚀 <strong>TOCI LIVE V87.0 (Auto-Cleaner)</strong></div>
     <div style="display:flex; gap:15px; align-items:center;">
         <div id="syncStatus" style="background:var(--warning); color:black; padding:4px 10px; border-radius:4px; font-weight:bold; transition: 0.3s;">Ühendan...</div>
         <button id="modeToggleBtn" onclick="toggleMode()" style="background:#95a5a6; color:white; border:none; padding:6px 12px; border-radius:4px; font-weight:bold; cursor:pointer;">🔒 VAATAJA</button>
@@ -180,7 +175,7 @@
     };
     
     const START_VIEW = new Date("2026-01-01"), TODAY = new Date();
-    let orders = [], customCap = JSON.parse(localStorage.getItem('prod_cap_v86')) || {};
+    let orders = [], customCap = JSON.parse(localStorage.getItem('prod_cap_v87')) || {};
     let currentMainTabFilter = 'active'; 
 
     const f = (v) => parseFloat(v) || 0;
@@ -234,13 +229,33 @@
         if(activeTab === 'dashboard_view') renderDashboard();
     }
 
+    // UUS! AUTOMAATNE KORISTAJA
     async function fetchData() {
         if (hasPendingChanges || isSaving) { alert("⏳ Oota! Süsteem parasjagu salvestab pilve."); return; }
         updateSyncStatus("🔄 Värskendan...", "warning");
         try {
-            const r = await fetch(API_URL); const d = await r.json();
-            if(Array.isArray(d)) {
-                orders = d.map(o => {
+            const r = await fetch(API_URL); 
+            const rawData = await r.json();
+            
+            if(Array.isArray(rawData)) {
+                let cleanedData = [];
+                let seenMt = new Set();
+                let duplicatesFound = 0;
+
+                // 1. Skaneerime andmed läbi ja kustutame dublikaadid
+                rawData.forEach(o => {
+                    let cleanMt = String(o.mt).trim().toLowerCase();
+                    if (cleanMt === "uus" || cleanMt === "") {
+                        cleanedData.push(o); // Uusi ja tühje ridu lubame
+                    } else if (!seenMt.has(cleanMt)) {
+                        seenMt.add(cleanMt);
+                        cleanedData.push(o); // Esimene unikaalne rida jääb
+                    } else {
+                        duplicatesFound++; // Dublikaat visatakse minema
+                    }
+                });
+
+                orders = cleanedData.map(o => {
                     let obj = {...o, kirjeldus: o.kirjeldus||'', 
                         trei:f(o.trei), must_k:f(o.must_k), rv_k:f(o.rv_k), must_l:f(o.must_l), rv_l:f(o.rv_l), kooste:f(o.kooste), 
                         prog_tr:f(o.prog_tr), prog_mk:f(o.prog_mk), prog_rk:f(o.prog_rk), prog_ml:f(o.prog_ml), prog_rl:f(o.prog_rl), prog_ko:f(o.prog_ko),
@@ -248,6 +263,13 @@
                     };
                     obj.progress = calcOverallProgress(obj); return obj;
                 });
+
+                // 2. Kui leidsime dublikaate, kirjutame puhta andmebaasi automaatselt pilve tagasi!
+                if (duplicatesFound > 0 && isAdmin) {
+                    fetch(API_URL, {method:"POST", body:JSON.stringify(orders), mode:'no-cors'});
+                    alert(`🧹 Süsteem leidis ja eemaldas automaatselt ${duplicatesFound} dubleeritud tellimust!`);
+                }
+
                 applyUIMode(); updateSyncStatus("✅ Andmed OK", "success");
             }
         } catch(e) { updateSyncStatus("❌ Ühenduse viga", "danger"); }
@@ -257,8 +279,6 @@
         const mV = document.getElementById('monthFilter').value, mtV = document.getElementById('mtFilter').value.toLowerCase(), b = document.getElementById('table-body'); b.innerHTML = '';
         let disAttr = isAdmin ? "" : "disabled"; let hideTrash = isAdmin ? "display:table-cell;" : "display:none;";
         let todayTime = new Date(); todayTime.setHours(23, 59, 59, 999);
-        let mtCounts = {};
-        orders.forEach(o => { let cleanMt = String(o.mt).trim().toLowerCase(); if(cleanMt !== "uus" && cleanMt !== "") mtCounts[cleanMt] = (mtCounts[cleanMt] || 0) + 1; });
         
         orders.forEach((o, i) => {
             if (currentMainTabFilter === 'active' && o.status === 'Valmis') return;
@@ -270,13 +290,9 @@
                 if (o.status === 'Töös') { let endD = new Date(o.end); endD.setHours(23, 59, 59, 999); if (endD.getTime() < todayTime.getTime()) isOverdue = true; }
                 let overStyle = isOverdue ? 'background-color:#ffebee; color:#c62828; font-weight:bold; border:1px solid #c62828;' : '';
                 let overTitle = isOverdue ? '⚠️ TÄHTAEG MÖÖDAS!' : 'Lõppkuupäev';
-                let cleanMt = String(o.mt).trim().toLowerCase();
-                let isDuplicate = (cleanMt !== "uus" && cleanMt !== "" && mtCounts[cleanMt] > 1);
-                let mtStyle = isDuplicate ? 'border:2px solid red; background-color:#ffebee; color:red;' : '';
-                let mtTitle = isDuplicate ? '⚠️ VIGA: DUBLIKAAT MT NUMBER!' : 'MT Number';
 
                 b.innerHTML += `<tr class="${sCl}">
-                    <td><input class="data-in" style="${mtStyle}" title="${mtTitle}" value="${o.mt}" onchange="u(${i},'mt',this.value)" ${disAttr}></td>
+                    <td><input class="data-in" value="${o.mt}" onchange="u(${i},'mt',this.value)" ${disAttr}></td>
                     <td><input class="data-in" value="${o.client}" onchange="u(${i},'client',this.value)" ${disAttr}></td>
                     <td><input class="data-in" value="${o.kirjeldus||''}" placeholder="${isAdmin?'Töö sisu...':''}" onchange="u(${i},'kirjeldus',this.value)" ${disAttr}></td>
                     <td><input type="date" class="data-in" value="${safeISO(o.start)}" onchange="u(${i},'start',this.value)" ${disAttr}></td>
@@ -373,19 +389,11 @@
         if(bS && hS) { bS.onscroll = () => { hS.scrollLeft = bS.scrollLeft; }; setTimeout(() => { bS.scrollLeft = (tIdx * 45) - 160; }, 100); }
     }
 
-    // SÜNKROONKERIMINE (requestAnimationFrame optimeeringuga)
-    let isSyncingScroll = false;
     function syncDailyScroll(e) {
-        if (!isSyncingScroll) {
-            window.requestAnimationFrame(() => {
-                const scrollX = e.target.scrollLeft;
-                document.querySelectorAll('.daily-chart-wrapper').forEach(w => {
-                    if (w !== e.target && w.scrollLeft !== scrollX) w.scrollLeft = scrollX;
-                });
-                isSyncingScroll = false;
-            });
-            isSyncingScroll = true;
-        }
+        const scrollX = e.target.scrollLeft;
+        document.querySelectorAll('.daily-chart-wrapper').forEach(w => {
+            if (w !== e.target && w.scrollLeft !== scrollX) w.scrollLeft = scrollX;
+        });
     }
 
     function renderDailyCharts() {
@@ -393,7 +401,6 @@
         const daysToShow = 365, startDate = new Date(TODAY); startDate.setDate(startDate.getDate() - 2);
         const SCALE = 4;
         
-        // Eelarvutus kiiruse jaoks
         let activeStats = {};
         Object.keys(CONFIG).forEach(k => {
             activeStats[k] = orders.filter(o => o.status === 'Töös' && o[k] > 0).map(o => {
@@ -423,7 +430,7 @@
 
     function renderDailyTable() {
         const container = document.getElementById('daily-table-container'); 
-        const daysToShow = 365; // Näitame ka tabelit 365 päeva (üle aasta)
+        const daysToShow = 365; // Aastane tabel
         const startDate = new Date(TODAY); startDate.setDate(startDate.getDate() - 2);
         
         let html = `<div style="background:white; border-radius:8px; padding:0; box-shadow:0 4px 15px rgba(0,0,0,0.05); overflow:auto; height:100%;">
@@ -474,7 +481,7 @@
     function saveCapacity() {
         if(!isAdmin) return;
         document.querySelectorAll('.cap-in').forEach(i => { if(!customCap[i.dataset.k]) customCap[i.dataset.k] = {}; customCap[i.dataset.k][i.dataset.w] = parseInt(i.value); });
-        localStorage.setItem('prod_cap_v86', JSON.stringify(customCap)); alert("Võimekus salvestatud brauseri mällu!"); fetchData();
+        localStorage.setItem('prod_cap_v87', JSON.stringify(customCap)); alert("Võimekus salvestatud brauseri mällu!"); fetchData();
     }
 
     function save() { 
