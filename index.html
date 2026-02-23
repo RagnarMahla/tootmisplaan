@@ -2,7 +2,7 @@
 <html lang="et">
 <head>
     <meta charset="UTF-8">
-    <title>TOCI Tootmisplaan V82.0</title>
+    <title>TOCI Tootmisplaan V83.0</title>
     <style>
         :root { --primary: #1a252f; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; --warning: #f1c40f; --bg: #f4f7f6; --today: #ff4757; --cell-w: 45px; --sub-bg: #95a5a6; }
         *, *:before, *:after { box-sizing: border-box; }
@@ -50,16 +50,17 @@
         .dash-card .value { font-size: 36px; font-weight: bold; color: var(--primary); }
         .dash-card .sub-text { font-size: 11px; color: #888; margin-top: 5px; }
 
-        /* PÄEVA KOORMUS & GANTT */
-        .daily-charts-container { height: 100%; overflow-y: auto; display: flex; flex-direction: column; gap: 40px; padding-bottom: 50px; }
-        .daily-chart-wrapper { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); overflow-x: auto; scroll-behavior: smooth; }
-        .daily-chart-area { display: flex; align-items: flex-end; height: 280px; gap: 4px; border-bottom: 2px solid #444; position: relative; margin-top: 40px; width: max-content; min-width: 100%; padding-right: 20px; }
+        /* PÄEVA KOORMUS (PARANDATUD CSS) */
+        .daily-charts-container { height: 100%; overflow-y: auto; display: block; padding-bottom: 50px; } /* display: block hoiab ära litsumise */
+        .daily-chart-wrapper { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); overflow-x: auto; margin-bottom: 40px; flex-shrink: 0; }
+        .daily-chart-area { display: flex; align-items: flex-end; height: 280px; min-height: 280px; gap: 4px; border-bottom: 2px solid #444; position: relative; margin-top: 40px; width: max-content; padding-right: 20px; }
         .day-column { flex: 1; min-width: 55px; display: flex; flex-direction: column-reverse; position: relative; height: 100%; }
         .day-label { position: absolute; top: 100%; left: 0; width: 100%; text-align: center; font-size: 9px; padding-top: 5px; line-height: 1.2; }
         .order-segment { width: 100%; border: 1px solid rgba(255,255,255,0.3); border-radius: 2px; display: flex; align-items: center; justify-content: center; overflow: hidden; color: white; font-size: 8px; font-weight: bold; cursor: help; }
         .today-bg { background: rgba(255,71,87,0.05); }
         .weekend-label { color: #999; }
 
+        /* GANTT */
         .gantt-outer { height: 100%; display: flex; flex-direction: column; background: white; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; }
         .gantt-header-wrapper { display: flex; background: #f8f9fa; border-bottom: 2px solid #ccc; height: 75px; }
         .header-corner { width: 320px; min-width: 320px; background: #eee; border-right: 3px solid #bbb; display: flex; align-items: center; padding-left: 15px; font-weight: bold; position: sticky; left: 0; z-index: 2500; }
@@ -85,7 +86,7 @@
 </head>
 <body>
 <div class="top-bar">
-    <div>🚀 <strong>TOCI LIVE V82.0</strong></div>
+    <div>🚀 <strong>TOCI LIVE V83.0</strong></div>
     <div style="display:flex; gap:15px; align-items:center;">
         <div id="syncStatus" style="background:var(--warning); color:black; padding:4px 10px; border-radius:4px; font-weight:bold; transition: 0.3s;">Ühendan...</div>
         <button id="modeToggleBtn" onclick="toggleMode()" style="background:#95a5a6; color:white; border:none; padding:6px 12px; border-radius:4px; font-weight:bold; cursor:pointer;">🔒 VAATAJA</button>
@@ -176,7 +177,7 @@
     };
     
     const START_VIEW = new Date("2026-01-01"), TODAY = new Date();
-    let orders = [], customCap = JSON.parse(localStorage.getItem('prod_cap_v82')) || {};
+    let orders = [], customCap = JSON.parse(localStorage.getItem('prod_cap_v83')) || {};
     let currentMainTabFilter = 'active'; 
 
     const f = (v) => parseFloat(v) || 0;
@@ -256,33 +257,20 @@
         const mV = document.getElementById('monthFilter').value, mtV = document.getElementById('mtFilter').value.toLowerCase(), b = document.getElementById('table-body'); b.innerHTML = '';
         let disAttr = isAdmin ? "" : "disabled";
         let hideTrash = isAdmin ? "display:table-cell;" : "display:none;";
-        
-        let todayTime = new Date();
-        todayTime.setHours(23, 59, 59, 999);
-
+        let todayTime = new Date(); todayTime.setHours(23, 59, 59, 999);
         let mtCounts = {};
-        orders.forEach(o => {
-            let cleanMt = String(o.mt).trim().toLowerCase();
-            if(cleanMt !== "uus" && cleanMt !== "") mtCounts[cleanMt] = (mtCounts[cleanMt] || 0) + 1;
-        });
+        orders.forEach(o => { let cleanMt = String(o.mt).trim().toLowerCase(); if(cleanMt !== "uus" && cleanMt !== "") mtCounts[cleanMt] = (mtCounts[cleanMt] || 0) + 1; });
         
         orders.forEach((o, i) => {
             if (currentMainTabFilter === 'active' && o.status === 'Valmis') return;
             if (currentMainTabFilter === 'archive' && o.status !== 'Valmis') return;
-
             let matchText = (!mtV || (o.mt && String(o.mt).toLowerCase().includes(mtV)) || (o.client && String(o.client).toLowerCase().includes(mtV)) || (o.kirjeldus && String(o.kirjeldus).toLowerCase().includes(mtV)));
-            
             if ((!mV || safeISO(o.start).includes(mV)) && matchText) {
                 const sCl = o.status === 'Valmis' ? 'status-valmis' : o.status === 'Töös' ? 'status-toos' : 'status-ootel';
-                
                 let isOverdue = false;
-                if (o.status === 'Töös') {
-                    let endD = new Date(o.end); endD.setHours(23, 59, 59, 999);
-                    if (endD.getTime() < todayTime.getTime()) isOverdue = true;
-                }
+                if (o.status === 'Töös') { let endD = new Date(o.end); endD.setHours(23, 59, 59, 999); if (endD.getTime() < todayTime.getTime()) isOverdue = true; }
                 let overStyle = isOverdue ? 'background-color:#ffebee; color:#c62828; font-weight:bold; border:1px solid #c62828;' : '';
                 let overTitle = isOverdue ? '⚠️ TÄHTAEG MÖÖDAS!' : 'Lõppkuupäev';
-
                 let cleanMt = String(o.mt).trim().toLowerCase();
                 let isDuplicate = (cleanMt !== "uus" && cleanMt !== "" && mtCounts[cleanMt] > 1);
                 let mtStyle = isDuplicate ? 'border:2px solid red; background-color:#ffebee; color:red;' : '';
@@ -294,17 +282,14 @@
                     <td><input class="data-in" value="${o.kirjeldus||''}" placeholder="${isAdmin?'Töö sisu...':''}" onchange="u(${i},'kirjeldus',this.value)" ${disAttr}></td>
                     <td><input type="date" class="data-in" value="${safeISO(o.start)}" onchange="u(${i},'start',this.value)" ${disAttr}></td>
                     <td class="divider-right"><input type="date" class="data-in" title="${overTitle}" style="${overStyle}" value="${safeISO(o.end)}" onchange="u(${i},'end',this.value)" ${disAttr}></td>
-                    
                     <td><input class="num-in" title="AH1" value="${o.sub1}" onchange="u(${i},'sub1',this.value)" ${disAttr}></td>
                     <td class="divider-right"><input class="num-in" title="AH2" value="${o.sub2}" onchange="u(${i},'sub2',this.value)" ${disAttr}></td>
-                    
                     <td class="divider-right"><div class="cell-flex"><input class="num-in" title="TR (tunnid)" value="${o.trei}" onchange="u(${i},'trei',this.value)" ${disAttr}><input class="prog-in" title="TR (%)" value="${o.prog_tr}" onchange="u(${i},'prog_tr',this.value)" ${disAttr}></div></td>
                     <td class="divider-right"><div class="cell-flex"><input class="num-in" title="MK (tunnid)" value="${o.must_k}" onchange="u(${i},'must_k',this.value)" ${disAttr}><input class="prog-in" title="MK (%)" value="${o.prog_mk}" onchange="u(${i},'prog_mk',this.value)" ${disAttr}></div></td>
                     <td class="divider-right"><div class="cell-flex"><input class="num-in" title="RK (tunnid)" value="${o.rv_k}" onchange="u(${i},'rv_k',this.value)" ${disAttr}><input class="prog-in" title="RK (%)" value="${o.prog_rk}" onchange="u(${i},'prog_rk',this.value)" ${disAttr}></div></td>
                     <td class="divider-right"><div class="cell-flex"><input class="num-in" title="ML (tunnid)" value="${o.must_l}" onchange="u(${i},'must_l',this.value)" ${disAttr}><input class="prog-in" title="ML (%)" value="${o.prog_ml}" onchange="u(${i},'prog_ml',this.value)" ${disAttr}></div></td>
                     <td class="divider-right"><div class="cell-flex"><input class="num-in" title="RL (tunnid)" value="${o.rv_l}" onchange="u(${i},'rv_l',this.value)" ${disAttr}><input class="prog-in" title="RL (%)" value="${o.prog_rl}" onchange="u(${i},'prog_rl',this.value)" ${disAttr}></div></td>
                     <td class="divider-right"><div class="cell-flex"><input class="num-in" title="KO (tunnid)" value="${o.kooste}" onchange="u(${i},'kooste',this.value)" ${disAttr}><input class="prog-in" title="KO (%)" value="${o.prog_ko}" onchange="u(${i},'prog_ko',this.value)" ${disAttr}></div></td>
-                    
                     <td class="divider-right" style="text-align:center;"><div id="prog_tot_${i}" style="background:#e3f2fd; color:#0277bd; border:1px solid #0288d1; border-radius:3px; padding:4px; font-weight:bold; font-size:11px; width:40px; margin:auto;" title="Kogu tellimuse automaatne valmisolek">${o.progress}%</div></td>
                     <td><select class="status-select" onchange="u(${i},'status',this.value);renderTable()" ${disAttr}><option ${o.status==='Ootel'?'selected':''}>Ootel</option><option ${o.status==='Töös'?'selected':''}>Töös</option><option ${o.status==='Valmis'?'selected':''}>Valmis</option></select></td>
                     <td class="admin-only" style="${hideTrash}"><button onclick="del(${i})" style="border:none; background:none; cursor:pointer;">🗑️</button></td>
@@ -346,8 +331,7 @@
 
     function renderGantt(containerId, key) {
         const outer = document.getElementById(containerId); if(!outer) return;
-        const dayCount = 365; // GANTT NÄITAB NÜÜD TERVET AASTAT
-        const tIdx = getDayIndexUTC(TODAY, START_VIEW);
+        const dayCount = 365; const tIdx = getDayIndexUTC(TODAY, START_VIEW);
         let headerCols = "";
         for(let d=0; d<dayCount; d++) {
             let cur = new Date(START_VIEW.getTime() + d * 86400000);
@@ -390,23 +374,44 @@
         if(bS && hS) { bS.onscroll = () => { hS.scrollLeft = bS.scrollLeft; }; setTimeout(() => { bS.scrollLeft = (tIdx * 45) - 160; }, 100); }
     }
 
+    // -- SÜNKROONKERIMISE FUNKTSIOON --
+    function syncDailyScroll(e) {
+        const scrollX = e.target.scrollLeft;
+        document.querySelectorAll('.daily-chart-wrapper').forEach(w => {
+            if (w !== e.target && w.scrollLeft !== scrollX) {
+                w.scrollLeft = scrollX;
+            }
+        });
+    }
+
     function renderDailyLoad() {
         const container = document.getElementById('daily-load-container'); container.innerHTML = "";
-        const daysToShow = 365; // PÄEVAKOORMUS NÄITAB NÜÜD TERVET AASTAT
+        const daysToShow = 365; // Näitame 365 päeva (terve aasta)
         const startDate = new Date(TODAY); startDate.setDate(startDate.getDate() - 2);
         const SCALE = 4;
         
+        // OPTIMEERIMINE: Eel-kalkuleerime tellimuste aegade info, et vältida brauseri hangumist (365x tsükkel!)
+        let activeStats = {};
         Object.keys(CONFIG).forEach(k => {
-            let chartHtml = `<div class="daily-chart-wrapper"><h3>${CONFIG[k].l} (Päeva koormus)</h3><div class="daily-chart-area">`;
+            activeStats[k] = orders.filter(o => o.status === 'Töös' && o[k] > 0).map(o => {
+                let s = new Date(o.start), e = new Date(o.end);
+                return { mt: o.mt, kirjeldus: o.kirjeldus, sTime: s.getTime(), eTime: e.getTime(), hPerDay: o[k] / getWorkingDays(s, e) };
+            });
+        });
+
+        Object.keys(CONFIG).forEach(k => {
+            let chartHtml = `<div class="daily-chart-wrapper" onscroll="syncDailyScroll(event)"><h3>${CONFIG[k].l} (Päeva koormus)</h3><div class="daily-chart-area">`;
             for(let i=0; i<daysToShow; i++) {
-                let curDate = new Date(startDate.getTime() + i*86400000), wNo = getWeek(curDate), isToday = curDate.toDateString() === TODAY.toDateString(), isWeekend = curDate.getDay() === 0 || curDate.getDay() === 6, segmentsHtml = "", totalH = 0;
+                let curDate = new Date(startDate.getTime() + i*86400000);
+                let curTime = curDate.getTime();
+                let wNo = getWeek(curDate), isToday = curDate.toDateString() === TODAY.toDateString(), isWeekend = curDate.getDay() === 0 || curDate.getDay() === 6, segmentsHtml = "", totalH = 0;
                 let dailyCap = (customCap[k] && customCap[k][wNo]) ? customCap[k][wNo] / 5 : CONFIG[k].c / 5;
+                
                 if (!isWeekend) {
-                    orders.filter(o => o.status === 'Töös' && o[k] > 0).forEach(o => {
-                        let s = new Date(o.start), e = new Date(o.end);
-                        if(curDate >= s && curDate <= e) {
-                            let workDays = getWorkingDays(s, e), hPerDay = o[k] / workDays;
-                            totalH += hPerDay; segmentsHtml += `<div class="order-segment" style="height:${hPerDay * SCALE}px; background:${CONFIG[k].color};" title="${o.mt} (${o.kirjeldus||''})\nKoormus: ${hPerDay.toFixed(1)}h">${hPerDay > 0.5 ? o.mt : ''}</div>`;
+                    activeStats[k].forEach(os => {
+                        if(curTime >= os.sTime && curTime <= os.eTime) {
+                            totalH += os.hPerDay; 
+                            segmentsHtml += `<div class="order-segment" style="height:${os.hPerDay * SCALE}px; background:${CONFIG[k].color};" title="${os.mt} (${os.kirjeldus||''})\nKoormus: ${os.hPerDay.toFixed(1)}h">${os.hPerDay > 0.5 ? os.mt : ''}</div>`;
                         }
                     });
                 }
@@ -430,7 +435,7 @@
     function saveCapacity() {
         if(!isAdmin) return;
         document.querySelectorAll('.cap-in').forEach(i => { if(!customCap[i.dataset.k]) customCap[i.dataset.k] = {}; customCap[i.dataset.k][i.dataset.w] = parseInt(i.value); });
-        localStorage.setItem('prod_cap_v82', JSON.stringify(customCap)); alert("Võimekus salvestatud brauseri mällu!"); fetchData();
+        localStorage.setItem('prod_cap_v83', JSON.stringify(customCap)); alert("Võimekus salvestatud brauseri mällu!"); fetchData();
     }
 
     function save() { 
