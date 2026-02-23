@@ -2,7 +2,7 @@
 <html lang="et">
 <head>
     <meta charset="UTF-8">
-    <title>TOCI Tootmisplaan V80.0</title>
+    <title>TOCI Tootmisplaan V82.0</title>
     <style>
         :root { --primary: #1a252f; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; --warning: #f1c40f; --bg: #f4f7f6; --today: #ff4757; --cell-w: 45px; --sub-bg: #95a5a6; }
         *, *:before, *:after { box-sizing: border-box; }
@@ -52,8 +52,8 @@
 
         /* PÄEVA KOORMUS & GANTT */
         .daily-charts-container { height: 100%; overflow-y: auto; display: flex; flex-direction: column; gap: 40px; padding-bottom: 50px; }
-        .daily-chart-wrapper { background: white; padding: 20px; border-radius: 12px; min-width: 1200px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        .daily-chart-area { display: flex; align-items: flex-end; height: 280px; gap: 4px; border-bottom: 2px solid #444; position: relative; margin-top: 40px; }
+        .daily-chart-wrapper { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); overflow-x: auto; scroll-behavior: smooth; }
+        .daily-chart-area { display: flex; align-items: flex-end; height: 280px; gap: 4px; border-bottom: 2px solid #444; position: relative; margin-top: 40px; width: max-content; min-width: 100%; padding-right: 20px; }
         .day-column { flex: 1; min-width: 55px; display: flex; flex-direction: column-reverse; position: relative; height: 100%; }
         .day-label { position: absolute; top: 100%; left: 0; width: 100%; text-align: center; font-size: 9px; padding-top: 5px; line-height: 1.2; }
         .order-segment { width: 100%; border: 1px solid rgba(255,255,255,0.3); border-radius: 2px; display: flex; align-items: center; justify-content: center; overflow: hidden; color: white; font-size: 8px; font-weight: bold; cursor: help; }
@@ -85,9 +85,9 @@
 </head>
 <body>
 <div class="top-bar">
-    <div>🚀 <strong>TOCI LIVE V80.0</strong></div>
+    <div>🚀 <strong>TOCI LIVE V82.0</strong></div>
     <div style="display:flex; gap:15px; align-items:center;">
-        <div id="syncStatus" style="background:var(--warning); color:black; padding:4px 10px; border-radius:4px; font-weight:bold;">Ühendan...</div>
+        <div id="syncStatus" style="background:var(--warning); color:black; padding:4px 10px; border-radius:4px; font-weight:bold; transition: 0.3s;">Ühendan...</div>
         <button id="modeToggleBtn" onclick="toggleMode()" style="background:#95a5a6; color:white; border:none; padding:6px 12px; border-radius:4px; font-weight:bold; cursor:pointer;">🔒 VAATAJA</button>
     </div>
 </div>
@@ -108,9 +108,7 @@
     <button class="tab-btn" style="background:var(--success)" onclick="fetchData()">🔄 VÄRSKENDA</button>
 </div>
 
-<div id="dashboard_view" class="content">
-    <div class="dashboard-grid" id="dashboard-container"></div>
-</div>
+<div id="dashboard_view" class="content"><div class="dashboard-grid" id="dashboard-container"></div></div>
 
 <div id="main_view" class="content active">
     <div style="margin-bottom:15px; display:flex; gap:10px; align-items:center;">
@@ -156,20 +154,17 @@
 <div id="gantt_ml" class="content"><div class="gantt-outer" id="out-ml"></div></div>
 <div id="gantt_rl" class="content"><div class="gantt-outer" id="out-rl"></div></div>
 <div id="gantt_ko" class="content"><div class="gantt-outer" id="out-ko"></div></div>
-
 <div id="paeva_koormus" class="content"><div id="daily-load-container" class="daily-charts-container"></div></div>
-
-<div id="voimekus_tab" class="content">
-    <div class="table-container" style="height: calc(100% - 60px);">
-        <table class="data-table" id="cap-table"></table>
-    </div>
-    <button id="saveCapBtn" onclick="saveCapacity()" style="margin-top:15px; padding:12px 25px; background:var(--accent); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold; display:none;">💾 SALVESTA VÕIMEKUS</button>
-</div>
+<div id="voimekus_tab" class="content"><div class="table-container" style="height: calc(100% - 60px);"><table class="data-table" id="cap-table"></table></div><button id="saveCapBtn" onclick="saveCapacity()" style="margin-top:15px; padding:12px 25px; background:var(--accent); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold; display:none;">💾 SALVESTA VÕIMEKUS</button></div>
 
 <script>
     let isAdmin = false;
     const ADMIN_PIN = "1234";
     const API_URL = "https://script.google.com/macros/s/AKfycbwFGxkxdlGqW57N4HlB3HI6lCofYLWrQIYlgUEag9KQR2oEFRiVX9vxoQZ4nKa-NlKb6w/exec";
+    
+    let saveTimeout;
+    let isSaving = false;
+    let hasPendingChanges = false;
     
     const CONFIG = { 
         trei:   {l:'Treial',   c:40,  color:'#9b59b6', order:1, p:'prog_tr'},
@@ -181,8 +176,8 @@
     };
     
     const START_VIEW = new Date("2026-01-01"), TODAY = new Date();
-    let orders = [], customCap = JSON.parse(localStorage.getItem('prod_cap_v80')) || {};
-    let currentMainTabFilter = 'active'; // 'active' või 'archive'
+    let orders = [], customCap = JSON.parse(localStorage.getItem('prod_cap_v82')) || {};
+    let currentMainTabFilter = 'active'; 
 
     const f = (v) => parseFloat(v) || 0;
     function getUTCDate(d) { const dt = new Date(d); return isNaN(dt.getTime()) ? null : Date.UTC(dt.getFullYear(), dt.getMonth(), dt.getDate()); }
@@ -190,6 +185,14 @@
     function safeISO(d) { const dt = new Date(d); return isNaN(dt.getTime()) ? new Date().toISOString().split('T')[0] : dt.toISOString().split('T')[0]; }
     function getWeek(d) { d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7)); return Math.ceil((((d - new Date(Date.UTC(d.getUTCFullYear(),0,1))) / 86400000) + 1)/7); }
     function getWorkingDays(s, e) { let c = 0, cur = new Date(s); while(cur <= e) { if(cur.getDay()!==0 && cur.getDay()!==6) c++; cur.setDate(cur.getDate()+1); } return c || 1; }
+
+    function updateSyncStatus(text, type) {
+        const el = document.getElementById('syncStatus');
+        el.innerText = text;
+        if(type === 'success') { el.style.background = "var(--success)"; el.style.color = "white"; }
+        else if(type === 'danger') { el.style.background = "var(--danger)"; el.style.color = "white"; }
+        else { el.style.background = "var(--warning)"; el.style.color = "black"; }
+    }
 
     function calcOverallProgress(o) {
         let totalH = f(o.trei) + f(o.must_k) + f(o.rv_k) + f(o.must_l) + f(o.rv_l) + f(o.kooste);
@@ -226,7 +229,11 @@
     }
 
     async function fetchData() {
-        document.getElementById('syncStatus').innerText = "Värskendan...";
+        if (hasPendingChanges || isSaving) {
+            alert("⏳ Oota! Süsteem parasjagu salvestab sinu viimaseid muudatusi pilve.");
+            return;
+        }
+        updateSyncStatus("🔄 Värskendan...", "warning");
         try {
             const r = await fetch(API_URL);
             const d = await r.json();
@@ -240,9 +247,9 @@
                     obj.progress = calcOverallProgress(obj);
                     return obj;
                 });
-                applyUIMode(); document.getElementById('syncStatus').innerText = "Andmed OK";
+                applyUIMode(); updateSyncStatus("✅ Andmed OK", "success");
             }
-        } catch(e) { document.getElementById('syncStatus').innerText = "Viga!"; }
+        } catch(e) { updateSyncStatus("❌ Ühenduse viga", "danger"); }
     }
 
     function renderTable() {
@@ -253,13 +260,10 @@
         let todayTime = new Date();
         todayTime.setHours(23, 59, 59, 999);
 
-        // Skaneerime tabelit dublikaatide leidmiseks (MT numbrite sagedus)
         let mtCounts = {};
         orders.forEach(o => {
             let cleanMt = String(o.mt).trim().toLowerCase();
-            if(cleanMt !== "uus" && cleanMt !== "") {
-                mtCounts[cleanMt] = (mtCounts[cleanMt] || 0) + 1;
-            }
+            if(cleanMt !== "uus" && cleanMt !== "") mtCounts[cleanMt] = (mtCounts[cleanMt] || 0) + 1;
         });
         
         orders.forEach((o, i) => {
@@ -271,17 +275,14 @@
             if ((!mV || safeISO(o.start).includes(mV)) && matchText) {
                 const sCl = o.status === 'Valmis' ? 'status-valmis' : o.status === 'Töös' ? 'status-toos' : 'status-ootel';
                 
-                // HOIATUS: Aegunud tähtaeg
                 let isOverdue = false;
                 if (o.status === 'Töös') {
-                    let endD = new Date(o.end);
-                    endD.setHours(23, 59, 59, 999);
+                    let endD = new Date(o.end); endD.setHours(23, 59, 59, 999);
                     if (endD.getTime() < todayTime.getTime()) isOverdue = true;
                 }
                 let overStyle = isOverdue ? 'background-color:#ffebee; color:#c62828; font-weight:bold; border:1px solid #c62828;' : '';
                 let overTitle = isOverdue ? '⚠️ TÄHTAEG MÖÖDAS!' : 'Lõppkuupäev';
 
-                // HOIATUS: Dublikaat MT number
                 let cleanMt = String(o.mt).trim().toLowerCase();
                 let isDuplicate = (cleanMt !== "uus" && cleanMt !== "" && mtCounts[cleanMt] > 1);
                 let mtStyle = isDuplicate ? 'border:2px solid red; background-color:#ffebee; color:red;' : '';
@@ -292,7 +293,6 @@
                     <td><input class="data-in" value="${o.client}" onchange="u(${i},'client',this.value)" ${disAttr}></td>
                     <td><input class="data-in" value="${o.kirjeldus||''}" placeholder="${isAdmin?'Töö sisu...':''}" onchange="u(${i},'kirjeldus',this.value)" ${disAttr}></td>
                     <td><input type="date" class="data-in" value="${safeISO(o.start)}" onchange="u(${i},'start',this.value)" ${disAttr}></td>
-                    
                     <td class="divider-right"><input type="date" class="data-in" title="${overTitle}" style="${overStyle}" value="${safeISO(o.end)}" onchange="u(${i},'end',this.value)" ${disAttr}></td>
                     
                     <td><input class="num-in" title="AH1" value="${o.sub1}" onchange="u(${i},'sub1',this.value)" ${disAttr}></td>
@@ -346,7 +346,8 @@
 
     function renderGantt(containerId, key) {
         const outer = document.getElementById(containerId); if(!outer) return;
-        const dayCount = 250; const tIdx = getDayIndexUTC(TODAY, START_VIEW);
+        const dayCount = 365; // GANTT NÄITAB NÜÜD TERVET AASTAT
+        const tIdx = getDayIndexUTC(TODAY, START_VIEW);
         let headerCols = "";
         for(let d=0; d<dayCount; d++) {
             let cur = new Date(START_VIEW.getTime() + d * 86400000);
@@ -391,8 +392,10 @@
 
     function renderDailyLoad() {
         const container = document.getElementById('daily-load-container'); container.innerHTML = "";
-        const daysToShow = 40, startDate = new Date(TODAY); startDate.setDate(startDate.getDate() - 2);
+        const daysToShow = 365; // PÄEVAKOORMUS NÄITAB NÜÜD TERVET AASTAT
+        const startDate = new Date(TODAY); startDate.setDate(startDate.getDate() - 2);
         const SCALE = 4;
+        
         Object.keys(CONFIG).forEach(k => {
             let chartHtml = `<div class="daily-chart-wrapper"><h3>${CONFIG[k].l} (Päeva koormus)</h3><div class="daily-chart-area">`;
             for(let i=0; i<daysToShow; i++) {
@@ -427,34 +430,34 @@
     function saveCapacity() {
         if(!isAdmin) return;
         document.querySelectorAll('.cap-in').forEach(i => { if(!customCap[i.dataset.k]) customCap[i.dataset.k] = {}; customCap[i.dataset.k][i.dataset.w] = parseInt(i.value); });
-        localStorage.setItem('prod_cap_v80', JSON.stringify(customCap)); alert("Võimekus salvestatud brauseri mällu!"); fetchData();
+        localStorage.setItem('prod_cap_v82', JSON.stringify(customCap)); alert("Võimekus salvestatud brauseri mällu!"); fetchData();
     }
 
-    async function save() { if(!isAdmin) return; await fetch(API_URL, {method:"POST", body:JSON.stringify(orders), mode:'no-cors'}); }
+    function save() { 
+        if(!isAdmin) return; 
+        hasPendingChanges = true; updateSyncStatus("⏳ Ootan...", "warning");
+        clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(async () => {
+            isSaving = true; updateSyncStatus("💾 Salvestan...", "warning");
+            try {
+                await fetch(API_URL, {method:"POST", body:JSON.stringify(orders), mode:'no-cors'});
+                isSaving = false; hasPendingChanges = false; updateSyncStatus("✅ Salvestatud", "success");
+            } catch(e) { isSaving = false; updateSyncStatus("❌ Salvestamise viga", "danger"); }
+        }, 1500);
+    }
     
     function u(i, k, v) { 
         if(!isAdmin) return; 
-        
-        // --- UUS: DUBLIKAADI KAITSE ---
         if (k === 'mt' && v !== "UUS" && String(v).trim() !== "") {
-            // Kontrollime, kas see number on juba kuskil mujal (v.a. see sama rida 'i') olemas
             let isDuplicate = orders.some((o, idx) => idx !== i && String(o.mt).trim().toLowerCase() === String(v).trim().toLowerCase());
-            if (isDuplicate) {
-                alert("⚠️ VIGA: MT number '" + v + "' on juba süsteemis olemas! Dublikaadid ei ole lubatud.");
-                renderTable(); // Taastab eelmise numbri
-                return; // Blokeerib salvestamise
-            }
+            if (isDuplicate) { alert("⚠️ VIGA: MT number '" + v + "' on juba süsteemis olemas! Dublikaadid ei ole lubatud."); renderTable(); return; }
         }
-
         orders[i][k] = v; 
-        
-        // Arvuta uus üldprotsent
         if (['trei', 'must_k', 'rv_k', 'must_l', 'rv_l', 'kooste', 'prog_tr', 'prog_mk', 'prog_rk', 'prog_ml', 'prog_rl', 'prog_ko'].includes(k)) {
             orders[i].progress = calcOverallProgress(orders[i]);
             let pCell = document.getElementById('prog_tot_' + i);
             if(pCell) pCell.innerText = orders[i].progress + '%';
         }
-        
         save(); 
     }
     
@@ -467,17 +470,15 @@
         document.getElementById('view-title').innerText = "Aktiivsed tööd (Ootel/Töös)";
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.querySelector('.tab-btn').classList.add('active'); 
-        renderTable(); 
-        save();
+        renderTable(); save();
     }
 
     function openTab(e, viewId, filterType) {
         document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         e.currentTarget.classList.add('active');
-        
         document.getElementById(viewId).classList.add('active');
-
+        
         if (viewId === 'main_view') {
             currentMainTabFilter = filterType;
             document.getElementById('view-title').innerText = filterType === 'active' ? "Aktiivsed tööd (Ootel/Töös)" : "Arhiiv (Lõpetatud tööd)";
