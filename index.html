@@ -2,7 +2,7 @@
 <html lang="et">
 <head>
     <meta charset="UTF-8">
-    <title>TOCI Tootmisplaan V76.0</title>
+    <title>TOCI Tootmisplaan V78.0</title>
     <style>
         :root { --primary: #1a252f; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; --warning: #f1c40f; --bg: #f4f7f6; --today: #ff4757; --cell-w: 45px; --sub-bg: #95a5a6; }
         *, *:before, *:after { box-sizing: border-box; }
@@ -23,15 +23,26 @@
         tr.status-toos { background-color: #e3f2fd !important; }
         tr.status-valmis { background-color: #e8f5e9 !important; }
         
-        /* VAATAJA REŽIIMI STIILID */
+        /* TULPADE ERALDAJAD JA PÄISED */
+        .divider-right { border-right: 2px solid #95a5a6 !important; }
+        .dept-header { background: #d5dde5 !important; text-align: center !important; }
+
+        /* KASTIDE JA VAATAJA REŽIIMI STIILID (PARANDATUD V78) */
         .data-in { width: 100%; border: 1px solid transparent; padding: 4px; border-radius: 3px; background: transparent; font-size: 12px; }
         .data-in:focus { border-color: var(--accent); outline: none; background: #fff; }
-        .data-in:disabled, .num-in:disabled, .prog-in:disabled, .status-select:disabled { color: #333; opacity: 1; background: transparent; border: none; -webkit-appearance: none; appearance: none; cursor: default; }
+        .data-in:disabled { color: #111; opacity: 1; background: transparent; border: none; -webkit-appearance: none; appearance: none; cursor: default; }
         
-        .num-in { width: 38px; text-align: center; font-weight: bold; border: 1px solid #ccc; border-radius: 3px; padding: 4px;}
+        /* Tunnid (Hallid kastid) */
+        .num-in { width: 38px; text-align: center; font-weight: bold; border: 1px solid #ccc; border-radius: 3px; padding: 4px; background: #fff; }
+        .num-in:disabled { background: #f0f2f5; border: 1px solid #dcdde1; color: #222; opacity: 1; -webkit-appearance: none; appearance: none; cursor: default; }
+
+        /* Protsendid (Rohelised kastid) */
         .prog-in { width: 38px; text-align: center; font-weight: bold; border: 1px solid #27ae60; border-radius: 3px; padding: 4px; background: #eafff0; color: #1b5e20; }
+        .prog-in:disabled { background: #eafff0; border: 1px solid #a5d6a7; color: #1b5e20; opacity: 1; -webkit-appearance: none; appearance: none; cursor: default; }
+        
         .status-select { padding: 4px; border-radius: 4px; border: 1px solid #999; font-weight: bold; font-size: 11px; cursor: pointer; background: white; }
-        .cell-flex { display: flex; gap: 3px; align-items: center; }
+        .status-select:disabled { border: none; background: transparent; color: #111; opacity: 1; -webkit-appearance: none; appearance: none; cursor: default; }
+        .cell-flex { display: flex; gap: 3px; align-items: center; justify-content: center; }
 
         /* PÄEVA KOORMUS */
         .daily-charts-container { height: 100%; overflow-y: auto; display: flex; flex-direction: column; gap: 40px; padding-bottom: 50px; }
@@ -69,7 +80,7 @@
 </head>
 <body>
 <div class="top-bar">
-    <div>🚀 <strong>TOCI LIVE V76.0</strong></div>
+    <div>🚀 <strong>TOCI LIVE V78.0</strong></div>
     <div style="display:flex; gap:15px; align-items:center;">
         <div id="syncStatus" style="background:var(--warning); color:black; padding:4px 10px; border-radius:4px; font-weight:bold;">Ühendan...</div>
         <button id="modeToggleBtn" onclick="toggleMode()" style="background:#95a5a6; color:white; border:none; padding:6px 12px; border-radius:4px; font-weight:bold; cursor:pointer;">🔒 VAATAJA</button>
@@ -96,7 +107,7 @@
             <option value="">Kõik kuud</option>
             <option value="-01-">Jaanuar</option><option value="-02-">Veebruar</option><option value="-03-">Märts</option><option value="-04-">Aprill</option><option value="-05-">Mai</option><option value="-06-">Juuni</option><option value="-07-">Juuli</option><option value="-08-">August</option><option value="-09-">September</option><option value="-10-">Oktoober</option><option value="-11-">November</option><option value="-12-">Detsember</option>
         </select>
-        <div style="font-size:11px; color:#666; margin-left:10px;">💡 Hall kast = Tunnid | Roheline kast = Valmis % | Sinine = Kogu tellimuse %</div>
+        <div style="font-size:11px; color:#666; margin-left:10px;">💡 Hall kast = Tunnid | Roheline kast = Valmis % | Sinine = Üld %</div>
     </div>
     <div class="table-container">
         <table class="data-table">
@@ -106,16 +117,16 @@
                     <th>Klient</th>
                     <th title="Töö sisu / Lühikirjeldus">Kirjeldus</th>
                     <th>Algus</th>
-                    <th>Lõpp</th>
+                    <th class="divider-right">Lõpp</th>
                     <th title="Allhange enne (p)">AH1</th>
-                    <th title="Allhange peale (p)">AH2</th>
-                    <th title="Treial (tunnid | %)">TR (h | %)</th>
-                    <th title="Must Keevitus (tunnid | %)">MK (h | %)</th>
-                    <th title="RV Keevitus (tunnid | %)">RK (h | %)</th>
-                    <th title="Must Lukksepp (tunnid | %)">ML (h | %)</th>
-                    <th title="RV Lukksepp (tunnid | %)">RL (h | %)</th>
-                    <th title="Kooste (tunnid | %)">KO (h | %)</th>
-                    <th title="Kogu tellimuse automaatselt arvutatud valmisolek (Tundide kaalutud keskmine)">Üld %</th>
+                    <th class="divider-right" title="Allhange peale (p)">AH2</th>
+                    <th class="dept-header divider-right" title="Treial (tunnid | %)">TR (h | %)</th>
+                    <th class="dept-header divider-right" title="Must Keevitus (tunnid | %)">MK (h | %)</th>
+                    <th class="dept-header divider-right" title="RV Keevitus (tunnid | %)">RK (h | %)</th>
+                    <th class="dept-header divider-right" title="Must Lukksepp (tunnid | %)">ML (h | %)</th>
+                    <th class="dept-header divider-right" title="RV Lukksepp (tunnid | %)">RL (h | %)</th>
+                    <th class="dept-header divider-right" title="Kooste (tunnid | %)">KO (h | %)</th>
+                    <th class="divider-right" title="Kogu tellimuse automaatselt arvutatud valmisolek (Tundide kaalutud keskmine)">Üld %</th>
                     <th>Staatus</th>
                     <th class="admin-only" style="display:none;">🗑️</th>
                 </tr>
@@ -156,7 +167,7 @@
     };
     
     const START_VIEW = new Date("2026-01-01"), TODAY = new Date();
-    let orders = [], customCap = JSON.parse(localStorage.getItem('prod_cap_v76')) || {};
+    let orders = [], customCap = JSON.parse(localStorage.getItem('prod_cap_v78')) || {};
 
     const f = (v) => parseFloat(v) || 0;
     function getUTCDate(d) { const dt = new Date(d); return isNaN(dt.getTime()) ? null : Date.UTC(dt.getFullYear(), dt.getMonth(), dt.getDate()); }
@@ -165,7 +176,6 @@
     function getWeek(d) { d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7)); return Math.ceil((((d - new Date(Date.UTC(d.getUTCFullYear(),0,1))) / 86400000) + 1)/7); }
     function getWorkingDays(s, e) { let c = 0, cur = new Date(s); while(cur <= e) { if(cur.getDay()!==0 && cur.getDay()!==6) c++; cur.setDate(cur.getDate()+1); } return c || 1; }
 
-    // Üldise progressi arvutamise funktsioon (Tundide kaalutud keskmine)
     function calcOverallProgress(o) {
         let totalH = f(o.trei) + f(o.must_k) + f(o.rv_k) + f(o.must_l) + f(o.rv_l) + f(o.kooste);
         if (totalH === 0) return 0;
@@ -304,7 +314,7 @@
     function saveCapacity() {
         if(!isAdmin) return;
         document.querySelectorAll('.cap-in').forEach(i => { if(!customCap[i.dataset.k]) customCap[i.dataset.k] = {}; customCap[i.dataset.k][i.dataset.w] = parseInt(i.value); });
-        localStorage.setItem('prod_cap_v76', JSON.stringify(customCap)); alert("Võimekus salvestatud brauseri mällu!"); fetchData();
+        localStorage.setItem('prod_cap_v78', JSON.stringify(customCap)); alert("Võimekus salvestatud brauseri mällu!"); fetchData();
     }
 
     function renderTable() {
@@ -321,18 +331,19 @@
                     <td><input class="data-in" value="${o.client}" onchange="u(${i},'client',this.value)" ${disAttr}></td>
                     <td><input class="data-in" value="${o.kirjeldus||''}" placeholder="${isAdmin?'Töö sisu...':''}" onchange="u(${i},'kirjeldus',this.value)" ${disAttr}></td>
                     <td><input type="date" class="data-in" value="${safeISO(o.start)}" onchange="u(${i},'start',this.value)" ${disAttr}></td>
-                    <td><input type="date" class="data-in" value="${safeISO(o.end)}" onchange="u(${i},'end',this.value)" ${disAttr}></td>
+                    <td class="divider-right"><input type="date" class="data-in" value="${safeISO(o.end)}" onchange="u(${i},'end',this.value)" ${disAttr}></td>
+                    
                     <td><input class="num-in" title="AH1" value="${o.sub1}" onchange="u(${i},'sub1',this.value)" ${disAttr}></td>
-                    <td><input class="num-in" title="AH2" value="${o.sub2}" onchange="u(${i},'sub2',this.value)" ${disAttr}></td>
+                    <td class="divider-right"><input class="num-in" title="AH2" value="${o.sub2}" onchange="u(${i},'sub2',this.value)" ${disAttr}></td>
                     
-                    <td><div class="cell-flex"><input class="num-in" title="TR (tunnid)" value="${o.trei}" onchange="u(${i},'trei',this.value)" ${disAttr}><input class="prog-in" title="TR (%)" value="${o.prog_tr}" onchange="u(${i},'prog_tr',this.value)" ${disAttr}></div></td>
-                    <td><div class="cell-flex"><input class="num-in" title="MK (tunnid)" value="${o.must_k}" onchange="u(${i},'must_k',this.value)" ${disAttr}><input class="prog-in" title="MK (%)" value="${o.prog_mk}" onchange="u(${i},'prog_mk',this.value)" ${disAttr}></div></td>
-                    <td><div class="cell-flex"><input class="num-in" title="RK (tunnid)" value="${o.rv_k}" onchange="u(${i},'rv_k',this.value)" ${disAttr}><input class="prog-in" title="RK (%)" value="${o.prog_rk}" onchange="u(${i},'prog_rk',this.value)" ${disAttr}></div></td>
-                    <td><div class="cell-flex"><input class="num-in" title="ML (tunnid)" value="${o.must_l}" onchange="u(${i},'must_l',this.value)" ${disAttr}><input class="prog-in" title="ML (%)" value="${o.prog_ml}" onchange="u(${i},'prog_ml',this.value)" ${disAttr}></div></td>
-                    <td><div class="cell-flex"><input class="num-in" title="RL (tunnid)" value="${o.rv_l}" onchange="u(${i},'rv_l',this.value)" ${disAttr}><input class="prog-in" title="RL (%)" value="${o.prog_rl}" onchange="u(${i},'prog_rl',this.value)" ${disAttr}></div></td>
-                    <td><div class="cell-flex"><input class="num-in" title="KO (tunnid)" value="${o.kooste}" onchange="u(${i},'kooste',this.value)" ${disAttr}><input class="prog-in" title="KO (%)" value="${o.prog_ko}" onchange="u(${i},'prog_ko',this.value)" ${disAttr}></div></td>
+                    <td class="divider-right"><div class="cell-flex"><input class="num-in" title="TR (tunnid)" value="${o.trei}" onchange="u(${i},'trei',this.value)" ${disAttr}><input class="prog-in" title="TR (%)" value="${o.prog_tr}" onchange="u(${i},'prog_tr',this.value)" ${disAttr}></div></td>
+                    <td class="divider-right"><div class="cell-flex"><input class="num-in" title="MK (tunnid)" value="${o.must_k}" onchange="u(${i},'must_k',this.value)" ${disAttr}><input class="prog-in" title="MK (%)" value="${o.prog_mk}" onchange="u(${i},'prog_mk',this.value)" ${disAttr}></div></td>
+                    <td class="divider-right"><div class="cell-flex"><input class="num-in" title="RK (tunnid)" value="${o.rv_k}" onchange="u(${i},'rv_k',this.value)" ${disAttr}><input class="prog-in" title="RK (%)" value="${o.prog_rk}" onchange="u(${i},'prog_rk',this.value)" ${disAttr}></div></td>
+                    <td class="divider-right"><div class="cell-flex"><input class="num-in" title="ML (tunnid)" value="${o.must_l}" onchange="u(${i},'must_l',this.value)" ${disAttr}><input class="prog-in" title="ML (%)" value="${o.prog_ml}" onchange="u(${i},'prog_ml',this.value)" ${disAttr}></div></td>
+                    <td class="divider-right"><div class="cell-flex"><input class="num-in" title="RL (tunnid)" value="${o.rv_l}" onchange="u(${i},'rv_l',this.value)" ${disAttr}><input class="prog-in" title="RL (%)" value="${o.prog_rl}" onchange="u(${i},'prog_rl',this.value)" ${disAttr}></div></td>
+                    <td class="divider-right"><div class="cell-flex"><input class="num-in" title="KO (tunnid)" value="${o.kooste}" onchange="u(${i},'kooste',this.value)" ${disAttr}><input class="prog-in" title="KO (%)" value="${o.prog_ko}" onchange="u(${i},'prog_ko',this.value)" ${disAttr}></div></td>
                     
-                    <td style="text-align:center;"><div id="prog_tot_${i}" style="background:#e3f2fd; color:#0277bd; border:1px solid #0288d1; border-radius:3px; padding:4px; font-weight:bold; font-size:11px; width:40px; margin:auto;" title="Kogu tellimuse automaatne valmisolek">${o.progress}%</div></td>
+                    <td class="divider-right" style="text-align:center;"><div id="prog_tot_${i}" style="background:#e3f2fd; color:#0277bd; border:1px solid #0288d1; border-radius:3px; padding:4px; font-weight:bold; font-size:11px; width:40px; margin:auto;" title="Kogu tellimuse automaatne valmisolek">${o.progress}%</div></td>
                     <td><select class="status-select" onchange="u(${i},'status',this.value);renderTable()" ${disAttr}><option ${o.status==='Ootel'?'selected':''}>Ootel</option><option ${o.status==='Töös'?'selected':''}>Töös</option><option ${o.status==='Valmis'?'selected':''}>Valmis</option></select></td>
                     <td class="admin-only" style="${hideTrash}"><button onclick="del(${i})" style="border:none; background:none; cursor:pointer;">🗑️</button></td>
                 </tr>`;
@@ -345,12 +356,9 @@
     function u(i, k, v) { 
         if(!isAdmin) return; 
         orders[i][k] = v; 
-        
-        // Kui muudeti tunde või osakonna protsenti, arvuta kohe uus üldine protsent
         orders[i].progress = calcOverallProgress(orders[i]);
         let pCell = document.getElementById('prog_tot_' + i);
         if(pCell) pCell.innerText = orders[i].progress + '%';
-        
         save(); 
     }
     
