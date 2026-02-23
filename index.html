@@ -2,7 +2,7 @@
 <html lang="et">
 <head>
     <meta charset="UTF-8">
-    <title>TOCI Tootmisplaan V85.0</title>
+    <title>TOCI Tootmisplaan V86.0</title>
     <style>
         :root { --primary: #1a252f; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; --warning: #f1c40f; --bg: #f4f7f6; --today: #ff4757; --cell-w: 45px; --sub-bg: #95a5a6; }
         *, *:before, *:after { box-sizing: border-box; }
@@ -48,7 +48,7 @@
         .dash-card .value { font-size: 36px; font-weight: bold; color: var(--primary); }
         .dash-card .sub-text { font-size: 11px; color: #888; margin-top: 5px; }
 
-        /* GANTT (Tavaline, eraldi vahelehel - KIIRE JA SUJUV) */
+        /* GANTT VAATE OPTIMEERITUD STIILID */
         .gantt-outer { height: 100%; display: flex; flex-direction: column; background: white; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; }
         .gantt-header-wrapper { display: flex; background: #f8f9fa; border-bottom: 2px solid #ccc; height: 75px; }
         .header-corner { width: 320px; min-width: 320px; background: #eee; border-right: 3px solid #bbb; display: flex; align-items: center; padding-left: 15px; font-weight: bold; position: sticky; left: 0; z-index: 2500; }
@@ -57,13 +57,15 @@
         .h-col { width: var(--cell-w); min-width: var(--cell-w); border-right: 1px solid #ddd; display: flex; flex-direction: column; flex-shrink: 0; }
         .h-week { height: 35px; background: #dfe4ea; border-bottom: 1px solid #ccc; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; }
         .h-day { height: 40px; display: flex; align-items: center; justify-content: center; font-size: 9px; }
-        .gantt-body { flex-grow: 1; overflow: auto; scroll-behavior: smooth; }
+        .gantt-body { flex-grow: 1; overflow: auto; } /* 'scroll-behavior: smooth' EEMALDATUD kiiruse jaoks */
         .gantt-row { display: flex; border-bottom: 1px solid #eee; min-height: 105px; width: max-content; }
         .gantt-info { position: sticky !important; left: 0 !important; width: 320px; min-width: 320px; background: #fff !important; z-index: 1000 !important; border-right: 3px solid #bbb !important; padding: 10px 15px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; gap: 4px; }
         .gantt-info input[type="date"] { width: 100%; padding: 2px; font-size: 10px; border: 1px solid #ccc; border-radius:3px; }
         .gantt-info input[type="date"]:disabled { border: none; background: transparent; color: black; }
-        .gantt-bars-area { position: relative; display: flex; background-color: #fff; width: max-content; }
-        .day-cell-bg { width: var(--cell-w); min-width: var(--cell-w); border-right: 1px solid #f1f1f1; height: 100%; flex-shrink: 0; }
+        
+        /* CSS-põhine taustavõrgustik (asendab 18 000 HTML elementi) */
+        .gantt-bars-area { position: relative; display: flex; background-color: #fff; background-image: repeating-linear-gradient(to right, transparent, transparent calc(var(--cell-w) - 1px), #f1f1f1 calc(var(--cell-w) - 1px), #f1f1f1 var(--cell-w)); }
+        
         .today-line { position: absolute; top: 0; bottom: 0; width: 3px; background: var(--today); z-index: 500; pointer-events: none; }
         .task-bar { position: absolute; height: 32px; top: 32px; border-radius: 5px; color: white; display: flex; align-items: center; padding: 0 10px; font-size: 11px; font-weight: bold; z-index: 100; cursor: help; overflow:hidden; white-space:nowrap;}
         .progress-fill { position: absolute; left: 0; top: 0; height: 100%; background: rgba(0,0,0,0.3); border-right: 2px solid rgba(255,255,255,0.6); }
@@ -71,9 +73,9 @@
         .sub-pre { top: 18px; } .sub-post { top: 66px; }
         .empty-state { padding: 30px; text-align: center; color: #7f8c8d; font-size: 14px; position: sticky; left: 320px; }
 
-        /* PÄEVA KOORMUSE GRAAFIKUD (Eraldi vaheleht) */
+        /* PÄEVA KOORMUSE GRAAFIKUD */
         .daily-charts-container { height: 100%; overflow-y: auto; display: block; padding-bottom: 50px; }
-        .daily-chart-wrapper { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); overflow-x: auto; margin-bottom: 40px; flex-shrink: 0; scroll-behavior: smooth; }
+        .daily-chart-wrapper { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); overflow-x: auto; margin-bottom: 40px; flex-shrink: 0; } /* smooth scroll eemaldatud */
         .daily-chart-area { display: flex; align-items: flex-end; height: 280px; min-height: 280px; gap: 4px; border-bottom: 2px solid #444; position: relative; margin-top: 40px; width: max-content; padding-right: 20px; }
         .day-column { flex: 1; min-width: 55px; display: flex; flex-direction: column-reverse; position: relative; height: 100%; }
         .day-label { position: absolute; top: 100%; left: 0; width: 100%; text-align: center; font-size: 9px; padding-top: 5px; line-height: 1.2; }
@@ -84,7 +86,7 @@
 </head>
 <body>
 <div class="top-bar">
-    <div>🚀 <strong>TOCI LIVE V85.0</strong></div>
+    <div>🚀 <strong>TOCI LIVE V86.0 (Optimized Engine)</strong></div>
     <div style="display:flex; gap:15px; align-items:center;">
         <div id="syncStatus" style="background:var(--warning); color:black; padding:4px 10px; border-radius:4px; font-weight:bold; transition: 0.3s;">Ühendan...</div>
         <button id="modeToggleBtn" onclick="toggleMode()" style="background:#95a5a6; color:white; border:none; padding:6px 12px; border-radius:4px; font-weight:bold; cursor:pointer;">🔒 VAATAJA</button>
@@ -157,7 +159,6 @@
 <div id="gantt_ko" class="content"><div class="gantt-outer" id="out-ko"></div></div>
 
 <div id="paeva_koormus_graafik" class="content"><div id="daily-load-container" class="daily-charts-container"></div></div>
-
 <div id="paeva_koormus_tabel" class="content"><div id="daily-table-container" style="height:100%;"></div></div>
 
 <div id="voimekus_tab" class="content"><div class="table-container" style="height: calc(100% - 60px);"><table class="data-table" id="cap-table"></table></div><button id="saveCapBtn" onclick="saveCapacity()" style="margin-top:15px; padding:12px 25px; background:var(--accent); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold; display:none;">💾 SALVESTA VÕIMEKUS</button></div>
@@ -179,7 +180,7 @@
     };
     
     const START_VIEW = new Date("2026-01-01"), TODAY = new Date();
-    let orders = [], customCap = JSON.parse(localStorage.getItem('prod_cap_v85')) || {};
+    let orders = [], customCap = JSON.parse(localStorage.getItem('prod_cap_v86')) || {};
     let currentMainTabFilter = 'active'; 
 
     const f = (v) => parseFloat(v) || 0;
@@ -357,26 +358,34 @@
                     <b>${o.mt}</b><small>${o.client}</small><small style="color:#777; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${o.kirjeldus||''}">${o.kirjeldus||''}</small>
                     <div style="display:flex;gap:3px;"><input type="date" title="Algus" value="${safeISO(o.start)}" onchange="u(${gIdx},'start',this.value);renderGantt('${containerId}','${key}')" ${disAttr}><input type="date" title="Lõpp" value="${safeISO(o.end)}" onchange="u(${gIdx},'end',this.value);renderGantt('${containerId}','${key}')" ${disAttr}></div>
                 </div>
-                <div class="gantt-bars-area"><div class="today-line" style="left:${tIdx * 45}px"></div>`;
+                <div class="gantt-bars-area" style="width:calc(var(--cell-w) * ${dayCount});">
+                    <div class="today-line" style="left:${tIdx * 45}px"></div>`;
             if(o.sub1 > 0) bodyHtml += `<div class="sub-bar sub-pre" style="left:${(sIdx - o.sub1)*45}px; width:${o.sub1*45 - 2}px">AH1</div>`;
             bodyHtml += `<div class="task-bar" title="MT: ${o.mt}\nKlient: ${o.client}\n${CONFIG[key].l}: ${o[key]}h\nValmis: ${curProg}%\nSisu: ${o.kirjeldus||'-'}" style="left:${finalLeft}px; width:${taskDur * 45 - 5}px; background:${CONFIG[key].color}">
                 <div class="progress-fill" style="width:${curProg}%"></div>
                 <span style="position:relative; padding-left:5px; z-index:10;">${o.mt} (${curProg}%)</span>
             </div>`;
             if(o.sub2 > 0) bodyHtml += `<div class="sub-bar sub-post" style="left:${(eIdx - kD - o.sub2 + 1) * 45}px; width:${o.sub2*45 - 2}px">AH2</div>`;
-            let bgCells = ""; for(let d=0; d<dayCount; d++) bgCells += `<div class="day-cell-bg ${d===tIdx?'today-col-bg':''}"></div>`;
-            bodyHtml += bgCells + `</div></div>`;
+            bodyHtml += `</div></div>`; // End row
         });
         outer.innerHTML = `<div class="gantt-header-wrapper"><div class="header-corner">MT / Klient / Aeg</div><div class="header-scroll" id="h-scroll-${key}"><div class="header-grid">${headerCols}</div></div></div>` + bodyHtml + `</div>`;
         const hS = document.getElementById(`h-scroll-${key}`), bS = document.getElementById(`b-scroll-${key}`);
         if(bS && hS) { bS.onscroll = () => { hS.scrollLeft = bS.scrollLeft; }; setTimeout(() => { bS.scrollLeft = (tIdx * 45) - 160; }, 100); }
     }
 
+    // SÜNKROONKERIMINE (requestAnimationFrame optimeeringuga)
+    let isSyncingScroll = false;
     function syncDailyScroll(e) {
-        const scrollX = e.target.scrollLeft;
-        document.querySelectorAll('.daily-chart-wrapper').forEach(w => {
-            if (w !== e.target && w.scrollLeft !== scrollX) w.scrollLeft = scrollX;
-        });
+        if (!isSyncingScroll) {
+            window.requestAnimationFrame(() => {
+                const scrollX = e.target.scrollLeft;
+                document.querySelectorAll('.daily-chart-wrapper').forEach(w => {
+                    if (w !== e.target && w.scrollLeft !== scrollX) w.scrollLeft = scrollX;
+                });
+                isSyncingScroll = false;
+            });
+            isSyncingScroll = true;
+        }
     }
 
     function renderDailyCharts() {
@@ -384,6 +393,7 @@
         const daysToShow = 365, startDate = new Date(TODAY); startDate.setDate(startDate.getDate() - 2);
         const SCALE = 4;
         
+        // Eelarvutus kiiruse jaoks
         let activeStats = {};
         Object.keys(CONFIG).forEach(k => {
             activeStats[k] = orders.filter(o => o.status === 'Töös' && o[k] > 0).map(o => {
@@ -395,16 +405,12 @@
         Object.keys(CONFIG).forEach(k => {
             let chartHtml = `<div class="daily-chart-wrapper" onscroll="syncDailyScroll(event)"><h3>${CONFIG[k].l} (Päeva koormus)</h3><div class="daily-chart-area">`;
             for(let i=0; i<daysToShow; i++) {
-                let curDate = new Date(startDate.getTime() + i*86400000);
-                let curTime = curDate.getTime(), wNo = getWeek(curDate), isToday = curDate.toDateString() === TODAY.toDateString(), isWeekend = curDate.getDay() === 0 || curDate.getDay() === 6;
-                let segmentsHtml = "", totalH = 0;
+                let curDate = new Date(startDate.getTime() + i*86400000), curTime = curDate.getTime(), wNo = getWeek(curDate), isToday = curDate.toDateString() === TODAY.toDateString(), isWeekend = curDate.getDay() === 0 || curDate.getDay() === 6, segmentsHtml = "", totalH = 0;
                 let dailyCap = (customCap[k] && customCap[k][wNo]) ? customCap[k][wNo] / 5 : CONFIG[k].c / 5;
-                
                 if (!isWeekend) {
                     activeStats[k].forEach(os => {
                         if(curTime >= os.sTime && curTime <= os.eTime) {
-                            totalH += os.hPerDay; 
-                            segmentsHtml += `<div class="order-segment" style="height:${os.hPerDay * SCALE}px; background:${CONFIG[k].color};" title="${os.mt} (${os.kirjeldus||''})\nKoormus: ${os.hPerDay.toFixed(1)}h">${os.hPerDay > 0.5 ? os.mt : ''}</div>`;
+                            totalH += os.hPerDay; segmentsHtml += `<div class="order-segment" style="height:${os.hPerDay * SCALE}px; background:${CONFIG[k].color};" title="${os.mt} (${os.kirjeldus||''})\nKoormus: ${os.hPerDay.toFixed(1)}h">${os.hPerDay > 0.5 ? os.mt : ''}</div>`;
                         }
                     });
                 }
@@ -417,7 +423,7 @@
 
     function renderDailyTable() {
         const container = document.getElementById('daily-table-container'); 
-        const daysToShow = 90; 
+        const daysToShow = 365; // Näitame ka tabelit 365 päeva (üle aasta)
         const startDate = new Date(TODAY); startDate.setDate(startDate.getDate() - 2);
         
         let html = `<div style="background:white; border-radius:8px; padding:0; box-shadow:0 4px 15px rgba(0,0,0,0.05); overflow:auto; height:100%;">
@@ -433,8 +439,7 @@
         Object.keys(CONFIG).forEach(k => {
             html += `<tr><td style="position:sticky; left:0; background:#f4f7f6; font-weight:bold; border-right:2px solid #ccc; z-index:10; color:${CONFIG[k].color};">${CONFIG[k].l}</td>`;
             for(let i=0; i<daysToShow; i++) {
-                let curDate = new Date(startDate.getTime() + i*86400000);
-                let curTime = curDate.getTime(), wNo = getWeek(curDate), isWeekend = curDate.getDay() === 0 || curDate.getDay() === 6, isToday = curDate.toDateString() === TODAY.toDateString();
+                let curDate = new Date(startDate.getTime() + i*86400000), curTime = curDate.getTime(), wNo = getWeek(curDate), isWeekend = curDate.getDay() === 0 || curDate.getDay() === 6, isToday = curDate.toDateString() === TODAY.toDateString();
                 let dailyCap = (customCap[k] && customCap[k][wNo]) ? customCap[k][wNo] / 5 : CONFIG[k].c / 5;
                 let totalH = 0;
                 
@@ -469,7 +474,7 @@
     function saveCapacity() {
         if(!isAdmin) return;
         document.querySelectorAll('.cap-in').forEach(i => { if(!customCap[i.dataset.k]) customCap[i.dataset.k] = {}; customCap[i.dataset.k][i.dataset.w] = parseInt(i.value); });
-        localStorage.setItem('prod_cap_v85', JSON.stringify(customCap)); alert("Võimekus salvestatud brauseri mällu!"); fetchData();
+        localStorage.setItem('prod_cap_v86', JSON.stringify(customCap)); alert("Võimekus salvestatud brauseri mällu!"); fetchData();
     }
 
     function save() { 
