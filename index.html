@@ -2,7 +2,7 @@
 <html lang="et">
 <head>
     <meta charset="UTF-8">
-    <title>TOCI Tootmisplaan V73.0</title>
+    <title>TOCI Tootmisplaan V74.0</title>
     <style>
         :root { --primary: #1a252f; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; --warning: #f1c40f; --bg: #f4f7f6; --today: #ff4757; --cell-w: 45px; --sub-bg: #95a5a6; }
         *, *:before, *:after { box-sizing: border-box; }
@@ -14,6 +14,7 @@
         .content { height: calc(100vh - 95px); display: none; padding: 15px; box-sizing: border-box; }
         .content.active { display: block; }
         
+        /* TABELID JA STAATUSE VÄRVID */
         .table-container { height: calc(100% - 60px); overflow: auto; background: white; border-radius: 8px; border: 1px solid #ddd; }
         .data-table { width: 100%; border-collapse: collapse; position: relative; }
         .data-table thead th { position: sticky; top: 0; background: #eee; z-index: 10; border-bottom: 2px solid #ccc; padding: 10px 5px; text-align: left; }
@@ -21,9 +22,13 @@
         tr.status-ootel { background-color: #f8f9fa !important; }
         tr.status-toos { background-color: #e3f2fd !important; }
         tr.status-valmis { background-color: #e8f5e9 !important; }
+        
+        /* VAATAJA REŽIIMI STIILID (KUI DISABLED) */
         .data-in { width: 100%; border: 1px solid transparent; padding: 4px; border-radius: 3px; background: transparent; font-size: 12px; }
         .data-in:focus { border-color: var(--accent); outline: none; background: #fff; }
-        .num-in { width: 42px; text-align: center; font-weight: bold; }
+        .data-in:disabled, .num-in:disabled, .status-select:disabled { color: #333; opacity: 1; background: transparent; border: none; -webkit-appearance: none; appearance: none; cursor: default; }
+        
+        .num-in { width: 42px; text-align: center; font-weight: bold; border: 1px solid #ccc; border-radius: 3px; padding: 3px;}
         .status-select { padding: 4px; border-radius: 4px; border: 1px solid #999; font-weight: bold; font-size: 11px; cursor: pointer; background: white; }
 
         /* PÄEVA KOORMUS */
@@ -48,7 +53,8 @@
         .gantt-body { flex-grow: 1; overflow: auto; scroll-behavior: smooth; }
         .gantt-row { display: flex; border-bottom: 1px solid #eee; min-height: 105px; width: max-content; }
         .gantt-info { position: sticky !important; left: 0 !important; width: 320px; min-width: 320px; background: #fff !important; z-index: 1000 !important; border-right: 3px solid #bbb !important; padding: 10px 15px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; gap: 4px; }
-        .gantt-info input[type="date"] { width: 100%; padding: 2px; font-size: 10px; }
+        .gantt-info input[type="date"] { width: 100%; padding: 2px; font-size: 10px; border: 1px solid #ccc; border-radius:3px; }
+        .gantt-info input[type="date"]:disabled { border: none; background: transparent; color: black; }
         .gantt-bars-area { position: relative; display: flex; background-color: #fff; width: max-content; }
         .day-cell-bg { width: var(--cell-w); min-width: var(--cell-w); border-right: 1px solid #f1f1f1; height: 100%; flex-shrink: 0; }
         .today-line { position: absolute; top: 0; bottom: 0; width: 3px; background: var(--today); z-index: 500; pointer-events: none; }
@@ -56,12 +62,17 @@
         .progress-fill { position: absolute; left: 0; top: 0; height: 100%; background: rgba(0,0,0,0.25); border-right: 1px solid rgba(255,255,255,0.4); }
         .sub-bar { position: absolute; height: 12px; background: var(--sub-bg); opacity: 0.6; border-radius: 3px; z-index: 90; font-size: 8px; color: white; display: flex; align-items: center; justify-content: center; }
         .sub-pre { top: 18px; } .sub-post { top: 66px; }
-        
         .empty-state { padding: 30px; text-align: center; color: #7f8c8d; font-size: 14px; position: sticky; left: 320px; }
     </style>
 </head>
 <body>
-<div class="top-bar"><div>🚀 <strong>TOCI LIVE V73.0</strong></div><div id="syncStatus" style="background:var(--warning); color:black; padding:4px 10px; border-radius:4px; font-weight:bold;">Ühendan...</div></div>
+<div class="top-bar">
+    <div>🚀 <strong>TOCI LIVE V74.0</strong></div>
+    <div style="display:flex; gap:15px; align-items:center;">
+        <div id="syncStatus" style="background:var(--warning); color:black; padding:4px 10px; border-radius:4px; font-weight:bold;">Ühendan...</div>
+        <button id="modeToggleBtn" onclick="toggleMode()" style="background:#95a5a6; color:white; border:none; padding:6px 12px; border-radius:4px; font-weight:bold; cursor:pointer;">🔒 VAATAJA</button>
+    </div>
+</div>
 <div class="tabs">
     <button class="tab-btn active" onclick="openTab(event, 'sisestus')">SISESTUS</button>
     <button class="tab-btn" onclick="openTab(event, 'gantt_tr')">TREI</button>
@@ -77,7 +88,7 @@
 
 <div id="sisestus" class="content active">
     <div style="margin-bottom:15px; display:flex; gap:10px; align-items:center;">
-        <button onclick="addNewRow()" style="padding:10px 20px; background:var(--success); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">+ LISA TELLIMUS</button>
+        <button id="addOrderBtn" onclick="addNewRow()" style="padding:10px 20px; background:var(--success); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold; display:none;">+ LISA TELLIMUS</button>
         <input type="text" id="mtFilter" placeholder="Otsi (MT, klient, kirjeldus)..." oninput="renderTable()" style="padding:8px; border-radius:4px; border:1px solid #ccc; width:200px;">
         <select id="monthFilter" onchange="renderTable()" style="padding:8px; border-radius:4px; border:1px solid #ccc;">
             <option value="">Kõik kuud</option>
@@ -103,7 +114,7 @@
                     <th title="Kooste (h)">KO</th>
                     <th>%</th>
                     <th>Staatus</th>
-                    <th>🗑️</th>
+                    <th class="admin-only" style="display:none;">🗑️</th>
                 </tr>
             </thead>
             <tbody id="table-body"></tbody>
@@ -124,13 +135,15 @@
     <div class="table-container" style="height: calc(100% - 60px);">
         <table class="data-table" id="cap-table"></table>
     </div>
-    <button onclick="saveCapacity()" style="margin-top:15px; padding:12px 25px; background:var(--accent); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">💾 SALVESTA VÕIMEKUS</button>
+    <button id="saveCapBtn" onclick="saveCapacity()" style="margin-top:15px; padding:12px 25px; background:var(--accent); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold; display:none;">💾 SALVESTA VÕIMEKUS</button>
 </div>
 
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbwFGxkxdlGqW57N4HlB3HI6lCofYLWrQIYlgUEag9KQR2oEFRiVX9vxoQZ4nKa-NlKb6w/exec";
+    // --- TURVALISUSE SÄTTED ---
+    let isAdmin = false;
+    const ADMIN_PIN = "1234"; // SIIT SAAD OMA PIN KOODI MUUTA
     
-    // CONFIG on uuendatud - lisatud 'trei' osakond lukkseppadega samasse gruppi (order: 1)
+    const API_URL = "https://script.google.com/macros/s/AKfycbwFGxkxdlGqW57N4HlB3HI6lCofYLWrQIYlgUEag9KQR2oEFRiVX9vxoQZ4nKa-NlKb6w/exec";
     const CONFIG = { 
         trei:   {l:'Treial',   c:40,  color:'#9b59b6', order:1},
         must_k: {l:'Must Keev',c:240, color:'#e67e22', order:2}, 
@@ -141,7 +154,7 @@
     };
     
     const START_VIEW = new Date("2026-01-01"), TODAY = new Date();
-    let orders = [], customCap = JSON.parse(localStorage.getItem('prod_cap_v73')) || {};
+    let orders = [], customCap = JSON.parse(localStorage.getItem('prod_cap_v74')) || {};
 
     const f = (v) => parseFloat(v) || 0;
     function getUTCDate(d) { const dt = new Date(d); return isNaN(dt.getTime()) ? null : Date.UTC(dt.getFullYear(), dt.getMonth(), dt.getDate()); }
@@ -150,48 +163,65 @@
     function getWeek(d) { d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7)); return Math.ceil((((d - new Date(Date.UTC(d.getUTCFullYear(),0,1))) / 86400000) + 1)/7); }
     function getWorkingDays(s, e) { let c = 0, cur = new Date(s); while(cur <= e) { if(cur.getDay()!==0 && cur.getDay()!==6) c++; cur.setDate(cur.getDate()+1); } return c || 1; }
 
+    function toggleMode() {
+        if(isAdmin) {
+            isAdmin = false;
+            document.getElementById('modeToggleBtn').innerText = "🔒 VAATAJA";
+            document.getElementById('modeToggleBtn').style.background = "#95a5a6";
+        } else {
+            let pwd = prompt("Sisesta administraatori PIN kood, et andmeid muuta:");
+            if(pwd === ADMIN_PIN) {
+                isAdmin = true;
+                document.getElementById('modeToggleBtn').innerText = "🔓 ADMIN";
+                document.getElementById('modeToggleBtn').style.background = "var(--danger)";
+            } else if (pwd !== null) {
+                alert("Vale PIN kood!");
+            }
+        }
+        applyUIMode();
+    }
+
+    function applyUIMode() {
+        document.getElementById('addOrderBtn').style.display = isAdmin ? "block" : "none";
+        document.getElementById('saveCapBtn').style.display = isAdmin ? "block" : "none";
+        document.querySelectorAll('.admin-only').forEach(el => el.style.display = isAdmin ? "table-cell" : "none");
+        renderTable();
+        // Värskendame ka avatud Gantti või Võimekuse vaadet
+        const activeTab = document.querySelector('.content.active').id;
+        if(activeTab.startsWith('gantt_')) renderGantt('out-' + activeTab.split('_')[1], activeTab.split('_')[1] === 'tr' ? 'trei' : activeTab.split('_')[1] === 'mk' ? 'must_k' : activeTab.split('_')[1] === 'rk' ? 'rv_k' : activeTab.split('_')[1] === 'ml' ? 'must_l' : activeTab.split('_')[1] === 'rl' ? 'rv_l' : 'kooste');
+        if(activeTab === 'voimekus_tab') renderCapacity();
+    }
+
     async function fetchData() {
         document.getElementById('syncStatus').innerText = "Värskendan...";
         try {
             const r = await fetch(API_URL);
             const d = await r.json();
             if(Array.isArray(d)) {
-                // Lisatud 'kirjeldus' ja 'trei'
                 orders = d.map(o => ({...o, kirjeldus: o.kirjeldus||'', trei:f(o.trei), must_k:f(o.must_k), rv_k:f(o.rv_k), must_l:f(o.must_l), rv_l:f(o.rv_l), kooste:f(o.kooste), progress:f(o.progress), sub1:f(o.sub1), sub2:f(o.sub2), status: o.status || 'Töös'}));
-                renderTable(); document.getElementById('syncStatus').innerText = "Andmed OK";
+                applyUIMode(); document.getElementById('syncStatus').innerText = "Andmed OK";
             }
         } catch(e) { document.getElementById('syncStatus').innerText = "Viga!"; }
     }
 
     function renderGantt(containerId, key) {
         const outer = document.getElementById(containerId); if(!outer) return;
-        const dayCount = 250;
-        const tIdx = getDayIndexUTC(TODAY, START_VIEW);
-        
+        const dayCount = 250; const tIdx = getDayIndexUTC(TODAY, START_VIEW);
         let headerCols = "";
         for(let d=0; d<dayCount; d++) {
             let cur = new Date(START_VIEW.getTime() + d * 86400000);
             headerCols += `<div class="h-col"><div class="h-week">${d%7===0?'W'+getWeek(cur):''}</div><div class="h-day" style="${d===tIdx?'color:red;font-weight:bold;':''}">${cur.getDate()}.${cur.getMonth()+1}</div></div>`;
         }
-
         let bodyHtml = `<div class="gantt-body" id="b-scroll-${key}">`;
         let filteredOrders = orders.filter(o => o[key] > 0 && o.status === 'Töös');
-        
-        if (filteredOrders.length === 0) {
-            bodyHtml += `<div class="empty-state">ℹ️ Hetkel ei ole ühtegi tellimust "${CONFIG[key].l}" osakonnas 'Töös' staatusega.</div>`;
-        }
+        if (filteredOrders.length === 0) bodyHtml += `<div class="empty-state">ℹ️ Hetkel ei ole ühtegi tellimust "${CONFIG[key].l}" osakonnas 'Töös' staatusega.</div>`;
+
+        let disAttr = isAdmin ? "" : "disabled";
 
         filteredOrders.forEach((o) => {
-            let gIdx = orders.indexOf(o);
-            let sIdx = getDayIndexUTC(o.start, START_VIEW);
-            let eIdx = getDayIndexUTC(o.end, START_VIEW);
-            let totalRange = eIdx - sIdx + 1;
-            let kD = Math.max(1, Math.ceil(o.kooste / 8));
-            let prodD = Math.max(1, totalRange - kD - o.sub2);
-            
-            // Arvutusloogika: Lukk + Trei tehakse ühes faasis enne keevitust
+            let gIdx = orders.indexOf(o), sIdx = getDayIndexUTC(o.start, START_VIEW), eIdx = getDayIndexUTC(o.end, START_VIEW);
+            let totalRange = eIdx - sIdx + 1, kD = Math.max(1, Math.ceil(o.kooste / 8)), prodD = Math.max(1, totalRange - kD - o.sub2);
             let lH = o.must_l + o.rv_l + o.trei, kH = o.must_k + o.rv_k, tH = lH + kH || 1;
-            
             let finalLeft = 0, taskDur = 0;
             if (CONFIG[key].order === 3) { taskDur = kD; finalLeft = (eIdx - kD + 1) * 45; }
             else if (CONFIG[key].order === 1) { taskDur = Math.ceil((lH/tH)*prodD); finalLeft = sIdx * 45; }
@@ -199,137 +229,102 @@
 
             bodyHtml += `<div class="gantt-row">
                 <div class="gantt-info">
-                    <b>${o.mt}</b><small>${o.client}</small>
-                    <small style="color:#777; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${o.kirjeldus||''}">${o.kirjeldus||''}</small>
-                    <div style="display:flex;gap:3px;"><input type="date" title="Algus" value="${safeISO(o.start)}" onchange="u(${gIdx},'start',this.value);renderGantt('${containerId}','${key}')"><input type="date" title="Lõpp" value="${safeISO(o.end)}" onchange="u(${gIdx},'end',this.value);renderGantt('${containerId}','${key}')"></div>
+                    <b>${o.mt}</b><small>${o.client}</small><small style="color:#777; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${o.kirjeldus||''}">${o.kirjeldus||''}</small>
+                    <div style="display:flex;gap:3px;"><input type="date" title="Algus" value="${safeISO(o.start)}" onchange="u(${gIdx},'start',this.value);renderGantt('${containerId}','${key}')" ${disAttr}><input type="date" title="Lõpp" value="${safeISO(o.end)}" onchange="u(${gIdx},'end',this.value);renderGantt('${containerId}','${key}')" ${disAttr}></div>
                 </div>
                 <div class="gantt-bars-area"><div class="today-line" style="left:${tIdx * 45}px"></div>`;
-            
             if(o.sub1 > 0) bodyHtml += `<div class="sub-bar sub-pre" style="left:${(sIdx - o.sub1)*45}px; width:${o.sub1*45 - 2}px">AH1</div>`;
-            
-            bodyHtml += `<div class="task-bar" title="MT: ${o.mt}\nKlient: ${o.client}\n${CONFIG[key].l}: ${o[key]}h\nSisu: ${o.kirjeldus||'-'}" style="left:${finalLeft}px; width:${taskDur * 45 - 5}px; background:${CONFIG[key].color}">
-                <div class="progress-fill" style="width:${o.progress}%"></div>
-                <span style="position:relative; padding-left:5px;">${o.mt} (${o.progress}%)</span>
-            </div>`;
-            
+            bodyHtml += `<div class="task-bar" title="MT: ${o.mt}\nKlient: ${o.client}\n${CONFIG[key].l}: ${o[key]}h\nSisu: ${o.kirjeldus||'-'}" style="left:${finalLeft}px; width:${taskDur * 45 - 5}px; background:${CONFIG[key].color}"><div class="progress-fill" style="width:${o.progress}%"></div><span style="position:relative; padding-left:5px;">${o.mt} (${o.progress}%)</span></div>`;
             if(o.sub2 > 0) bodyHtml += `<div class="sub-bar sub-post" style="left:${(eIdx - kD - o.sub2 + 1) * 45}px; width:${o.sub2*45 - 2}px">AH2</div>`;
-            
-            let bgCells = "";
-            for(let d=0; d<dayCount; d++) bgCells += `<div class="day-cell-bg ${d===tIdx?'today-col-bg':''}"></div>`;
+            let bgCells = ""; for(let d=0; d<dayCount; d++) bgCells += `<div class="day-cell-bg ${d===tIdx?'today-col-bg':''}"></div>`;
             bodyHtml += bgCells + `</div></div>`;
         });
-        
         outer.innerHTML = `<div class="gantt-header-wrapper"><div class="header-corner">MT / Klient / Aeg</div><div class="header-scroll" id="h-scroll-${key}"><div class="header-grid">${headerCols}</div></div></div>` + bodyHtml + `</div>`;
-        
         const hS = document.getElementById(`h-scroll-${key}`), bS = document.getElementById(`b-scroll-${key}`);
-        if(bS && hS) { 
-            bS.onscroll = () => { hS.scrollLeft = bS.scrollLeft; }; 
-            setTimeout(() => { bS.scrollLeft = (tIdx * 45) - 160; }, 100); 
-        }
+        if(bS && hS) { bS.onscroll = () => { hS.scrollLeft = bS.scrollLeft; }; setTimeout(() => { bS.scrollLeft = (tIdx * 45) - 160; }, 100); }
     }
 
     function renderDailyLoad() {
         const container = document.getElementById('daily-load-container'); container.innerHTML = "";
         const daysToShow = 40, startDate = new Date(TODAY); startDate.setDate(startDate.getDate() - 2);
-        
-        const SCALE = 4; // 1 tund = 4 pikslit kõrgust
-
+        const SCALE = 4;
         Object.keys(CONFIG).forEach(k => {
             let chartHtml = `<div class="daily-chart-wrapper"><h3>${CONFIG[k].l} (Päeva koormus)</h3><div class="daily-chart-area">`;
-            
             for(let i=0; i<daysToShow; i++) {
-                let curDate = new Date(startDate.getTime() + i*86400000);
-                let wNo = getWeek(curDate);
-                let isToday = curDate.toDateString() === TODAY.toDateString();
-                let isWeekend = curDate.getDay() === 0 || curDate.getDay() === 6;
-                let segmentsHtml = "";
-                let totalH = 0;
-                
+                let curDate = new Date(startDate.getTime() + i*86400000), wNo = getWeek(curDate), isToday = curDate.toDateString() === TODAY.toDateString(), isWeekend = curDate.getDay() === 0 || curDate.getDay() === 6, segmentsHtml = "", totalH = 0;
                 let dailyCap = (customCap[k] && customCap[k][wNo]) ? customCap[k][wNo] / 5 : CONFIG[k].c / 5;
-                
                 if (!isWeekend) {
                     orders.filter(o => o.status === 'Töös' && o[k] > 0).forEach(o => {
                         let s = new Date(o.start), e = new Date(o.end);
                         if(curDate >= s && curDate <= e) {
                             let workDays = getWorkingDays(s, e), hPerDay = o[k] / workDays;
-                            totalH += hPerDay; 
-                            segmentsHtml += `<div class="order-segment" style="height:${hPerDay * SCALE}px; background:${CONFIG[k].color};" title="${o.mt} (${o.kirjeldus||''})\nKoormus: ${hPerDay.toFixed(1)}h">${hPerDay > 0.5 ? o.mt : ''}</div>`;
+                            totalH += hPerDay; segmentsHtml += `<div class="order-segment" style="height:${hPerDay * SCALE}px; background:${CONFIG[k].color};" title="${o.mt} (${o.kirjeldus||''})\nKoormus: ${hPerDay.toFixed(1)}h">${hPerDay > 0.5 ? o.mt : ''}</div>`;
                         }
                     });
                 }
-                
                 let limitLineHtml = isWeekend ? '' : `<div style="position:absolute; bottom:${dailyCap * SCALE}px; width:100%; border-top:2px dashed red; z-index:10; opacity:0.8; pointer-events:none;"></div>`;
-
-                chartHtml += `<div class="day-column ${isToday?'today-bg':''}">
-                    ${limitLineHtml}
-                    ${segmentsHtml} 
-                    <div class="day-label ${isWeekend?'weekend-label':''}">
-                        <strong>${curDate.getDate()}.${curDate.getMonth()+1}</strong><br>${['P','E','T','K','N','R','L'][curDate.getDay()]}<br>
-                        <span style="color:${totalH > dailyCap ? 'red' : '#666'}">${totalH > 0 ? totalH.toFixed(1)+'h' : ''}</span>
-                    </div>
-                </div>`;
+                chartHtml += `<div class="day-column ${isToday?'today-bg':''}"> ${limitLineHtml} ${segmentsHtml} <div class="day-label ${isWeekend?'weekend-label':''}"><strong>${curDate.getDate()}.${curDate.getMonth()+1}</strong><br>${['P','E','T','K','N','R','L'][curDate.getDay()]}<br><span style="color:${totalH > dailyCap ? 'red' : '#666'}">${totalH > 0 ? totalH.toFixed(1)+'h' : ''}</span></div></div>`;
             }
             container.innerHTML += chartHtml + `</div></div>`;
         });
     }
 
     function renderCapacity() {
+        let disAttr = isAdmin ? "" : "disabled";
         let h = `<thead><tr><th>Osakond</th>` + Array.from({length:52},(_,i)=>`<th>W${i+1}</th>`).join('') + `</tr></thead><tbody>`;
         h += Object.keys(CONFIG).map(k => `<tr><td style="position:sticky; left:0; background:#eee; z-index:5;"><b>${CONFIG[k].l}</b></td>` + Array.from({length:52},(_,i)=>{
             let v = (customCap[k] && customCap[k][i+1]) ? customCap[k][i+1] : CONFIG[k].c;
-            return `<td><input type="number" class="cap-in num-in" data-k="${k}" data-w="${i+1}" value="${v}"></td>`;
+            return `<td><input type="number" class="cap-in num-in" data-k="${k}" data-w="${i+1}" value="${v}" ${disAttr}></td>`;
         }).join('') + `</tr>`).join('');
         document.getElementById('cap-table').innerHTML = h + `</tbody>`;
     }
 
     function saveCapacity() {
+        if(!isAdmin) return;
         document.querySelectorAll('.cap-in').forEach(i => {
             if(!customCap[i.dataset.k]) customCap[i.dataset.k] = {};
             customCap[i.dataset.k][i.dataset.w] = parseInt(i.value);
         });
-        localStorage.setItem('prod_cap_v73', JSON.stringify(customCap));
+        localStorage.setItem('prod_cap_v74', JSON.stringify(customCap));
         alert("Võimekus salvestatud brauseri mällu!");
         fetchData();
     }
 
     function renderTable() {
         const mV = document.getElementById('monthFilter').value, mtV = document.getElementById('mtFilter').value.toLowerCase(), b = document.getElementById('table-body'); b.innerHTML = '';
+        let disAttr = isAdmin ? "" : "disabled";
+        let hideTrash = isAdmin ? "display:table-cell;" : "display:none;";
+        
         orders.forEach((o, i) => {
-            // Otsing toimib nüüd nii MT, Kliendi kui Kirjelduse järgi
-            let matchText = (!mtV || 
-                (o.mt && String(o.mt).toLowerCase().includes(mtV)) || 
-                (o.client && String(o.client).toLowerCase().includes(mtV)) || 
-                (o.kirjeldus && String(o.kirjeldus).toLowerCase().includes(mtV))
-            );
-            
+            let matchText = (!mtV || (o.mt && String(o.mt).toLowerCase().includes(mtV)) || (o.client && String(o.client).toLowerCase().includes(mtV)) || (o.kirjeldus && String(o.kirjeldus).toLowerCase().includes(mtV)));
             if ((!mV || safeISO(o.start).includes(mV)) && matchText) {
                 const sCl = o.status === 'Valmis' ? 'status-valmis' : o.status === 'Töös' ? 'status-toos' : 'status-ootel';
                 b.innerHTML += `<tr class="${sCl}">
-                    <td><input class="data-in" value="${o.mt}" onchange="u(${i},'mt',this.value)"></td>
-                    <td><input class="data-in" value="${o.client}" onchange="u(${i},'client',this.value)"></td>
-                    <td><input class="data-in" value="${o.kirjeldus||''}" placeholder="Töö sisu..." onchange="u(${i},'kirjeldus',this.value)"></td>
-                    <td><input type="date" value="${safeISO(o.start)}" onchange="u(${i},'start',this.value)"></td>
-                    <td><input type="date" value="${safeISO(o.end)}" onchange="u(${i},'end',this.value)"></td>
-                    <td><input class="num-in" title="AH1" value="${o.sub1}" onchange="u(${i},'sub1',this.value)"></td>
-                    <td><input class="num-in" title="AH2" value="${o.sub2}" onchange="u(${i},'sub2',this.value)"></td>
-                    <td><input class="num-in" title="Treial (h)" value="${o.trei}" onchange="u(${i},'trei',this.value)"></td>
-                    <td><input class="num-in" title="Must Keevitus (h)" value="${o.must_k}" onchange="u(${i},'must_k',this.value)"></td>
-                    <td><input class="num-in" title="RV Keevitus (h)" value="${o.rv_k}" onchange="u(${i},'rv_k',this.value)"></td>
-                    <td><input class="num-in" title="Must Lukksepp (h)" value="${o.must_l}" onchange="u(${i},'must_l',this.value)"></td>
-                    <td><input class="num-in" title="RV Lukksepp (h)" value="${o.rv_l}" onchange="u(${i},'rv_l',this.value)"></td>
-                    <td><input class="num-in" title="Koostamine (h)" value="${o.kooste}" onchange="u(${i},'kooste',this.value)"></td>
-                    <td><input class="num-in" title="Progress %" value="${o.progress}" onchange="u(${i},'progress',this.value)"></td>
-                    <td><select class="status-select" onchange="u(${i},'status',this.value);renderTable()"><option ${o.status==='Ootel'?'selected':''}>Ootel</option><option ${o.status==='Töös'?'selected':''}>Töös</option><option ${o.status==='Valmis'?'selected':''}>Valmis</option></select></td>
-                    <td><button onclick="del(${i})" style="border:none; background:none; cursor:pointer;">🗑️</button></td>
+                    <td><input class="data-in" value="${o.mt}" onchange="u(${i},'mt',this.value)" ${disAttr}></td>
+                    <td><input class="data-in" value="${o.client}" onchange="u(${i},'client',this.value)" ${disAttr}></td>
+                    <td><input class="data-in" value="${o.kirjeldus||''}" placeholder="${isAdmin?'Töö sisu...':''}" onchange="u(${i},'kirjeldus',this.value)" ${disAttr}></td>
+                    <td><input type="date" class="data-in" value="${safeISO(o.start)}" onchange="u(${i},'start',this.value)" ${disAttr}></td>
+                    <td><input type="date" class="data-in" value="${safeISO(o.end)}" onchange="u(${i},'end',this.value)" ${disAttr}></td>
+                    <td><input class="num-in" title="AH1" value="${o.sub1}" onchange="u(${i},'sub1',this.value)" ${disAttr}></td>
+                    <td><input class="num-in" title="AH2" value="${o.sub2}" onchange="u(${i},'sub2',this.value)" ${disAttr}></td>
+                    <td><input class="num-in" title="Treial (h)" value="${o.trei}" onchange="u(${i},'trei',this.value)" ${disAttr}></td>
+                    <td><input class="num-in" title="Must Keevitus (h)" value="${o.must_k}" onchange="u(${i},'must_k',this.value)" ${disAttr}></td>
+                    <td><input class="num-in" title="RV Keevitus (h)" value="${o.rv_k}" onchange="u(${i},'rv_k',this.value)" ${disAttr}></td>
+                    <td><input class="num-in" title="Must Lukksepp (h)" value="${o.must_l}" onchange="u(${i},'must_l',this.value)" ${disAttr}></td>
+                    <td><input class="num-in" title="RV Lukksepp (h)" value="${o.rv_l}" onchange="u(${i},'rv_l',this.value)" ${disAttr}></td>
+                    <td><input class="num-in" title="Koostamine (h)" value="${o.kooste}" onchange="u(${i},'kooste',this.value)" ${disAttr}></td>
+                    <td><input class="num-in" title="Progress %" value="${o.progress}" onchange="u(${i},'progress',this.value)" ${disAttr}></td>
+                    <td><select class="status-select" onchange="u(${i},'status',this.value);renderTable()" ${disAttr}><option ${o.status==='Ootel'?'selected':''}>Ootel</option><option ${o.status==='Töös'?'selected':''}>Töös</option><option ${o.status==='Valmis'?'selected':''}>Valmis</option></select></td>
+                    <td class="admin-only" style="${hideTrash}"><button onclick="del(${i})" style="border:none; background:none; cursor:pointer;">🗑️</button></td>
                 </tr>`;
             }
         });
     }
 
-    async function save() { await fetch(API_URL, {method:"POST", body:JSON.stringify(orders), mode:'no-cors'}); fetchData(); }
-    function u(i, k, v) { orders[i][k] = v; save(); }
-    function del(i) { if(confirm("Kustuta rida?")) { orders.splice(i,1); save(); } }
-    function addNewRow() { orders.unshift({mt:"UUS", client:"", kirjeldus:"", start:new Date().toISOString().split('T')[0], end:new Date().toISOString().split('T')[0], sub1:0, sub2:0, trei:0, must_k:0, rv_k:0, must_l:0, rv_l:0, kooste:0, progress:0, status:'Ootel'}); renderTable(); }
+    async function save() { if(!isAdmin) return; await fetch(API_URL, {method:"POST", body:JSON.stringify(orders), mode:'no-cors'}); fetchData(); }
+    function u(i, k, v) { if(!isAdmin) return; orders[i][k] = v; save(); }
+    function del(i) { if(!isAdmin) return; if(confirm("Kustuta rida?")) { orders.splice(i,1); save(); } }
+    function addNewRow() { if(!isAdmin) return; orders.unshift({mt:"UUS", client:"", kirjeldus:"", start:new Date().toISOString().split('T')[0], end:new Date().toISOString().split('T')[0], sub1:0, sub2:0, trei:0, must_k:0, rv_k:0, must_l:0, rv_l:0, kooste:0, progress:0, status:'Ootel'}); renderTable(); }
 
     function openTab(e, t) {
         document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
