@@ -2,7 +2,7 @@
 <html lang="et">
 <head>
     <meta charset="UTF-8">
-    <title>TOCI Tootmisplaan V92.0</title>
+    <title>TOCI Tootmisplaan V93.0</title>
     <style>
         :root { --primary: #1a252f; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; --warning: #f1c40f; --bg: #f4f7f6; --today: #ff4757; --cell-w: 45px; --sub-bg: #95a5a6; }
         *, *:before, *:after { box-sizing: border-box; }
@@ -90,7 +90,7 @@
 </head>
 <body>
 <div class="top-bar">
-    <div>🚀 <strong>TOCI LIVE V92.0 (Gantti Loogika Parandus)</strong></div>
+    <div>🚀 <strong>TOCI LIVE V93.0 (Gantt Korda)</strong></div>
     <div style="display:flex; gap:15px; align-items:center;">
         <div id="syncStatus" style="background:var(--warning); color:black; padding:4px 10px; border-radius:4px; font-weight:bold; transition: 0.3s;">Ühendan...</div>
         <button id="modeToggleBtn" onclick="toggleMode()" style="background:#95a5a6; color:white; border:none; padding:6px 12px; border-radius:4px; font-weight:bold; cursor:pointer;">🔒 VAATAJA</button>
@@ -207,7 +207,7 @@
     };
     
     const START_VIEW = new Date("2026-01-01"), TODAY = new Date();
-    let orders = [], customCap = JSON.parse(localStorage.getItem('prod_cap_v92')) || {};
+    let orders = [], customCap = JSON.parse(localStorage.getItem('prod_cap_v93')) || {};
     if (!customCap.holidays) customCap.holidays = [];
     
     let currentMainTabFilter = 'active'; 
@@ -310,7 +310,6 @@
 
                 if (duplicatesFound > 0 && isAdmin) {
                     fetch(API_URL, {method:"POST", body:JSON.stringify(orders), mode:'no-cors'});
-                    alert(`🧹 Süsteem leidis ja eemaldas automaatselt ${duplicatesFound} dubleeritud tellimust!`);
                 }
 
                 applyUIMode(); updateSyncStatus("✅ Andmed OK", "success");
@@ -318,43 +317,60 @@
         } catch(e) { updateSyncStatus("❌ Ühenduse viga", "danger"); }
     }
 
-    // --- V92: TÄPNE FAASIDE ARVUTUS (KASUTATAKSE NII GANTTIS KUI KOORMUSES) ---
+    // --- V93: TÄPNE FAASIDE ARVUTUS (KASUTATAKSE NII GANTTIS KUI KOORMUSES) ---
     function getPhaseDates(o, kKey, startView) {
         let sIdx = getDayIndexUTC(o.start, startView);
         let eIdx = getDayIndexUTC(o.end, startView);
+        if (eIdx < sIdx) eIdx = sIdx; // Turvakontroll: Lõpp ei saa olla enne Algust
         let totalRange = eIdx - sIdx + 1;
         
-        let insD = f(o.ins) > 0 ? Math.max(1, Math.ceil(f(o.ins) / 8)) : 0;
-        let kD = f(o.kooste) > 0 ? Math.max(1, Math.ceil(f(o.kooste) / 8)) : 0;
+        let insD = Math.max(1, Math.ceil(f(o.ins) / 8)); if (f(o.ins) === 0) insD = 0;
+        let kD = Math.max(1, Math.ceil(f(o.kooste) / 8)); if (f(o.kooste) === 0) kD = 0;
         let ah1D = f(o.sub1) || 0;
         let ah2D = f(o.sub2) || 0;
         
-        let prodD = Math.max(1, totalRange - insD - kD - ah1D - ah2D);
         let lH = f(o.must_l) + f(o.rv_l) + f(o.trei);
         let kH = f(o.must_k) + f(o.rv_k);
+        let hasProd = (lH + kH) > 0;
+        
+        let prodD = totalRange - insD - kD - ah1D - ah2D;
+        if (hasProd && prodD < 1) prodD = 1; // Miinimum 1 päev tootmisele, kui tunde on
+        
         let tH = lH + kH || 1;
+        let lD = Math.floor((lH/tH)*prodD);
+        let mkD = Math.max(1, prodD - lD);
 
-        let startOffset = 0, dur = 1;
+        let pStart = sIdx, pEnd = eIdx;
 
-        if (CONFIG[kKey].order === 0) { startOffset = 0; dur = insD || 1; }
-        else if (CONFIG[kKey].order === 1) { startOffset = insD + ah1D; dur = Math.ceil((lH/tH)*prodD) || 1; }
-        else if (CONFIG[kKey].order === 2) { let lD = Math.floor((lH/tH)*prodD); startOffset = insD + ah1D + lD; dur = Math.max(1, prodD - lD); }
-        else if (CONFIG[kKey].order === 3) { startOffset = Math.max(0, totalRange - kD); dur = kD || 1; }
+        if (CONFIG[kKey].order === 0) { // INS
+            pStart = sIdx;
+            pEnd = sIdx + insD - 1;
+        }
+        else if (CONFIG[kKey].order === 1) { // TR, ML, RL
+            pStart = sIdx + insD + ah1D;
+            pEnd = pStart + Math.max(1, lD) - 1;
+        }
+        else if (CONFIG[kKey].order === 2) { // MK, RK
+            pStart = sIdx + insD + ah1D + lD;
+            pEnd = pStart + mkD - 1;
+        }
+        else if (CONFIG[kKey].order === 3) { // KO
+            pEnd = eIdx;
+            pStart = eIdx - kD + 1;
+        }
 
-        let sDate = new Date(startView.getTime() + (sIdx + startOffset) * 86400000);
-        let eDate = new Date(sDate.getTime() + (dur - 1) * 86400000);
-        
-        let absStart = new Date(o.start); 
-        let absEnd = new Date(o.end);
-        
-        // V92 TURVAKONTROLL: Kast ei tohi kunagi minna üle Algus ja Lõpp kuupäevade!
-        if(sDate > absEnd) sDate = new Date(absEnd.getTime());
-        if(sDate < absStart) sDate = new Date(absStart.getTime());
-        
-        if(eDate > absEnd) eDate = new Date(absEnd.getTime());
-        if(eDate < sDate) eDate = new Date(sDate.getTime());
+        // TÄIELIK KLAMMERDAMINE: Ükski kast ei tohi lekkida Algus ja Lõpp kuupäevade alt välja!
+        if (pStart < sIdx) pStart = sIdx;
+        if (pStart > eIdx) pStart = eIdx;
+        if (pEnd < pStart) pEnd = pStart;
+        if (pEnd > eIdx) pEnd = eIdx;
 
-        return { s: sDate, e: eDate };
+        return { 
+            sIdx: pStart, 
+            eIdx: pEnd,
+            s: new Date(startView.getTime() + pStart * 86400000), 
+            e: new Date(startView.getTime() + pEnd * 86400000) 
+        };
     }
 
     function renderTable() {
@@ -450,13 +466,10 @@
             let sIdx = getDayIndexUTC(o.start, START_VIEW);
             let eIdx = getDayIndexUTC(o.end, START_VIEW);
             
-            // --- V92: GANTTI ARVUTUS TUGINEB NÜÜD TÄPSELE FAASI ARVUTUSELE ---
+            // Keskne turvaline arvutus: annab meile alguse ja lõpu indexid
             let phase = getPhaseDates(o, key, START_VIEW);
-            let phaseSIdx = getDayIndexUTC(phase.s, START_VIEW);
-            let phaseEIdx = getDayIndexUTC(phase.e, START_VIEW);
-            
-            let finalLeft = phaseSIdx * 45; 
-            let taskDur = Math.max(1, phaseEIdx - phaseSIdx + 1);
+            let finalLeft = phase.sIdx * 45; 
+            let taskDur = Math.max(1, phase.eIdx - phase.sIdx + 1);
 
             let insD = f(o.ins) > 0 ? Math.max(1, Math.ceil(f(o.ins) / 8)) : 0;
             let kD = f(o.kooste) > 0 ? Math.max(1, Math.ceil(f(o.kooste) / 8)) : 0;
@@ -473,21 +486,22 @@
                 <div class="gantt-bars-area" style="width:calc(var(--cell-w) * ${dayCount});">
                     <div class="today-line" style="left:${tIdx * 45}px"></div>`;
             
-            // V92: AH1 visuaalne klammerdamine Lõpp-kuupäevaga
+            // AH1 klammerdamine (ei lähe üle Alguse ja Lõpu)
             if(ah1D > 0) {
                 let ah1S = sIdx + insD;
-                if (ah1S > eIdx) ah1S = eIdx; // Ei alga pärast Lõppu
-                let ah1E = Math.min(ah1S + ah1D - 1, eIdx); // Ei lõpe pärast Lõppu
+                if (ah1S > eIdx) ah1S = eIdx;
+                let ah1E = Math.min(eIdx, ah1S + ah1D - 1);
                 let a1Dur = Math.max(1, ah1E - ah1S + 1);
                 bodyHtml += `<div class="sub-bar sub-pre" style="left:${ah1S*45}px; width:${a1Dur*45 - 2}px">AH1</div>`;
             }
             
+            // Põhikast
             bodyHtml += `<div class="task-bar" title="MT: ${o.mt}\nKlient: ${o.client}\n${CONFIG[key].l}: ${o[key]}h\nValmis: ${curProg}%\nSisu: ${o.kirjeldus||'-'}" style="left:${finalLeft}px; width:${taskDur * 45 - 5}px; background:${CONFIG[key].color}">
                 <div class="progress-fill" style="width:${curProg}%"></div>
                 <span style="position:relative; padding-left:5px; z-index:10;">${o.mt} (${curProg}%)</span>
             </div>`;
             
-            // V92: AH2 visuaalne klammerdamine
+            // AH2 klammerdamine (ei lähe üle Alguse ja Lõpu)
             if(ah2D > 0) {
                 let ah2E = eIdx - kD;
                 if (ah2E < sIdx) ah2E = sIdx;
@@ -594,20 +608,6 @@
         setTimeout(() => { container.firstElementChild.scrollLeft = (2 * 40); }, 100);
     }
 
-    function renderHolidays() {
-        let list = document.getElementById('holidays-list');
-        if(!list) return;
-        let html = "";
-        (customCap.holidays || []).forEach((h, i) => {
-            html += `<div style="display:flex; justify-content:space-between; align-items:center; max-width:400px; background:#ffebee; padding:5px 10px; border:1px solid #ffcdd2; border-radius:4px; color:#c62828;">
-                <div><strong>${h.n}</strong>: ${safeISO(h.s)} ${h.s!==h.e ? ' kuni '+safeISO(h.e) : ''}</div>
-                <button class="admin-only" onclick="delHoliday(${i})" style="color:white; background:#c62828; border:none; padding:3px 8px; border-radius:3px; cursor:pointer; font-weight:bold; ${isAdmin?'display:block':'display:none'}">X</button>
-            </div>`;
-        });
-        if((customCap.holidays||[]).length === 0) html = "<div style='color:#777; font-size:11px;'>Ühtegi puhkust pole lisatud.</div>";
-        list.innerHTML = html;
-    }
-
     function renderCapacity() {
         let disAttr = isAdmin ? "" : "disabled";
         
@@ -633,7 +633,6 @@
         document.getElementById('cap-table').innerHTML = h + `</tbody>`;
     }
 
-    // ... (salvestamise funktsioonid jäävad samaks)
     function addHoliday() {
         if(!isAdmin) return;
         let n = document.getElementById('hol-name').value; let s = document.getElementById('hol-start').value; let e = document.getElementById('hol-end').value;
@@ -650,7 +649,7 @@
     function saveCapacity() {
         if(!isAdmin) return;
         document.querySelectorAll('.cap-num-in').forEach(i => { if(!customCap[i.dataset.k]) customCap[i.dataset.k] = {}; customCap[i.dataset.k][i.dataset.w] = parseInt(i.value); });
-        localStorage.setItem('prod_cap_v92', JSON.stringify(customCap)); 
+        localStorage.setItem('prod_cap_v93', JSON.stringify(customCap)); 
         alert("Puhkused ja võimekus salvestatud brauseri mällu!"); applyUIMode(); fetchData();
     }
 
