@@ -2,7 +2,7 @@
 <html lang="et">
 <head>
     <meta charset="UTF-8">
-    <title>TOCI Tootmisplaan V89.0</title>
+    <title>TOCI Tootmisplaan V90.0</title>
     <style>
         :root { --primary: #1a252f; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; --warning: #f1c40f; --bg: #f4f7f6; --today: #ff4757; --cell-w: 45px; --sub-bg: #95a5a6; }
         *, *:before, *:after { box-sizing: border-box; }
@@ -31,6 +31,11 @@
         
         .num-in { width: 38px; text-align: center; font-weight: bold; border: 1px solid #ccc; border-radius: 3px; padding: 4px; background: #fff; }
         .num-in:disabled { background: #f0f2f5; border: 1px solid #dcdde1; color: #222; opacity: 1; -webkit-appearance: none; appearance: none; cursor: default; }
+        
+        /* LAIEMAD KASTID VÕIMEKUSE TABELILE V90 */
+        .cap-num-in { width: 48px; text-align: center; font-weight: bold; border: 1px solid #ccc; border-radius: 3px; padding: 5px 2px; background: #fff; }
+        .cap-num-in:disabled { background: #f0f2f5; color: #222; border: 1px solid #ddd; }
+
         .prog-in { width: 38px; text-align: center; font-weight: bold; border: 1px solid #27ae60; border-radius: 3px; padding: 4px; background: #eafff0; color: #1b5e20; }
         .prog-in:disabled { background: #eafff0; border: 1px solid #a5d6a7; color: #1b5e20; opacity: 1; -webkit-appearance: none; appearance: none; cursor: default; }
         
@@ -77,11 +82,13 @@
         .order-segment { width: 100%; border: 1px solid rgba(255,255,255,0.3); border-radius: 2px; display: flex; align-items: center; justify-content: center; overflow: hidden; color: white; font-size: 8px; font-weight: bold; cursor: help; }
         .today-bg { background: rgba(255,71,87,0.05); }
         .weekend-label { color: #999; }
+        .holiday-bg { background: repeating-linear-gradient(45deg, #ffeeee, #ffebee 10px, #ffffff 10px, #ffffff 20px); border-bottom: 2px solid #e53935 !important; }
+        .holiday-text { color: #c62828 !important; font-weight: bold; }
     </style>
 </head>
 <body>
 <div class="top-bar">
-    <div>🚀 <strong>TOCI LIVE V89.0 (Täpne ajakava)</strong></div>
+    <div>🚀 <strong>TOCI LIVE V90.0 (Puhkuste Kalender)</strong></div>
     <div style="display:flex; gap:15px; align-items:center;">
         <div id="syncStatus" style="background:var(--warning); color:black; padding:4px 10px; border-radius:4px; font-weight:bold; transition: 0.3s;">Ühendan...</div>
         <button id="modeToggleBtn" onclick="toggleMode()" style="background:#95a5a6; color:white; border:none; padding:6px 12px; border-radius:4px; font-weight:bold; cursor:pointer;">🔒 VAATAJA</button>
@@ -132,7 +139,6 @@
                     <th title="Allhange enne (p)">AH1</th>
                     <th class="divider-right" title="Allhange peale (p)">AH2</th>
                     <th class="dept-header divider-right" title="Inseneeria (tunnid | %)" style="background:#b3e5fc !important;">INS (h | %)</th>
-                    
                     <th class="dept-header divider-right" title="Treial (tunnid | %)">TR (h | %)</th>
                     <th class="dept-header divider-right" title="Must Keevitus (tunnid | %)">MK (h | %)</th>
                     <th class="dept-header divider-right" title="RV Keevitus (tunnid | %)">RK (h | %)</th>
@@ -160,7 +166,25 @@
 <div id="paeva_koormus_graafik" class="content"><div id="daily-load-container" class="daily-charts-container"></div></div>
 <div id="paeva_koormus_tabel" class="content"><div id="daily-table-container" style="height:100%;"></div></div>
 
-<div id="voimekus_tab" class="content"><div class="table-container" style="height: calc(100% - 60px);"><table class="data-table" id="cap-table"></table></div><button id="saveCapBtn" onclick="saveCapacity()" style="margin-top:15px; padding:12px 25px; background:var(--accent); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold; display:none;">💾 SALVESTA VÕIMEKUS</button></div>
+<div id="voimekus_tab" class="content">
+    <div id="holiday-manager" style="margin-bottom: 20px; padding: 15px; background: white; border-radius: 8px; border: 1px solid #ddd;">
+        <h3 style="margin-top:0; color:#c62828;">🏖️ Puhkused ja Riigipühad</h3>
+        <p style="font-size:11px; color:#666; margin-top:-5px;">Määratud pühade päevadel jaotatakse koormus automaatselt ümber ja neid ei loeta tööpäevadeks.</p>
+        <div class="admin-only" style="display:none; margin-bottom: 15px; gap: 10px; align-items: center;">
+            <input type="text" id="hol-name" placeholder="Nimetus (nt. Suvepuhkus)" style="padding:6px; border-radius:4px; border:1px solid #ccc; width:200px;">
+            <input type="date" id="hol-start" style="padding:6px; border-radius:4px; border:1px solid #ccc;">
+            <span style="font-weight:bold;">kuni</span>
+            <input type="date" id="hol-end" title="Jäta tühjaks, kui on ainult 1 päev" style="padding:6px; border-radius:4px; border:1px solid #ccc;">
+            <button onclick="addHoliday()" style="padding:7px 15px; background:var(--danger); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">+ LISA PUHKUS</button>
+        </div>
+        <div id="holidays-list" style="display:flex; flex-direction:column; gap:5px;"></div>
+    </div>
+
+    <div class="table-container" style="height: calc(100% - 180px);">
+        <table class="data-table" id="cap-table"></table>
+    </div>
+    <button id="saveCapBtn" onclick="saveCapacity()" style="margin-top:15px; padding:12px 25px; background:var(--accent); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold; display:none;">💾 SALVESTA VÕIMEKUS JA PUHKUSED</button>
+</div>
 
 <script>
     let isAdmin = false;
@@ -169,7 +193,6 @@
     
     let saveTimeout; let isSaving = false; let hasPendingChanges = false;
     
-    // Konfiguratsioon
     const CONFIG = { 
         ins:    {l:'Inseneeria', c:100, color:'#0097e6', order:0, p:'prog_ins'}, 
         trei:   {l:'Treial',   c:40,  color:'#9b59b6', order:1, p:'prog_tr'},
@@ -181,7 +204,9 @@
     };
     
     const START_VIEW = new Date("2026-01-01"), TODAY = new Date();
-    let orders = [], customCap = JSON.parse(localStorage.getItem('prod_cap_v89')) || {};
+    let orders = [], customCap = JSON.parse(localStorage.getItem('prod_cap_v90')) || {};
+    if (!customCap.holidays) customCap.holidays = [];
+    
     let currentMainTabFilter = 'active'; 
 
     const f = (v) => parseFloat(v) || 0;
@@ -189,7 +214,27 @@
     function getDayIndexUTC(target, base) { const t = getUTCDate(target), b = getUTCDate(base); return (t === null || b === null) ? 0 : Math.round((t - b) / 86400000); }
     function safeISO(d) { const dt = new Date(d); return isNaN(dt.getTime()) ? new Date().toISOString().split('T')[0] : dt.toISOString().split('T')[0]; }
     function getWeek(d) { d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7)); return Math.ceil((((d - new Date(Date.UTC(d.getUTCFullYear(),0,1))) / 86400000) + 1)/7); }
-    function getWorkingDays(s, e) { let c = 0, cur = new Date(s); while(cur <= e) { if(cur.getDay()!==0 && cur.getDay()!==6) c++; cur.setDate(cur.getDate()+1); } return c || 1; }
+    
+    // --- UUS: PUHKUSTE KONTROLL ---
+    function isHoliday(dateObj) {
+        let dTime = new Date(dateObj).setHours(0,0,0,0);
+        for(let i=0; i<customCap.holidays.length; i++) {
+            let h = customCap.holidays[i];
+            let s = new Date(h.s).setHours(0,0,0,0);
+            let e = new Date(h.e).setHours(23,59,59,999);
+            if (dTime >= s && dTime <= e) return true;
+        }
+        return false;
+    }
+
+    function getWorkingDays(s, e) { 
+        let c = 0, cur = new Date(s); 
+        while(cur <= e) { 
+            if(cur.getDay()!==0 && cur.getDay()!==6 && !isHoliday(cur)) c++; 
+            cur.setDate(cur.getDate()+1); 
+        } 
+        return c || 1; // Väldib 0-ga jagamist
+    }
 
     function updateSyncStatus(text, type) {
         const el = document.getElementById('syncStatus');
@@ -220,7 +265,7 @@
     function applyUIMode() {
         document.getElementById('addOrderBtn').style.display = (isAdmin && currentMainTabFilter === 'active') ? "block" : "none";
         document.getElementById('saveCapBtn').style.display = isAdmin ? "block" : "none";
-        document.querySelectorAll('.admin-only').forEach(el => el.style.display = isAdmin ? "table-cell" : "none");
+        document.querySelectorAll('.admin-only').forEach(el => el.style.display = isAdmin ? "flex" : "none");
         renderTable();
         
         const activeTab = document.querySelector('.content.active').id;
@@ -231,7 +276,7 @@
         }
         if(activeTab === 'paeva_koormus_graafik') renderDailyCharts();
         if(activeTab === 'paeva_koormus_tabel') renderDailyTable();
-        if(activeTab === 'voimekus_tab') renderCapacity();
+        if(activeTab === 'voimekus_tab') { renderHolidays(); renderCapacity(); }
         if(activeTab === 'dashboard_view') renderDashboard();
     }
 
@@ -271,7 +316,6 @@
         } catch(e) { updateSyncStatus("❌ Ühenduse viga", "danger"); }
     }
 
-    // --- UUS: TÄPNE FAASIDE ARVUTUS (Daily Load jaoks) ---
     function getPhaseDates(o, kKey, startView) {
         let sIdx = getDayIndexUTC(o.start, startView);
         let eIdx = getDayIndexUTC(o.end, startView);
@@ -289,23 +333,14 @@
 
         let startOffset = 0, dur = 1;
 
-        if (CONFIG[kKey].order === 0) { // INS
-            startOffset = 0; dur = insD || 1; 
-        }
-        else if (CONFIG[kKey].order === 1) { // TR, ML, RL
-            startOffset = insD + ah1D; dur = Math.ceil((lH/tH)*prodD) || 1; 
-        }
-        else if (CONFIG[kKey].order === 2) { // MK, RK
-            let lD = Math.floor((lH/tH)*prodD); startOffset = insD + ah1D + lD; dur = Math.max(1, prodD - lD); 
-        }
-        else if (CONFIG[kKey].order === 3) { // KO
-            startOffset = Math.max(0, totalRange - kD); dur = kD || 1; 
-        }
+        if (CONFIG[kKey].order === 0) { startOffset = 0; dur = insD || 1; }
+        else if (CONFIG[kKey].order === 1) { startOffset = insD + ah1D; dur = Math.ceil((lH/tH)*prodD) || 1; }
+        else if (CONFIG[kKey].order === 2) { let lD = Math.floor((lH/tH)*prodD); startOffset = insD + ah1D + lD; dur = Math.max(1, prodD - lD); }
+        else if (CONFIG[kKey].order === 3) { startOffset = Math.max(0, totalRange - kD); dur = kD || 1; }
 
         let sDate = new Date(startView.getTime() + (sIdx + startOffset) * 86400000);
         let eDate = new Date(sDate.getTime() + (dur - 1) * 86400000);
         
-        // Juhul kui tellimus on liiga lühikese vahega, hoiame andmed raamides
         let absStart = new Date(o.start); let absEnd = new Date(o.end);
         if(sDate < absStart) sDate = absStart;
         if(eDate > absEnd) eDate = absEnd;
@@ -406,12 +441,10 @@
             let gIdx = orders.indexOf(o), sIdx = getDayIndexUTC(o.start, START_VIEW), eIdx = getDayIndexUTC(o.end, START_VIEW);
             let totalRange = eIdx - sIdx + 1;
             
-            // FAASIDE ARVUTUS GANTTIS
             let insD = f(o.ins) > 0 ? Math.max(1, Math.ceil(f(o.ins) / 8)) : 0;
             let kD = f(o.kooste) > 0 ? Math.max(1, Math.ceil(f(o.kooste) / 8)) : 0;
             let ah1D = f(o.sub1) || 0;
             let ah2D = f(o.sub2) || 0;
-            
             let prodD = Math.max(1, totalRange - insD - kD - ah1D - ah2D);
             let lH = f(o.must_l) + f(o.rv_l) + f(o.trei);
             let kH = f(o.must_k) + f(o.rv_k);
@@ -465,17 +498,26 @@
         Object.keys(CONFIG).forEach(k => {
             let chartHtml = `<div class="daily-chart-wrapper"><h3>${CONFIG[k].l} (Päeva koormus)</h3><div class="daily-chart-area">`;
             for(let i=0; i<daysToShow; i++) {
-                let curDate = new Date(startDate.getTime() + i*86400000), curTime = curDate.getTime(), wNo = getWeek(curDate), isToday = curDate.toDateString() === TODAY.toDateString(), isWeekend = curDate.getDay() === 0 || curDate.getDay() === 6, segmentsHtml = "", totalH = 0;
+                let curDate = new Date(startDate.getTime() + i*86400000), curTime = curDate.getTime(), wNo = getWeek(curDate), isToday = curDate.toDateString() === TODAY.toDateString();
+                let isHol = isHoliday(curDate);
+                let isWeekend = curDate.getDay() === 0 || curDate.getDay() === 6;
+                let isRestDay = isWeekend || isHol;
+                let segmentsHtml = "", totalH = 0;
                 let dailyCap = (customCap[k] && customCap[k][wNo]) ? customCap[k][wNo] / 5 : CONFIG[k].c / 5;
-                if (!isWeekend) {
+                
+                if (!isRestDay) {
                     activeStats[k].forEach(os => {
                         if(curTime >= os.sTime && curTime <= os.eTime) {
                             totalH += os.hPerDay; segmentsHtml += `<div class="order-segment" style="height:${os.hPerDay * SCALE}px; background:${CONFIG[k].color};" title="${os.mt} (${os.kirjeldus||''})\nKoormus: ${os.hPerDay.toFixed(1)}h">${os.hPerDay > 0.5 ? os.mt : ''}</div>`;
                         }
                     });
                 }
-                let limitLineHtml = isWeekend ? '' : `<div style="position:absolute; bottom:${dailyCap * SCALE}px; width:100%; border-top:2px dashed red; z-index:10; opacity:0.8; pointer-events:none;"></div>`;
-                chartHtml += `<div class="day-column ${isToday?'today-bg':''}"> ${limitLineHtml} ${segmentsHtml} <div class="day-label ${isWeekend?'weekend-label':''}"><strong>${curDate.getDate()}.${curDate.getMonth()+1}</strong><br>${['P','E','T','K','N','R','L'][curDate.getDay()]}<br><span style="color:${totalH > dailyCap ? 'red' : '#666'}">${totalH > 0 ? totalH.toFixed(1)+'h' : ''}</span></div></div>`;
+                let limitLineHtml = isRestDay ? '' : `<div style="position:absolute; bottom:${dailyCap * SCALE}px; width:100%; border-top:2px dashed red; z-index:10; opacity:0.8; pointer-events:none;"></div>`;
+                
+                let bgClass = isHol ? 'holiday-bg' : (isToday ? 'today-bg' : '');
+                let labelClass = isHol ? 'holiday-text' : (isWeekend ? 'weekend-label' : '');
+                
+                chartHtml += `<div class="day-column ${bgClass}"> ${limitLineHtml} ${segmentsHtml} <div class="day-label ${labelClass}"><strong>${curDate.getDate()}.${curDate.getMonth()+1}</strong><br>${['P','E','T','K','N','R','L'][curDate.getDay()]}<br><span style="color:${totalH > dailyCap ? 'red' : '#666'}">${totalH > 0 ? totalH.toFixed(1)+'h' : ''}</span></div></div>`;
             }
             container.innerHTML += chartHtml + `</div></div>`;
         });
@@ -500,7 +542,8 @@
         
         for(let i=0; i<daysToShow; i++) {
             let d = new Date(startDate.getTime() + i*86400000), isToday = d.toDateString() === TODAY.toDateString();
-            html += `<th style="position:sticky; top:0; z-index:20; background:#2c3e50; color:white; font-size:10px; text-align:center; min-width:40px; border-right:1px solid #34495e; ${isToday?'background:var(--today);':''}">${d.getDate()}.${d.getMonth()+1}<br>${['P','E','T','K','N','R','L'][d.getDay()]}</th>`;
+            let thStyle = isHoliday(d) ? "background:#c62828; color:white;" : (isToday ? "background:var(--today);" : "background:#2c3e50; color:white;");
+            html += `<th style="position:sticky; top:0; z-index:20; font-size:10px; text-align:center; min-width:40px; border-right:1px solid #34495e; ${thStyle}">${d.getDate()}.${d.getMonth()+1}<br>${['P','E','T','K','N','R','L'][d.getDay()]}</th>`;
         }
         html += `</tr></thead><tbody>`;
         
@@ -508,18 +551,20 @@
             html += `<tr><td style="position:sticky; left:0; background:#f4f7f6; font-weight:bold; border-right:2px solid #ccc; z-index:10; color:${CONFIG[k].color};">${CONFIG[k].l}</td>`;
             for(let i=0; i<daysToShow; i++) {
                 let curDate = new Date(startDate.getTime() + i*86400000), curTime = curDate.getTime(), wNo = getWeek(curDate), isWeekend = curDate.getDay() === 0 || curDate.getDay() === 6, isToday = curDate.toDateString() === TODAY.toDateString();
+                let isHol = isHoliday(curDate);
                 let dailyCap = (customCap[k] && customCap[k][wNo]) ? customCap[k][wNo] / 5 : CONFIG[k].c / 5;
                 let totalH = 0;
                 
-                if (!isWeekend) {
+                if (!isWeekend && !isHol) {
                     activeStats[k].forEach(os => {
                         if(curTime >= os.sTime && curTime <= os.eTime) totalH += os.hPerDay;
                     });
                 }
                 
-                let isOver = totalH > dailyCap, cellStyle = isWeekend ? "background:#eee;" : (isOver ? "background:#ffebee; color:#c62828; font-weight:bold;" : (totalH > 0 ? "background:#e8f5e9; color:#2e7d32; font-weight:bold;" : "background:#fff;"));
+                let isOver = totalH > dailyCap;
+                let cellStyle = isHol ? "background:#ffebee; color:#c62828;" : (isWeekend ? "background:#eee;" : (isOver ? "background:#ffebee; color:#c62828; font-weight:bold;" : (totalH > 0 ? "background:#e8f5e9; color:#2e7d32; font-weight:bold;" : "background:#fff;")));
                 if(isToday) cellStyle += " border-left:2px solid var(--today); border-right:2px solid var(--today);";
-                html += `<td style="text-align:center; border-right:1px solid #eee; border-bottom:1px solid #eee; ${cellStyle}">${totalH > 0 ? totalH.toFixed(1) : ''}</td>`;
+                html += `<td style="text-align:center; border-right:1px solid #eee; border-bottom:1px solid #eee; ${cellStyle}">${totalH > 0 ? totalH.toFixed(1) : (isHol ? 'P' : '')}</td>`;
             }
             html += `</tr>`;
         });
@@ -528,20 +573,73 @@
         setTimeout(() => { container.firstElementChild.scrollLeft = (2 * 40); }, 100);
     }
 
+    // --- UUS PUHKUSTE HALDUR ---
+    function addHoliday() {
+        if(!isAdmin) return;
+        let n = document.getElementById('hol-name').value;
+        let s = document.getElementById('hol-start').value;
+        let e = document.getElementById('hol-end').value;
+        if(!n || !s) { alert("Nimetus ja alguskuupäev on kohustuslikud!"); return; }
+        if(!e) e = s;
+        if(!customCap.holidays) customCap.holidays = [];
+        customCap.holidays.push({n:n, s:s, e:e});
+        document.getElementById('hol-name').value = ""; document.getElementById('hol-start').value = ""; document.getElementById('hol-end').value = "";
+        saveCapacity(); 
+    }
+
+    function delHoliday(idx) {
+        if(!isAdmin) return;
+        customCap.holidays.splice(idx, 1);
+        saveCapacity();
+    }
+
+    function renderHolidays() {
+        let list = document.getElementById('holidays-list');
+        if(!list) return;
+        let html = "";
+        (customCap.holidays || []).forEach((h, i) => {
+            html += `<div style="display:flex; justify-content:space-between; align-items:center; max-width:400px; background:#ffebee; padding:5px 10px; border:1px solid #ffcdd2; border-radius:4px; color:#c62828;">
+                <div><strong>${h.n}</strong>: ${safeISO(h.s)} ${h.s!==h.e ? ' kuni '+safeISO(h.e) : ''}</div>
+                <button class="admin-only" onclick="delHoliday(${i})" style="color:white; background:#c62828; border:none; padding:3px 8px; border-radius:3px; cursor:pointer; font-weight:bold; ${isAdmin?'display:block':'display:none'}">X</button>
+            </div>`;
+        });
+        if((customCap.holidays||[]).length === 0) html = "<div style='color:#777; font-size:11px;'>Ühtegi puhkust pole lisatud.</div>";
+        list.innerHTML = html;
+    }
+
     function renderCapacity() {
         let disAttr = isAdmin ? "" : "disabled";
-        let h = `<thead><tr><th>Osakond</th>` + Array.from({length:52},(_,i)=>`<th>W${i+1}</th>`).join('') + `</tr></thead><tbody>`;
+        
+        // Otsime välja millistes nädalates on puhkused (et W päist punaseks teha)
+        let holidayWeeks = new Set();
+        let currentYear = TODAY.getFullYear();
+        for(let d=new Date(currentYear,0,1); d.getFullYear()===currentYear; d.setDate(d.getDate()+1)) {
+            if(isHoliday(d)) holidayWeeks.add(getWeek(d));
+        }
+
+        let h = `<thead><tr><th style="background:#2c3e50; color:white;">Osakond</th>`;
+        for(let i=1; i<=52; i++) {
+            let wStyle = holidayWeeks.has(i) ? "background:#c62828; color:white;" : "";
+            h += `<th style="${wStyle}" title="${holidayWeeks.has(i) ? 'Selles nädalas on märgitud puhkus/püha!' : ''}">W${i}</th>`;
+        }
+        h += `</tr></thead><tbody>`;
+
         h += Object.keys(CONFIG).map(k => `<tr><td style="position:sticky; left:0; background:#eee; z-index:5;"><b>${CONFIG[k].l}</b></td>` + Array.from({length:52},(_,i)=>{
             let v = (customCap[k] && customCap[k][i+1]) ? customCap[k][i+1] : CONFIG[k].c;
-            return `<td><input type="number" class="cap-in num-in" data-k="${k}" data-w="${i+1}" value="${v}" ${disAttr}></td>`;
+            let bgStyle = holidayWeeks.has(i+1) ? "background-color:#ffebee;" : "";
+            return `<td><input type="number" class="cap-num-in" style="${bgStyle}" data-k="${k}" data-w="${i+1}" value="${v}" ${disAttr}></td>`;
         }).join('') + `</tr>`).join('');
+        
         document.getElementById('cap-table').innerHTML = h + `</tbody>`;
     }
 
     function saveCapacity() {
         if(!isAdmin) return;
-        document.querySelectorAll('.cap-in').forEach(i => { if(!customCap[i.dataset.k]) customCap[i.dataset.k] = {}; customCap[i.dataset.k][i.dataset.w] = parseInt(i.value); });
-        localStorage.setItem('prod_cap_v89', JSON.stringify(customCap)); alert("Võimekus salvestatud brauseri mällu!"); fetchData();
+        document.querySelectorAll('.cap-num-in').forEach(i => { if(!customCap[i.dataset.k]) customCap[i.dataset.k] = {}; customCap[i.dataset.k][i.dataset.w] = parseInt(i.value); });
+        localStorage.setItem('prod_cap_v90', JSON.stringify(customCap)); 
+        alert("Puhkused ja võimekus salvestatud brauseri mällu!"); 
+        applyUIMode(); 
+        fetchData();
     }
 
     function save() { 
@@ -605,7 +703,7 @@
         }
         if (viewId === 'paeva_koormus_graafik') renderDailyCharts();
         if (viewId === 'paeva_koormus_tabel') renderDailyTable();
-        if (viewId === 'voimekus_tab') renderCapacity();
+        if (viewId === 'voimekus_tab') { renderHolidays(); renderCapacity(); }
     }
     
     fetchData();
