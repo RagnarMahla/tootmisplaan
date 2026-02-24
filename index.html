@@ -2,7 +2,7 @@
 <html lang="et">
 <head>
     <meta charset="UTF-8">
-    <title>TOCI Tootmisplaan V87.0</title>
+    <title>TOCI Tootmisplaan V89.0</title>
     <style>
         :root { --primary: #1a252f; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; --warning: #f1c40f; --bg: #f4f7f6; --today: #ff4757; --cell-w: 45px; --sub-bg: #95a5a6; }
         *, *:before, *:after { box-sizing: border-box; }
@@ -81,7 +81,7 @@
 </head>
 <body>
 <div class="top-bar">
-    <div>🚀 <strong>TOCI LIVE V87.0 (Auto-Cleaner)</strong></div>
+    <div>🚀 <strong>TOCI LIVE V89.0 (Täpne ajakava)</strong></div>
     <div style="display:flex; gap:15px; align-items:center;">
         <div id="syncStatus" style="background:var(--warning); color:black; padding:4px 10px; border-radius:4px; font-weight:bold; transition: 0.3s;">Ühendan...</div>
         <button id="modeToggleBtn" onclick="toggleMode()" style="background:#95a5a6; color:white; border:none; padding:6px 12px; border-radius:4px; font-weight:bold; cursor:pointer;">🔒 VAATAJA</button>
@@ -92,6 +92,7 @@
     <button class="tab-btn" onclick="openTab(event, 'main_view', 'archive')" style="color:#bdc3c7;">ARHIIV</button>
     <button class="tab-btn" onclick="openTab(event, 'dashboard_view', null)">📊 KOKKUVÕTE</button>
     
+    <button class="tab-btn" onclick="openTab(event, 'gantt_in', null)" style="border-bottom: 3px solid #0097e6;">INS</button>
     <button class="tab-btn" onclick="openTab(event, 'gantt_tr', null)">TREI</button>
     <button class="tab-btn" onclick="openTab(event, 'gantt_mk', null)">MUST KEEV</button>
     <button class="tab-btn" onclick="openTab(event, 'gantt_rk', null)">RV KEEV</button>
@@ -130,6 +131,8 @@
                     <th class="divider-right">Lõpp</th>
                     <th title="Allhange enne (p)">AH1</th>
                     <th class="divider-right" title="Allhange peale (p)">AH2</th>
+                    <th class="dept-header divider-right" title="Inseneeria (tunnid | %)" style="background:#b3e5fc !important;">INS (h | %)</th>
+                    
                     <th class="dept-header divider-right" title="Treial (tunnid | %)">TR (h | %)</th>
                     <th class="dept-header divider-right" title="Must Keevitus (tunnid | %)">MK (h | %)</th>
                     <th class="dept-header divider-right" title="RV Keevitus (tunnid | %)">RK (h | %)</th>
@@ -146,6 +149,7 @@
     </div>
 </div>
 
+<div id="gantt_in" class="content"><div class="gantt-outer" id="out-in"></div></div>
 <div id="gantt_tr" class="content"><div class="gantt-outer" id="out-tr"></div></div>
 <div id="gantt_mk" class="content"><div class="gantt-outer" id="out-mk"></div></div>
 <div id="gantt_rk" class="content"><div class="gantt-outer" id="out-rk"></div></div>
@@ -165,7 +169,9 @@
     
     let saveTimeout; let isSaving = false; let hasPendingChanges = false;
     
+    // Konfiguratsioon
     const CONFIG = { 
+        ins:    {l:'Inseneeria', c:100, color:'#0097e6', order:0, p:'prog_ins'}, 
         trei:   {l:'Treial',   c:40,  color:'#9b59b6', order:1, p:'prog_tr'},
         must_k: {l:'Must Keev',c:240, color:'#e67e22', order:2, p:'prog_mk'}, 
         rv_k:   {l:'RV Keev',  c:120, color:'#f39c12', order:2, p:'prog_rk'}, 
@@ -175,7 +181,7 @@
     };
     
     const START_VIEW = new Date("2026-01-01"), TODAY = new Date();
-    let orders = [], customCap = JSON.parse(localStorage.getItem('prod_cap_v87')) || {};
+    let orders = [], customCap = JSON.parse(localStorage.getItem('prod_cap_v89')) || {};
     let currentMainTabFilter = 'active'; 
 
     const f = (v) => parseFloat(v) || 0;
@@ -194,9 +200,9 @@
     }
 
     function calcOverallProgress(o) {
-        let totalH = f(o.trei) + f(o.must_k) + f(o.rv_k) + f(o.must_l) + f(o.rv_l) + f(o.kooste);
+        let totalH = f(o.ins) + f(o.trei) + f(o.must_k) + f(o.rv_k) + f(o.must_l) + f(o.rv_l) + f(o.kooste);
         if (totalH === 0) return 0;
-        let doneH = (f(o.trei)*f(o.prog_tr) + f(o.must_k)*f(o.prog_mk) + f(o.rv_k)*f(o.prog_rk) + f(o.must_l)*f(o.prog_ml) + f(o.rv_l)*f(o.prog_rl) + f(o.kooste)*f(o.prog_ko)) / 100;
+        let doneH = (f(o.ins)*f(o.prog_ins) + f(o.trei)*f(o.prog_tr) + f(o.must_k)*f(o.prog_mk) + f(o.rv_k)*f(o.prog_rk) + f(o.must_l)*f(o.prog_ml) + f(o.rv_l)*f(o.prog_rl) + f(o.kooste)*f(o.prog_ko)) / 100;
         return Math.round((doneH / totalH) * 100);
     }
 
@@ -220,7 +226,7 @@
         const activeTab = document.querySelector('.content.active').id;
         if(activeTab.startsWith('gantt_')) {
             let key = activeTab.split('_')[1];
-            let realKey = key === 'tr' ? 'trei' : key === 'mk' ? 'must_k' : key === 'rk' ? 'rv_k' : key === 'ml' ? 'must_l' : key === 'rl' ? 'rv_l' : 'kooste';
+            let realKey = key === 'in' ? 'ins' : key === 'tr' ? 'trei' : key === 'mk' ? 'must_k' : key === 'rk' ? 'rv_k' : key === 'ml' ? 'must_l' : key === 'rl' ? 'rv_l' : 'kooste';
             renderGantt('out-' + key, realKey);
         }
         if(activeTab === 'paeva_koormus_graafik') renderDailyCharts();
@@ -229,7 +235,6 @@
         if(activeTab === 'dashboard_view') renderDashboard();
     }
 
-    // UUS! AUTOMAATNE KORISTAJA
     async function fetchData() {
         if (hasPendingChanges || isSaving) { alert("⏳ Oota! Süsteem parasjagu salvestab pilve."); return; }
         updateSyncStatus("🔄 Värskendan...", "warning");
@@ -238,33 +243,24 @@
             const rawData = await r.json();
             
             if(Array.isArray(rawData)) {
-                let cleanedData = [];
-                let seenMt = new Set();
-                let duplicatesFound = 0;
+                let cleanedData = []; let seenMt = new Set(); let duplicatesFound = 0;
 
-                // 1. Skaneerime andmed läbi ja kustutame dublikaadid
                 rawData.forEach(o => {
                     let cleanMt = String(o.mt).trim().toLowerCase();
-                    if (cleanMt === "uus" || cleanMt === "") {
-                        cleanedData.push(o); // Uusi ja tühje ridu lubame
-                    } else if (!seenMt.has(cleanMt)) {
-                        seenMt.add(cleanMt);
-                        cleanedData.push(o); // Esimene unikaalne rida jääb
-                    } else {
-                        duplicatesFound++; // Dublikaat visatakse minema
-                    }
+                    if (cleanMt === "uus" || cleanMt === "") { cleanedData.push(o); } 
+                    else if (!seenMt.has(cleanMt)) { seenMt.add(cleanMt); cleanedData.push(o); } 
+                    else { duplicatesFound++; }
                 });
 
                 orders = cleanedData.map(o => {
                     let obj = {...o, kirjeldus: o.kirjeldus||'', 
-                        trei:f(o.trei), must_k:f(o.must_k), rv_k:f(o.rv_k), must_l:f(o.must_l), rv_l:f(o.rv_l), kooste:f(o.kooste), 
-                        prog_tr:f(o.prog_tr), prog_mk:f(o.prog_mk), prog_rk:f(o.prog_rk), prog_ml:f(o.prog_ml), prog_rl:f(o.prog_rl), prog_ko:f(o.prog_ko),
+                        ins:f(o.ins), trei:f(o.trei), must_k:f(o.must_k), rv_k:f(o.rv_k), must_l:f(o.must_l), rv_l:f(o.rv_l), kooste:f(o.kooste), 
+                        prog_ins:f(o.prog_ins), prog_tr:f(o.prog_tr), prog_mk:f(o.prog_mk), prog_rk:f(o.prog_rk), prog_ml:f(o.prog_ml), prog_rl:f(o.prog_rl), prog_ko:f(o.prog_ko),
                         sub1:f(o.sub1), sub2:f(o.sub2), status: o.status || 'Töös'
                     };
                     obj.progress = calcOverallProgress(obj); return obj;
                 });
 
-                // 2. Kui leidsime dublikaate, kirjutame puhta andmebaasi automaatselt pilve tagasi!
                 if (duplicatesFound > 0 && isAdmin) {
                     fetch(API_URL, {method:"POST", body:JSON.stringify(orders), mode:'no-cors'});
                     alert(`🧹 Süsteem leidis ja eemaldas automaatselt ${duplicatesFound} dubleeritud tellimust!`);
@@ -273,6 +269,49 @@
                 applyUIMode(); updateSyncStatus("✅ Andmed OK", "success");
             }
         } catch(e) { updateSyncStatus("❌ Ühenduse viga", "danger"); }
+    }
+
+    // --- UUS: TÄPNE FAASIDE ARVUTUS (Daily Load jaoks) ---
+    function getPhaseDates(o, kKey, startView) {
+        let sIdx = getDayIndexUTC(o.start, startView);
+        let eIdx = getDayIndexUTC(o.end, startView);
+        let totalRange = eIdx - sIdx + 1;
+        
+        let insD = f(o.ins) > 0 ? Math.max(1, Math.ceil(f(o.ins) / 8)) : 0;
+        let kD = f(o.kooste) > 0 ? Math.max(1, Math.ceil(f(o.kooste) / 8)) : 0;
+        let ah1D = f(o.sub1) || 0;
+        let ah2D = f(o.sub2) || 0;
+        
+        let prodD = Math.max(1, totalRange - insD - kD - ah1D - ah2D);
+        let lH = f(o.must_l) + f(o.rv_l) + f(o.trei);
+        let kH = f(o.must_k) + f(o.rv_k);
+        let tH = lH + kH || 1;
+
+        let startOffset = 0, dur = 1;
+
+        if (CONFIG[kKey].order === 0) { // INS
+            startOffset = 0; dur = insD || 1; 
+        }
+        else if (CONFIG[kKey].order === 1) { // TR, ML, RL
+            startOffset = insD + ah1D; dur = Math.ceil((lH/tH)*prodD) || 1; 
+        }
+        else if (CONFIG[kKey].order === 2) { // MK, RK
+            let lD = Math.floor((lH/tH)*prodD); startOffset = insD + ah1D + lD; dur = Math.max(1, prodD - lD); 
+        }
+        else if (CONFIG[kKey].order === 3) { // KO
+            startOffset = Math.max(0, totalRange - kD); dur = kD || 1; 
+        }
+
+        let sDate = new Date(startView.getTime() + (sIdx + startOffset) * 86400000);
+        let eDate = new Date(sDate.getTime() + (dur - 1) * 86400000);
+        
+        // Juhul kui tellimus on liiga lühikese vahega, hoiame andmed raamides
+        let absStart = new Date(o.start); let absEnd = new Date(o.end);
+        if(sDate < absStart) sDate = absStart;
+        if(eDate > absEnd) eDate = absEnd;
+        if(eDate < sDate) eDate = sDate;
+
+        return { s: sDate, e: eDate };
     }
 
     function renderTable() {
@@ -299,6 +338,9 @@
                     <td class="divider-right"><input type="date" class="data-in" title="${overTitle}" style="${overStyle}" value="${safeISO(o.end)}" onchange="u(${i},'end',this.value)" ${disAttr}></td>
                     <td><input class="num-in" title="AH1" value="${o.sub1}" onchange="u(${i},'sub1',this.value)" ${disAttr}></td>
                     <td class="divider-right"><input class="num-in" title="AH2" value="${o.sub2}" onchange="u(${i},'sub2',this.value)" ${disAttr}></td>
+                    
+                    <td class="divider-right" style="background:#e1f5fe;"><div class="cell-flex"><input class="num-in" title="INS (tunnid)" value="${o.ins}" onchange="u(${i},'ins',this.value)" ${disAttr}><input class="prog-in" title="INS (%)" value="${o.prog_ins}" onchange="u(${i},'prog_ins',this.value)" ${disAttr}></div></td>
+                    
                     <td class="divider-right"><div class="cell-flex"><input class="num-in" title="TR (tunnid)" value="${o.trei}" onchange="u(${i},'trei',this.value)" ${disAttr}><input class="prog-in" title="TR (%)" value="${o.prog_tr}" onchange="u(${i},'prog_tr',this.value)" ${disAttr}></div></td>
                     <td class="divider-right"><div class="cell-flex"><input class="num-in" title="MK (tunnid)" value="${o.must_k}" onchange="u(${i},'must_k',this.value)" ${disAttr}><input class="prog-in" title="MK (%)" value="${o.prog_mk}" onchange="u(${i},'prog_mk',this.value)" ${disAttr}></div></td>
                     <td class="divider-right"><div class="cell-flex"><input class="num-in" title="RK (tunnid)" value="${o.rv_k}" onchange="u(${i},'rv_k',this.value)" ${disAttr}><input class="prog-in" title="RK (%)" value="${o.prog_rk}" onchange="u(${i},'prog_rk',this.value)" ${disAttr}></div></td>
@@ -315,7 +357,7 @@
 
     function renderDashboard() {
         let activeTotal = 0; let overdueTotal = 0;
-        let remH = { trei:0, must_k:0, rv_k:0, must_l:0, rv_l:0, kooste:0 };
+        let remH = { ins:0, trei:0, must_k:0, rv_k:0, must_l:0, rv_l:0, kooste:0 };
         let todayTime = new Date(); todayTime.setHours(23, 59, 59, 999);
 
         orders.forEach(o => {
@@ -323,6 +365,7 @@
                 activeTotal++;
                 let endD = new Date(o.end); endD.setHours(23, 59, 59, 999);
                 if (o.status === 'Töös' && endD.getTime() < todayTime.getTime()) overdueTotal++;
+                remH.ins += f(o.ins) * (1 - f(o.prog_ins)/100);
                 remH.trei += f(o.trei) * (1 - f(o.prog_tr)/100);
                 remH.must_k += f(o.must_k) * (1 - f(o.prog_mk)/100);
                 remH.rv_k += f(o.rv_k) * (1 - f(o.prog_rk)/100);
@@ -335,6 +378,7 @@
         document.getElementById('dashboard-container').innerHTML = `
             <div class="dash-card" style="border-left-color:var(--success);"><h3>Aktiivsed Tööd</h3><div class="value">${activeTotal}</div><div class="sub-text">Ootel või Töös staatusega tellimused</div></div>
             <div class="dash-card ${overdueTotal > 0 ? 'danger' : ''}" style="${overdueTotal === 0 ? 'border-left-color:#ccc;' : ''}"><h3 style="${overdueTotal > 0 ? 'color:var(--danger);' : ''}">Tähtaeg Ületatud</h3><div class="value" style="${overdueTotal > 0 ? 'color:var(--danger);' : 'color:#999;'}">${overdueTotal}</div><div class="sub-text">"Töös" olevad tellimused, mille lõppkuupäev on möödas</div></div>
+            <div class="dash-card" style="border-left-color:${CONFIG.ins.color};"><h3>Inseneeria</h3><div class="value">${remH.ins.toFixed(1)} h</div><div class="sub-text">Reaalselt tegemata jäänud töötunnid</div></div>
             <div class="dash-card" style="border-left-color:${CONFIG.trei.color};"><h3>Treial</h3><div class="value">${remH.trei.toFixed(1)} h</div><div class="sub-text">Reaalselt tegemata jäänud töötunnid</div></div>
             <div class="dash-card" style="border-left-color:${CONFIG.must_k.color};"><h3>Must Keevitus</h3><div class="value">${remH.must_k.toFixed(1)} h</div><div class="sub-text">Reaalselt tegemata jäänud töötunnid</div></div>
             <div class="dash-card" style="border-left-color:${CONFIG.rv_k.color};"><h3>RV Keevitus</h3><div class="value">${remH.rv_k.toFixed(1)} h</div><div class="sub-text">Reaalselt tegemata jäänud töötunnid</div></div>
@@ -360,12 +404,25 @@
 
         filteredOrders.forEach((o) => {
             let gIdx = orders.indexOf(o), sIdx = getDayIndexUTC(o.start, START_VIEW), eIdx = getDayIndexUTC(o.end, START_VIEW);
-            let totalRange = eIdx - sIdx + 1, kD = Math.max(1, Math.ceil(o.kooste / 8)), prodD = Math.max(1, totalRange - kD - o.sub2);
-            let lH = o.must_l + o.rv_l + o.trei, kH = o.must_k + o.rv_k, tH = lH + kH || 1;
+            let totalRange = eIdx - sIdx + 1;
+            
+            // FAASIDE ARVUTUS GANTTIS
+            let insD = f(o.ins) > 0 ? Math.max(1, Math.ceil(f(o.ins) / 8)) : 0;
+            let kD = f(o.kooste) > 0 ? Math.max(1, Math.ceil(f(o.kooste) / 8)) : 0;
+            let ah1D = f(o.sub1) || 0;
+            let ah2D = f(o.sub2) || 0;
+            
+            let prodD = Math.max(1, totalRange - insD - kD - ah1D - ah2D);
+            let lH = f(o.must_l) + f(o.rv_l) + f(o.trei);
+            let kH = f(o.must_k) + f(o.rv_k);
+            let tH = lH + kH || 1;
+            
             let finalLeft = 0, taskDur = 0;
-            if (CONFIG[key].order === 3) { taskDur = kD; finalLeft = (eIdx - kD + 1) * 45; }
-            else if (CONFIG[key].order === 1) { taskDur = Math.ceil((lH/tH)*prodD); finalLeft = sIdx * 45; }
-            else if (CONFIG[key].order === 2) { let lD = Math.floor((lH/tH)*prodD); taskDur = Math.max(1, prodD - lD); finalLeft = (sIdx + lD) * 45; }
+            
+            if (CONFIG[key].order === 0) { taskDur = insD || 1; finalLeft = sIdx * 45; }
+            else if (CONFIG[key].order === 1) { taskDur = Math.ceil((lH/tH)*prodD) || 1; finalLeft = (sIdx + insD + ah1D) * 45; }
+            else if (CONFIG[key].order === 2) { let lD = Math.floor((lH/tH)*prodD); taskDur = Math.max(1, prodD - lD); finalLeft = (sIdx + insD + ah1D + lD) * 45; }
+            else if (CONFIG[key].order === 3) { taskDur = kD || 1; finalLeft = Math.max(sIdx, (eIdx - kD + 1)) * 45; }
 
             let curProg = o[CONFIG[key].p] || 0; 
 
@@ -376,24 +433,19 @@
                 </div>
                 <div class="gantt-bars-area" style="width:calc(var(--cell-w) * ${dayCount});">
                     <div class="today-line" style="left:${tIdx * 45}px"></div>`;
-            if(o.sub1 > 0) bodyHtml += `<div class="sub-bar sub-pre" style="left:${(sIdx - o.sub1)*45}px; width:${o.sub1*45 - 2}px">AH1</div>`;
+            
+            if(ah1D > 0) bodyHtml += `<div class="sub-bar sub-pre" style="left:${(sIdx + insD)*45}px; width:${ah1D*45 - 2}px">AH1</div>`;
             bodyHtml += `<div class="task-bar" title="MT: ${o.mt}\nKlient: ${o.client}\n${CONFIG[key].l}: ${o[key]}h\nValmis: ${curProg}%\nSisu: ${o.kirjeldus||'-'}" style="left:${finalLeft}px; width:${taskDur * 45 - 5}px; background:${CONFIG[key].color}">
                 <div class="progress-fill" style="width:${curProg}%"></div>
                 <span style="position:relative; padding-left:5px; z-index:10;">${o.mt} (${curProg}%)</span>
             </div>`;
-            if(o.sub2 > 0) bodyHtml += `<div class="sub-bar sub-post" style="left:${(eIdx - kD - o.sub2 + 1) * 45}px; width:${o.sub2*45 - 2}px">AH2</div>`;
-            bodyHtml += `</div></div>`; // End row
+            if(ah2D > 0) bodyHtml += `<div class="sub-bar sub-post" style="left:${(eIdx - kD - ah2D + 1) * 45}px; width:${ah2D*45 - 2}px">AH2</div>`;
+            
+            bodyHtml += `</div></div>`; 
         });
         outer.innerHTML = `<div class="gantt-header-wrapper"><div class="header-corner">MT / Klient / Aeg</div><div class="header-scroll" id="h-scroll-${key}"><div class="header-grid">${headerCols}</div></div></div>` + bodyHtml + `</div>`;
         const hS = document.getElementById(`h-scroll-${key}`), bS = document.getElementById(`b-scroll-${key}`);
         if(bS && hS) { bS.onscroll = () => { hS.scrollLeft = bS.scrollLeft; }; setTimeout(() => { bS.scrollLeft = (tIdx * 45) - 160; }, 100); }
-    }
-
-    function syncDailyScroll(e) {
-        const scrollX = e.target.scrollLeft;
-        document.querySelectorAll('.daily-chart-wrapper').forEach(w => {
-            if (w !== e.target && w.scrollLeft !== scrollX) w.scrollLeft = scrollX;
-        });
     }
 
     function renderDailyCharts() {
@@ -404,13 +456,14 @@
         let activeStats = {};
         Object.keys(CONFIG).forEach(k => {
             activeStats[k] = orders.filter(o => o.status === 'Töös' && o[k] > 0).map(o => {
-                let s = new Date(o.start), e = new Date(o.end);
-                return { mt: o.mt, kirjeldus: o.kirjeldus, sTime: s.getTime(), eTime: e.getTime(), hPerDay: o[k] / getWorkingDays(s, e) };
+                let phase = getPhaseDates(o, k, START_VIEW);
+                let workDays = getWorkingDays(phase.s, phase.e);
+                return { mt: o.mt, kirjeldus: o.kirjeldus, sTime: phase.s.getTime(), eTime: phase.e.getTime(), hPerDay: o[k] / workDays };
             });
         });
 
         Object.keys(CONFIG).forEach(k => {
-            let chartHtml = `<div class="daily-chart-wrapper" onscroll="syncDailyScroll(event)"><h3>${CONFIG[k].l} (Päeva koormus)</h3><div class="daily-chart-area">`;
+            let chartHtml = `<div class="daily-chart-wrapper"><h3>${CONFIG[k].l} (Päeva koormus)</h3><div class="daily-chart-area">`;
             for(let i=0; i<daysToShow; i++) {
                 let curDate = new Date(startDate.getTime() + i*86400000), curTime = curDate.getTime(), wNo = getWeek(curDate), isToday = curDate.toDateString() === TODAY.toDateString(), isWeekend = curDate.getDay() === 0 || curDate.getDay() === 6, segmentsHtml = "", totalH = 0;
                 let dailyCap = (customCap[k] && customCap[k][wNo]) ? customCap[k][wNo] / 5 : CONFIG[k].c / 5;
@@ -430,9 +483,17 @@
 
     function renderDailyTable() {
         const container = document.getElementById('daily-table-container'); 
-        const daysToShow = 365; // Aastane tabel
+        const daysToShow = 365; 
         const startDate = new Date(TODAY); startDate.setDate(startDate.getDate() - 2);
         
+        let activeStats = {};
+        Object.keys(CONFIG).forEach(k => {
+            activeStats[k] = orders.filter(o => o.status === 'Töös' && o[k] > 0).map(o => {
+                let phase = getPhaseDates(o, k, START_VIEW);
+                return { sTime: phase.s.getTime(), eTime: phase.e.getTime(), hPerDay: o[k] / getWorkingDays(phase.s, phase.e) };
+            });
+        });
+
         let html = `<div style="background:white; border-radius:8px; padding:0; box-shadow:0 4px 15px rgba(0,0,0,0.05); overflow:auto; height:100%;">
             <table class="data-table" style="min-width:max-content; border-collapse: separate; border-spacing: 0;">
             <thead><tr><th style="position:sticky; left:0; top:0; z-index:30; background:#2c3e50; color:white; min-width:120px; border-right:2px solid #34495e;">Osakond</th>`;
@@ -451,9 +512,8 @@
                 let totalH = 0;
                 
                 if (!isWeekend) {
-                    orders.filter(o => o.status === 'Töös' && o[k] > 0).forEach(o => {
-                        let s = new Date(o.start), e = new Date(o.end);
-                        if(curTime >= s.getTime() && curTime <= e.getTime()) totalH += o[k] / getWorkingDays(s, e);
+                    activeStats[k].forEach(os => {
+                        if(curTime >= os.sTime && curTime <= os.eTime) totalH += os.hPerDay;
                     });
                 }
                 
@@ -481,7 +541,7 @@
     function saveCapacity() {
         if(!isAdmin) return;
         document.querySelectorAll('.cap-in').forEach(i => { if(!customCap[i.dataset.k]) customCap[i.dataset.k] = {}; customCap[i.dataset.k][i.dataset.w] = parseInt(i.value); });
-        localStorage.setItem('prod_cap_v87', JSON.stringify(customCap)); alert("Võimekus salvestatud brauseri mällu!"); fetchData();
+        localStorage.setItem('prod_cap_v89', JSON.stringify(customCap)); alert("Võimekus salvestatud brauseri mällu!"); fetchData();
     }
 
     function save() { 
@@ -504,7 +564,7 @@
             if (isDuplicate) { alert("⚠️ VIGA: MT number '" + v + "' on juba süsteemis olemas! Dublikaadid ei ole lubatud."); renderTable(); return; }
         }
         orders[i][k] = v; 
-        if (['trei', 'must_k', 'rv_k', 'must_l', 'rv_l', 'kooste', 'prog_tr', 'prog_mk', 'prog_rk', 'prog_ml', 'prog_rl', 'prog_ko'].includes(k)) {
+        if (['ins', 'trei', 'must_k', 'rv_k', 'must_l', 'rv_l', 'kooste', 'prog_ins', 'prog_tr', 'prog_mk', 'prog_rk', 'prog_ml', 'prog_rl', 'prog_ko'].includes(k)) {
             orders[i].progress = calcOverallProgress(orders[i]);
             let pCell = document.getElementById('prog_tot_' + i);
             if(pCell) pCell.innerText = orders[i].progress + '%';
@@ -516,7 +576,7 @@
     
     function addNewRow() { 
         if(!isAdmin) return; 
-        orders.unshift({mt:"UUS", client:"", kirjeldus:"", start:new Date().toISOString().split('T')[0], end:new Date().toISOString().split('T')[0], sub1:0, sub2:0, trei:0, must_k:0, rv_k:0, must_l:0, rv_l:0, kooste:0, prog_tr:0, prog_mk:0, prog_rk:0, prog_ml:0, prog_rl:0, prog_ko:0, progress:0, status:'Ootel'}); 
+        orders.unshift({mt:"UUS", client:"", kirjeldus:"", start:new Date().toISOString().split('T')[0], end:new Date().toISOString().split('T')[0], sub1:0, sub2:0, ins:0, trei:0, must_k:0, rv_k:0, must_l:0, rv_l:0, kooste:0, prog_ins:0, prog_tr:0, prog_mk:0, prog_rk:0, prog_ml:0, prog_rl:0, prog_ko:0, progress:0, status:'Ootel'}); 
         currentMainTabFilter = 'active';
         document.getElementById('view-title').innerText = "Aktiivsed tööd (Ootel/Töös)";
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -540,7 +600,7 @@
         if (viewId === 'dashboard_view') renderDashboard();
         if (viewId.startsWith('gantt_')) {
             let key = viewId.split('_')[1];
-            let realKey = key === 'tr' ? 'trei' : key === 'mk' ? 'must_k' : key === 'rk' ? 'rv_k' : key === 'ml' ? 'must_l' : key === 'rl' ? 'rv_l' : 'kooste';
+            let realKey = key === 'in' ? 'ins' : key === 'tr' ? 'trei' : key === 'mk' ? 'must_k' : key === 'rk' ? 'rv_k' : key === 'ml' ? 'must_l' : key === 'rl' ? 'rv_l' : 'kooste';
             renderGantt('out-' + key, realKey);
         }
         if (viewId === 'paeva_koormus_graafik') renderDailyCharts();
