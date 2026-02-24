@@ -2,7 +2,7 @@
 <html lang="et">
 <head>
     <meta charset="UTF-8">
-    <title>TOCI Tootmisplaan V93.0</title>
+    <title>TOCI Tootmisplaan V94.0</title>
     <style>
         :root { --primary: #1a252f; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; --warning: #f1c40f; --bg: #f4f7f6; --today: #ff4757; --cell-w: 45px; --sub-bg: #95a5a6; }
         *, *:before, *:after { box-sizing: border-box; }
@@ -90,7 +90,7 @@
 </head>
 <body>
 <div class="top-bar">
-    <div>🚀 <strong>TOCI LIVE V93.0 (Gantt Korda)</strong></div>
+    <div>🚀 <strong>TOCI LIVE V94.0 (Täpne & Katkematu Matemaatika)</strong></div>
     <div style="display:flex; gap:15px; align-items:center;">
         <div id="syncStatus" style="background:var(--warning); color:black; padding:4px 10px; border-radius:4px; font-weight:bold; transition: 0.3s;">Ühendan...</div>
         <button id="modeToggleBtn" onclick="toggleMode()" style="background:#95a5a6; color:white; border:none; padding:6px 12px; border-radius:4px; font-weight:bold; cursor:pointer;">🔒 VAATAJA</button>
@@ -207,7 +207,7 @@
     };
     
     const START_VIEW = new Date("2026-01-01"), TODAY = new Date();
-    let orders = [], customCap = JSON.parse(localStorage.getItem('prod_cap_v93')) || {};
+    let orders = [], customCap = JSON.parse(localStorage.getItem('prod_cap_v94')) || {};
     if (!customCap.holidays) customCap.holidays = [];
     
     let currentMainTabFilter = 'active'; 
@@ -218,12 +218,20 @@
     function safeISO(d) { const dt = new Date(d); return isNaN(dt.getTime()) ? new Date().toISOString().split('T')[0] : dt.toISOString().split('T')[0]; }
     function getWeek(d) { d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7)); return Math.ceil((((d - new Date(Date.UTC(d.getUTCFullYear(),0,1))) / 86400000) + 1)/7); }
     
+    // V94: PURUNEMATU PUHKUSTE KONTROLL
     function isHoliday(dateObj) {
+        if (!customCap.holidays || !Array.isArray(customCap.holidays)) return false;
         let dTime = new Date(dateObj).setHours(0,0,0,0);
         for(let i=0; i<customCap.holidays.length; i++) {
             let h = customCap.holidays[i];
-            let s = new Date(h.s).setHours(0,0,0,0);
-            let e = new Date(h.e).setHours(23,59,59,999);
+            if (!h || !h.s) continue; 
+            let sDate = new Date(h.s);
+            if (isNaN(sDate.getTime())) continue;
+            let eDate = h.e ? new Date(h.e) : new Date(h.s);
+            if (isNaN(eDate.getTime())) eDate = sDate;
+            
+            let s = sDate.setHours(0,0,0,0);
+            let e = eDate.setHours(23,59,59,999);
             if (dTime >= s && dTime <= e) return true;
         }
         return false;
@@ -291,7 +299,6 @@
             
             if(Array.isArray(rawData)) {
                 let cleanedData = []; let seenMt = new Set(); let duplicatesFound = 0;
-
                 rawData.forEach(o => {
                     let cleanMt = String(o.mt).trim().toLowerCase();
                     if (cleanMt === "uus" || cleanMt === "") { cleanedData.push(o); } 
@@ -308,69 +315,74 @@
                     obj.progress = calcOverallProgress(obj); return obj;
                 });
 
-                if (duplicatesFound > 0 && isAdmin) {
-                    fetch(API_URL, {method:"POST", body:JSON.stringify(orders), mode:'no-cors'});
-                }
-
+                if (duplicatesFound > 0 && isAdmin) fetch(API_URL, {method:"POST", body:JSON.stringify(orders), mode:'no-cors'});
                 applyUIMode(); updateSyncStatus("✅ Andmed OK", "success");
             }
         } catch(e) { updateSyncStatus("❌ Ühenduse viga", "danger"); }
     }
 
-    // --- V93: TÄPNE FAASIDE ARVUTUS (KASUTATAKSE NII GANTTIS KUI KOORMUSES) ---
-    function getPhaseDates(o, kKey, startView) {
+    // --- V94: ÜLITÄPNE PROPORTSIONAALNE KOSK (WATERFALL) ---
+    function getPhaseDates(o, startView) {
         let sIdx = getDayIndexUTC(o.start, startView);
         let eIdx = getDayIndexUTC(o.end, startView);
-        if (eIdx < sIdx) eIdx = sIdx; // Turvakontroll: Lõpp ei saa olla enne Algust
-        let totalRange = eIdx - sIdx + 1;
+        if (eIdx < sIdx) eIdx = sIdx;
         
-        let insD = Math.max(1, Math.ceil(f(o.ins) / 8)); if (f(o.ins) === 0) insD = 0;
-        let kD = Math.max(1, Math.ceil(f(o.kooste) / 8)); if (f(o.kooste) === 0) kD = 0;
         let ah1D = f(o.sub1) || 0;
         let ah2D = f(o.sub2) || 0;
         
-        let lH = f(o.must_l) + f(o.rv_l) + f(o.trei);
-        let kH = f(o.must_k) + f(o.rv_k);
-        let hasProd = (lH + kH) > 0;
+        let insH = f(o.ins);
+        let lukkH = f(o.trei) + f(o.must_l) + f(o.rv_l);
+        let keevH = f(o.must_k) + f(o.rv_k);
+        let koosteH = f(o.kooste);
+        let totalH = insH + lukkH + keevH + koosteH;
         
-        let prodD = totalRange - insD - kD - ah1D - ah2D;
-        if (hasProd && prodD < 1) prodD = 1; // Miinimum 1 päev tootmisele, kui tunde on
+        let availDays = (eIdx - sIdx + 1) - ah1D - ah2D;
+        if (availDays < 1) availDays = 1;
         
-        let tH = lH + kH || 1;
-        let lD = Math.floor((lH/tH)*prodD);
-        let mkD = Math.max(1, prodD - lD);
-
-        let pStart = sIdx, pEnd = eIdx;
-
-        if (CONFIG[kKey].order === 0) { // INS
-            pStart = sIdx;
-            pEnd = sIdx + insD - 1;
-        }
-        else if (CONFIG[kKey].order === 1) { // TR, ML, RL
-            pStart = sIdx + insD + ah1D;
-            pEnd = pStart + Math.max(1, lD) - 1;
-        }
-        else if (CONFIG[kKey].order === 2) { // MK, RK
-            pStart = sIdx + insD + ah1D + lD;
-            pEnd = pStart + mkD - 1;
-        }
-        else if (CONFIG[kKey].order === 3) { // KO
-            pEnd = eIdx;
-            pStart = eIdx - kD + 1;
+        let insDays = 0, lukkDays = 0, keevDays = 0, koosteDays = 0;
+        
+        if (totalH > 0) {
+            // Proportsionaalne päevade jaotus
+            insDays = Math.round((insH / totalH) * availDays);
+            lukkDays = Math.round((lukkH / totalH) * availDays);
+            keevDays = Math.round((keevH / totalH) * availDays);
+            koosteDays = Math.round((koosteH / totalH) * availDays);
+            
+            // Garantii: kui osakonnas on tööd, saab ta vähemalt 1 päeva
+            if (insH > 0 && insDays === 0) insDays = 1;
+            if (lukkH > 0 && lukkDays === 0) lukkDays = 1;
+            if (keevH > 0 && keevDays === 0) keevDays = 1;
+            if (koosteH > 0 && koosteDays === 0) koosteDays = 1;
         }
 
-        // TÄIELIK KLAMMERDAMINE: Ükski kast ei tohi lekkida Algus ja Lõpp kuupäevade alt välja!
-        if (pStart < sIdx) pStart = sIdx;
-        if (pStart > eIdx) pStart = eIdx;
-        if (pEnd < pStart) pEnd = pStart;
-        if (pEnd > eIdx) pEnd = eIdx;
+        let clamp = (val) => Math.max(sIdx, Math.min(eIdx, val));
 
-        return { 
-            sIdx: pStart, 
-            eIdx: pEnd,
-            s: new Date(startView.getTime() + pStart * 86400000), 
-            e: new Date(startView.getTime() + pEnd * 86400000) 
+        let bounds = {
+            ins:  { s: sIdx, e: sIdx + Math.max(0, insDays - 1) },
+            ah1:  { s: sIdx + insDays, e: sIdx + insDays + ah1D - 1 },
+            lukk: { s: sIdx + insDays + ah1D, e: sIdx + insDays + ah1D + Math.max(0, lukkDays - 1) },
+            keev: { s: sIdx + insDays + ah1D + lukkDays, e: sIdx + insDays + ah1D + lukkDays + Math.max(0, keevDays - 1) },
+            kooste: { s: eIdx - ah2D - Math.max(0, koosteDays - 1), e: eIdx - ah2D },
+            ah2:  { s: eIdx - ah2D + 1, e: eIdx }
         };
+
+        // Kui tellimuses töötunde pole, joonistame kastid lihtsalt loogilisse ritta
+        if (totalH === 0) {
+            bounds.lukk = { s: bounds.ah1.e + 1, e: bounds.ah1.e + 1 };
+            bounds.keev = { s: bounds.lukk.e, e: bounds.ah2.s - 1 };
+            bounds.kooste = { s: bounds.ah2.s - 1, e: bounds.ah2.s - 1 };
+        }
+
+        // Raudne klamber: Ükski väärtus ei tohi minna raamidest välja!
+        for (let k in bounds) {
+            bounds[k].s = clamp(bounds[k].s);
+            bounds[k].e = clamp(bounds[k].e);
+            if (bounds[k].e < bounds[k].s) bounds[k].e = bounds[k].s;
+            bounds[k].sDate = new Date(startView.getTime() + bounds[k].s * 86400000);
+            bounds[k].eDate = new Date(startView.getTime() + bounds[k].e * 86400000);
+        }
+
+        return bounds;
     }
 
     function renderTable() {
@@ -399,7 +411,6 @@
                     <td class="divider-right"><input class="num-in" title="AH2" value="${o.sub2}" onchange="u(${i},'sub2',this.value)" ${disAttr}></td>
                     
                     <td class="divider-right" style="background:#e1f5fe;"><div class="cell-flex"><input class="num-in" title="INS (tunnid)" value="${o.ins}" onchange="u(${i},'ins',this.value)" ${disAttr}><input class="prog-in" title="INS (%)" value="${o.prog_ins}" onchange="u(${i},'prog_ins',this.value)" ${disAttr}></div></td>
-                    
                     <td class="divider-right"><div class="cell-flex"><input class="num-in" title="TR (tunnid)" value="${o.trei}" onchange="u(${i},'trei',this.value)" ${disAttr}><input class="prog-in" title="TR (%)" value="${o.prog_tr}" onchange="u(${i},'prog_tr',this.value)" ${disAttr}></div></td>
                     <td class="divider-right"><div class="cell-flex"><input class="num-in" title="MK (tunnid)" value="${o.must_k}" onchange="u(${i},'must_k',this.value)" ${disAttr}><input class="prog-in" title="MK (%)" value="${o.prog_mk}" onchange="u(${i},'prog_mk',this.value)" ${disAttr}></div></td>
                     <td class="divider-right"><div class="cell-flex"><input class="num-in" title="RK (tunnid)" value="${o.rv_k}" onchange="u(${i},'rv_k',this.value)" ${disAttr}><input class="prog-in" title="RK (%)" value="${o.prog_rk}" onchange="u(${i},'prog_rk',this.value)" ${disAttr}></div></td>
@@ -463,19 +474,18 @@
 
         filteredOrders.forEach((o) => {
             let gIdx = orders.indexOf(o);
-            let sIdx = getDayIndexUTC(o.start, START_VIEW);
-            let eIdx = getDayIndexUTC(o.end, START_VIEW);
             
-            // Keskne turvaline arvutus: annab meile alguse ja lõpu indexid
-            let phase = getPhaseDates(o, key, START_VIEW);
-            let finalLeft = phase.sIdx * 45; 
-            let taskDur = Math.max(1, phase.eIdx - phase.sIdx + 1);
+            // Tsentraalne loogika annab meile kõikide kastide algused ja lõpud!
+            let bnds = getPhaseDates(o, START_VIEW);
+            
+            let myBnd;
+            if (CONFIG[key].order === 0) myBnd = bnds.ins;
+            else if (CONFIG[key].order === 1) myBnd = bnds.lukk;
+            else if (CONFIG[key].order === 2) myBnd = bnds.keev;
+            else if (CONFIG[key].order === 3) myBnd = bnds.kooste;
 
-            let insD = f(o.ins) > 0 ? Math.max(1, Math.ceil(f(o.ins) / 8)) : 0;
-            let kD = f(o.kooste) > 0 ? Math.max(1, Math.ceil(f(o.kooste) / 8)) : 0;
-            let ah1D = f(o.sub1) || 0;
-            let ah2D = f(o.sub2) || 0;
-
+            let finalLeft = myBnd.s * 45; 
+            let taskDur = Math.max(1, myBnd.e - myBnd.s + 1);
             let curProg = o[CONFIG[key].p] || 0; 
 
             bodyHtml += `<div class="gantt-row">
@@ -486,28 +496,20 @@
                 <div class="gantt-bars-area" style="width:calc(var(--cell-w) * ${dayCount});">
                     <div class="today-line" style="left:${tIdx * 45}px"></div>`;
             
-            // AH1 klammerdamine (ei lähe üle Alguse ja Lõpu)
-            if(ah1D > 0) {
-                let ah1S = sIdx + insD;
-                if (ah1S > eIdx) ah1S = eIdx;
-                let ah1E = Math.min(eIdx, ah1S + ah1D - 1);
-                let a1Dur = Math.max(1, ah1E - ah1S + 1);
-                bodyHtml += `<div class="sub-bar sub-pre" style="left:${ah1S*45}px; width:${a1Dur*45 - 2}px">AH1</div>`;
+            // Allhanked on nüüd turvaliselt raamides
+            if(f(o.sub1) > 0) {
+                let ah1Dur = Math.max(1, bnds.ah1.e - bnds.ah1.s + 1);
+                bodyHtml += `<div class="sub-bar sub-pre" style="left:${bnds.ah1.s*45}px; width:${ah1Dur*45 - 2}px">AH1</div>`;
             }
             
-            // Põhikast
             bodyHtml += `<div class="task-bar" title="MT: ${o.mt}\nKlient: ${o.client}\n${CONFIG[key].l}: ${o[key]}h\nValmis: ${curProg}%\nSisu: ${o.kirjeldus||'-'}" style="left:${finalLeft}px; width:${taskDur * 45 - 5}px; background:${CONFIG[key].color}">
                 <div class="progress-fill" style="width:${curProg}%"></div>
                 <span style="position:relative; padding-left:5px; z-index:10;">${o.mt} (${curProg}%)</span>
             </div>`;
             
-            // AH2 klammerdamine (ei lähe üle Alguse ja Lõpu)
-            if(ah2D > 0) {
-                let ah2E = eIdx - kD;
-                if (ah2E < sIdx) ah2E = sIdx;
-                let ah2S = Math.max(sIdx, ah2E - ah2D + 1);
-                let a2Dur = Math.max(1, ah2E - ah2S + 1);
-                bodyHtml += `<div class="sub-bar sub-post" style="left:${ah2S*45}px; width:${a2Dur*45 - 2}px">AH2</div>`;
+            if(f(o.sub2) > 0) {
+                let ah2Dur = Math.max(1, bnds.ah2.e - bnds.ah2.s + 1);
+                bodyHtml += `<div class="sub-bar sub-post" style="left:${bnds.ah2.s*45}px; width:${ah2Dur*45 - 2}px">AH2</div>`;
             }
             
             bodyHtml += `</div></div>`; 
@@ -515,6 +517,13 @@
         outer.innerHTML = `<div class="gantt-header-wrapper"><div class="header-corner">MT / Klient / Aeg</div><div class="header-scroll" id="h-scroll-${key}"><div class="header-grid">${headerCols}</div></div></div>` + bodyHtml + `</div>`;
         const hS = document.getElementById(`h-scroll-${key}`), bS = document.getElementById(`b-scroll-${key}`);
         if(bS && hS) { bS.onscroll = () => { hS.scrollLeft = bS.scrollLeft; }; setTimeout(() => { bS.scrollLeft = (tIdx * 45) - 160; }, 100); }
+    }
+
+    function syncDailyScroll(e) {
+        const scrollX = e.target.scrollLeft;
+        document.querySelectorAll('.daily-chart-wrapper').forEach(w => {
+            if (w !== e.target && w.scrollLeft !== scrollX) w.scrollLeft = scrollX;
+        });
     }
 
     function renderDailyCharts() {
@@ -525,14 +534,20 @@
         let activeStats = {};
         Object.keys(CONFIG).forEach(k => {
             activeStats[k] = orders.filter(o => o.status === 'Töös' && o[k] > 0).map(o => {
-                let phase = getPhaseDates(o, k, START_VIEW);
-                let workDays = getWorkingDays(phase.s, phase.e);
-                return { mt: o.mt, kirjeldus: o.kirjeldus, sTime: phase.s.getTime(), eTime: phase.e.getTime(), hPerDay: o[k] / workDays };
+                let bnds = getPhaseDates(o, START_VIEW);
+                let myBnd;
+                if (CONFIG[k].order === 0) myBnd = bnds.ins;
+                else if (CONFIG[k].order === 1) myBnd = bnds.lukk;
+                else if (CONFIG[k].order === 2) myBnd = bnds.keev;
+                else if (CONFIG[k].order === 3) myBnd = bnds.kooste;
+                
+                let workDays = getWorkingDays(myBnd.sDate, myBnd.eDate);
+                return { mt: o.mt, kirjeldus: o.kirjeldus, sTime: myBnd.sDate.getTime(), eTime: myBnd.eDate.getTime(), hPerDay: o[k] / workDays };
             });
         });
 
         Object.keys(CONFIG).forEach(k => {
-            let chartHtml = `<div class="daily-chart-wrapper"><h3>${CONFIG[k].l} (Päeva koormus)</h3><div class="daily-chart-area">`;
+            let chartHtml = `<div class="daily-chart-wrapper" onscroll="syncDailyScroll(event)"><h3>${CONFIG[k].l} (Päeva koormus)</h3><div class="daily-chart-area">`;
             for(let i=0; i<daysToShow; i++) {
                 let curDate = new Date(startDate.getTime() + i*86400000), curTime = curDate.getTime(), wNo = getWeek(curDate), isToday = curDate.toDateString() === TODAY.toDateString();
                 let isHol = isHoliday(curDate);
@@ -567,8 +582,13 @@
         let activeStats = {};
         Object.keys(CONFIG).forEach(k => {
             activeStats[k] = orders.filter(o => o.status === 'Töös' && o[k] > 0).map(o => {
-                let phase = getPhaseDates(o, k, START_VIEW);
-                return { sTime: phase.s.getTime(), eTime: phase.e.getTime(), hPerDay: o[k] / getWorkingDays(phase.s, phase.e) };
+                let bnds = getPhaseDates(o, START_VIEW);
+                let myBnd;
+                if (CONFIG[k].order === 0) myBnd = bnds.ins;
+                else if (CONFIG[k].order === 1) myBnd = bnds.lukk;
+                else if (CONFIG[k].order === 2) myBnd = bnds.keev;
+                else if (CONFIG[k].order === 3) myBnd = bnds.kooste;
+                return { sTime: myBnd.sDate.getTime(), eTime: myBnd.eDate.getTime(), hPerDay: o[k] / getWorkingDays(myBnd.sDate, myBnd.eDate) };
             });
         });
 
@@ -606,6 +626,20 @@
         html += `</tbody></table></div>`;
         container.innerHTML = html;
         setTimeout(() => { container.firstElementChild.scrollLeft = (2 * 40); }, 100);
+    }
+
+    function renderHolidays() {
+        let list = document.getElementById('holidays-list');
+        if(!list) return;
+        let html = "";
+        (customCap.holidays || []).forEach((h, i) => {
+            html += `<div style="display:flex; justify-content:space-between; align-items:center; max-width:400px; background:#ffebee; padding:5px 10px; border:1px solid #ffcdd2; border-radius:4px; color:#c62828;">
+                <div><strong>${h.n}</strong>: ${safeISO(h.s)} ${h.s!==h.e ? ' kuni '+safeISO(h.e) : ''}</div>
+                <button class="admin-only" onclick="delHoliday(${i})" style="color:white; background:#c62828; border:none; padding:3px 8px; border-radius:3px; cursor:pointer; font-weight:bold; ${isAdmin?'display:block':'display:none'}">X</button>
+            </div>`;
+        });
+        if((customCap.holidays||[]).length === 0) html = "<div style='color:#777; font-size:11px;'>Ühtegi puhkust pole lisatud.</div>";
+        list.innerHTML = html;
     }
 
     function renderCapacity() {
@@ -649,7 +683,7 @@
     function saveCapacity() {
         if(!isAdmin) return;
         document.querySelectorAll('.cap-num-in').forEach(i => { if(!customCap[i.dataset.k]) customCap[i.dataset.k] = {}; customCap[i.dataset.k][i.dataset.w] = parseInt(i.value); });
-        localStorage.setItem('prod_cap_v93', JSON.stringify(customCap)); 
+        localStorage.setItem('prod_cap_v94', JSON.stringify(customCap)); 
         alert("Puhkused ja võimekus salvestatud brauseri mällu!"); applyUIMode(); fetchData();
     }
 
