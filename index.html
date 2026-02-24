@@ -2,7 +2,7 @@
 <html lang="et">
 <head>
     <meta charset="UTF-8">
-    <title>TOCI Tootmisplaan V90.0</title>
+    <title>TOCI Tootmisplaan V91.0</title>
     <style>
         :root { --primary: #1a252f; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; --warning: #f1c40f; --bg: #f4f7f6; --today: #ff4757; --cell-w: 45px; --sub-bg: #95a5a6; }
         *, *:before, *:after { box-sizing: border-box; }
@@ -14,6 +14,10 @@
         .content { height: calc(100vh - 95px); display: none; padding: 15px; box-sizing: border-box; }
         .content.active { display: block; }
         
+        /* UUS: Paindlik vaade Võimekuse lehe jaoks */
+        .flex-view { display: none !important; flex-direction: column; height: calc(100vh - 95px); box-sizing: border-box; }
+        .flex-view.active { display: flex !important; }
+
         .table-container { height: calc(100% - 60px); overflow: auto; background: white; border-radius: 8px; border: 1px solid #ddd; }
         .data-table { width: 100%; border-collapse: collapse; position: relative; }
         .data-table thead th { position: sticky; top: 0; background: #eee; z-index: 10; border-bottom: 2px solid #ccc; padding: 10px 5px; text-align: left; }
@@ -32,7 +36,6 @@
         .num-in { width: 38px; text-align: center; font-weight: bold; border: 1px solid #ccc; border-radius: 3px; padding: 4px; background: #fff; }
         .num-in:disabled { background: #f0f2f5; border: 1px solid #dcdde1; color: #222; opacity: 1; -webkit-appearance: none; appearance: none; cursor: default; }
         
-        /* LAIEMAD KASTID VÕIMEKUSE TABELILE V90 */
         .cap-num-in { width: 48px; text-align: center; font-weight: bold; border: 1px solid #ccc; border-radius: 3px; padding: 5px 2px; background: #fff; }
         .cap-num-in:disabled { background: #f0f2f5; color: #222; border: 1px solid #ddd; }
 
@@ -88,7 +91,7 @@
 </head>
 <body>
 <div class="top-bar">
-    <div>🚀 <strong>TOCI LIVE V90.0 (Puhkuste Kalender)</strong></div>
+    <div>🚀 <strong>TOCI LIVE V91.0 (Võimekuse & Kerimise Fix)</strong></div>
     <div style="display:flex; gap:15px; align-items:center;">
         <div id="syncStatus" style="background:var(--warning); color:black; padding:4px 10px; border-radius:4px; font-weight:bold; transition: 0.3s;">Ühendan...</div>
         <button id="modeToggleBtn" onclick="toggleMode()" style="background:#95a5a6; color:white; border:none; padding:6px 12px; border-radius:4px; font-weight:bold; cursor:pointer;">🔒 VAATAJA</button>
@@ -166,8 +169,8 @@
 <div id="paeva_koormus_graafik" class="content"><div id="daily-load-container" class="daily-charts-container"></div></div>
 <div id="paeva_koormus_tabel" class="content"><div id="daily-table-container" style="height:100%;"></div></div>
 
-<div id="voimekus_tab" class="content">
-    <div id="holiday-manager" style="margin-bottom: 20px; padding: 15px; background: white; border-radius: 8px; border: 1px solid #ddd;">
+<div id="voimekus_tab" class="content flex-view">
+    <div id="holiday-manager" style="margin-bottom: 20px; padding: 15px; background: white; border-radius: 8px; border: 1px solid #ddd; flex-shrink: 0;">
         <h3 style="margin-top:0; color:#c62828;">🏖️ Puhkused ja Riigipühad</h3>
         <p style="font-size:11px; color:#666; margin-top:-5px;">Määratud pühade päevadel jaotatakse koormus automaatselt ümber ja neid ei loeta tööpäevadeks.</p>
         <div class="admin-only" style="display:none; margin-bottom: 15px; gap: 10px; align-items: center;">
@@ -177,13 +180,14 @@
             <input type="date" id="hol-end" title="Jäta tühjaks, kui on ainult 1 päev" style="padding:6px; border-radius:4px; border:1px solid #ccc;">
             <button onclick="addHoliday()" style="padding:7px 15px; background:var(--danger); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">+ LISA PUHKUS</button>
         </div>
-        <div id="holidays-list" style="display:flex; flex-direction:column; gap:5px;"></div>
+        <div id="holidays-list" style="display:flex; flex-direction:column; gap:5px; max-height: 100px; overflow-y: auto;"></div>
     </div>
 
-    <div class="table-container" style="height: calc(100% - 180px);">
-        <table class="data-table" id="cap-table"></table>
+    <div class="table-container" style="flex-grow: 1; overflow: auto; min-height: 0; padding: 0;">
+        <table class="data-table" id="cap-table" style="min-width: max-content; border-collapse: separate; border-spacing: 0;"></table>
     </div>
-    <button id="saveCapBtn" onclick="saveCapacity()" style="margin-top:15px; padding:12px 25px; background:var(--accent); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold; display:none;">💾 SALVESTA VÕIMEKUS JA PUHKUSED</button>
+    
+    <button id="saveCapBtn" onclick="saveCapacity()" style="margin-top:15px; padding:12px 25px; background:var(--accent); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold; display:none; flex-shrink: 0; align-self: flex-start;">💾 SALVESTA VÕIMEKUS JA PUHKUSED</button>
 </div>
 
 <script>
@@ -204,7 +208,7 @@
     };
     
     const START_VIEW = new Date("2026-01-01"), TODAY = new Date();
-    let orders = [], customCap = JSON.parse(localStorage.getItem('prod_cap_v90')) || {};
+    let orders = [], customCap = JSON.parse(localStorage.getItem('prod_cap_v91')) || {};
     if (!customCap.holidays) customCap.holidays = [];
     
     let currentMainTabFilter = 'active'; 
@@ -215,7 +219,6 @@
     function safeISO(d) { const dt = new Date(d); return isNaN(dt.getTime()) ? new Date().toISOString().split('T')[0] : dt.toISOString().split('T')[0]; }
     function getWeek(d) { d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7)); return Math.ceil((((d - new Date(Date.UTC(d.getUTCFullYear(),0,1))) / 86400000) + 1)/7); }
     
-    // --- UUS: PUHKUSTE KONTROLL ---
     function isHoliday(dateObj) {
         let dTime = new Date(dateObj).setHours(0,0,0,0);
         for(let i=0; i<customCap.holidays.length; i++) {
@@ -233,7 +236,7 @@
             if(cur.getDay()!==0 && cur.getDay()!==6 && !isHoliday(cur)) c++; 
             cur.setDate(cur.getDate()+1); 
         } 
-        return c || 1; // Väldib 0-ga jagamist
+        return c || 1; 
     }
 
     function updateSyncStatus(text, type) {
@@ -373,9 +376,7 @@
                     <td class="divider-right"><input type="date" class="data-in" title="${overTitle}" style="${overStyle}" value="${safeISO(o.end)}" onchange="u(${i},'end',this.value)" ${disAttr}></td>
                     <td><input class="num-in" title="AH1" value="${o.sub1}" onchange="u(${i},'sub1',this.value)" ${disAttr}></td>
                     <td class="divider-right"><input class="num-in" title="AH2" value="${o.sub2}" onchange="u(${i},'sub2',this.value)" ${disAttr}></td>
-                    
                     <td class="divider-right" style="background:#e1f5fe;"><div class="cell-flex"><input class="num-in" title="INS (tunnid)" value="${o.ins}" onchange="u(${i},'ins',this.value)" ${disAttr}><input class="prog-in" title="INS (%)" value="${o.prog_ins}" onchange="u(${i},'prog_ins',this.value)" ${disAttr}></div></td>
-                    
                     <td class="divider-right"><div class="cell-flex"><input class="num-in" title="TR (tunnid)" value="${o.trei}" onchange="u(${i},'trei',this.value)" ${disAttr}><input class="prog-in" title="TR (%)" value="${o.prog_tr}" onchange="u(${i},'prog_tr',this.value)" ${disAttr}></div></td>
                     <td class="divider-right"><div class="cell-flex"><input class="num-in" title="MK (tunnid)" value="${o.must_k}" onchange="u(${i},'must_k',this.value)" ${disAttr}><input class="prog-in" title="MK (%)" value="${o.prog_mk}" onchange="u(${i},'prog_mk',this.value)" ${disAttr}></div></td>
                     <td class="divider-right"><div class="cell-flex"><input class="num-in" title="RK (tunnid)" value="${o.rv_k}" onchange="u(${i},'rv_k',this.value)" ${disAttr}><input class="prog-in" title="RK (%)" value="${o.prog_rk}" onchange="u(${i},'prog_rk',this.value)" ${disAttr}></div></td>
@@ -561,8 +562,7 @@
                     });
                 }
                 
-                let isOver = totalH > dailyCap;
-                let cellStyle = isHol ? "background:#ffebee; color:#c62828;" : (isWeekend ? "background:#eee;" : (isOver ? "background:#ffebee; color:#c62828; font-weight:bold;" : (totalH > 0 ? "background:#e8f5e9; color:#2e7d32; font-weight:bold;" : "background:#fff;")));
+                let isOver = totalH > dailyCap, cellStyle = isHol ? "background:#ffebee; color:#c62828;" : (isWeekend ? "background:#eee;" : (isOver ? "background:#ffebee; color:#c62828; font-weight:bold;" : (totalH > 0 ? "background:#e8f5e9; color:#2e7d32; font-weight:bold;" : "background:#fff;")));
                 if(isToday) cellStyle += " border-left:2px solid var(--today); border-right:2px solid var(--today);";
                 html += `<td style="text-align:center; border-right:1px solid #eee; border-bottom:1px solid #eee; ${cellStyle}">${totalH > 0 ? totalH.toFixed(1) : (isHol ? 'P' : '')}</td>`;
             }
@@ -610,24 +610,23 @@
     function renderCapacity() {
         let disAttr = isAdmin ? "" : "disabled";
         
-        // Otsime välja millistes nädalates on puhkused (et W päist punaseks teha)
         let holidayWeeks = new Set();
         let currentYear = TODAY.getFullYear();
         for(let d=new Date(currentYear,0,1); d.getFullYear()===currentYear; d.setDate(d.getDate()+1)) {
             if(isHoliday(d)) holidayWeeks.add(getWeek(d));
         }
 
-        let h = `<thead><tr><th style="background:#2c3e50; color:white;">Osakond</th>`;
+        let h = `<thead><tr><th style="position:sticky; left:0; top:0; z-index:30; background:#2c3e50; color:white; border-right:2px solid #34495e;">Osakond</th>`;
         for(let i=1; i<=52; i++) {
-            let wStyle = holidayWeeks.has(i) ? "background:#c62828; color:white;" : "";
-            h += `<th style="${wStyle}" title="${holidayWeeks.has(i) ? 'Selles nädalas on märgitud puhkus/püha!' : ''}">W${i}</th>`;
+            let wStyle = holidayWeeks.has(i) ? "background:#c62828; color:white;" : "background:#eee; color:#333;";
+            h += `<th style="position:sticky; top:0; z-index:20; border-right:1px solid #ccc; border-bottom:2px solid #ccc; ${wStyle}" title="${holidayWeeks.has(i) ? 'Selles nädalas on märgitud puhkus/püha!' : ''}">W${i}</th>`;
         }
         h += `</tr></thead><tbody>`;
 
-        h += Object.keys(CONFIG).map(k => `<tr><td style="position:sticky; left:0; background:#eee; z-index:5;"><b>${CONFIG[k].l}</b></td>` + Array.from({length:52},(_,i)=>{
+        h += Object.keys(CONFIG).map(k => `<tr><td style="position:sticky; left:0; background:#f4f7f6; z-index:25; font-weight:bold; border-right:2px solid #ccc; border-bottom:1px solid #eee; color:${CONFIG[k].color};">${CONFIG[k].l}</td>` + Array.from({length:52},(_,i)=>{
             let v = (customCap[k] && customCap[k][i+1]) ? customCap[k][i+1] : CONFIG[k].c;
             let bgStyle = holidayWeeks.has(i+1) ? "background-color:#ffebee;" : "";
-            return `<td><input type="number" class="cap-num-in" style="${bgStyle}" data-k="${k}" data-w="${i+1}" value="${v}" ${disAttr}></td>`;
+            return `<td style="border-right:1px solid #eee; border-bottom:1px solid #eee; text-align:center;"><input type="number" class="cap-num-in" style="${bgStyle}" data-k="${k}" data-w="${i+1}" value="${v}" ${disAttr}></td>`;
         }).join('') + `</tr>`).join('');
         
         document.getElementById('cap-table').innerHTML = h + `</tbody>`;
@@ -636,7 +635,7 @@
     function saveCapacity() {
         if(!isAdmin) return;
         document.querySelectorAll('.cap-num-in').forEach(i => { if(!customCap[i.dataset.k]) customCap[i.dataset.k] = {}; customCap[i.dataset.k][i.dataset.w] = parseInt(i.value); });
-        localStorage.setItem('prod_cap_v90', JSON.stringify(customCap)); 
+        localStorage.setItem('prod_cap_v91', JSON.stringify(customCap)); 
         alert("Puhkused ja võimekus salvestatud brauseri mällu!"); 
         applyUIMode(); 
         fetchData();
