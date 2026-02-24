@@ -2,7 +2,7 @@
 <html lang="et">
 <head>
     <meta charset="UTF-8">
-    <title>TOCI Tootmisplaan V94.0</title>
+    <title>TOCI Tootmisplaan V95.0</title>
     <style>
         :root { --primary: #1a252f; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; --warning: #f1c40f; --bg: #f4f7f6; --today: #ff4757; --cell-w: 45px; --sub-bg: #95a5a6; }
         *, *:before, *:after { box-sizing: border-box; }
@@ -90,7 +90,7 @@
 </head>
 <body>
 <div class="top-bar">
-    <div>🚀 <strong>TOCI LIVE V94.0 (Täpne & Katkematu Matemaatika)</strong></div>
+    <div>🚀 <strong>TOCI TOOTMISPLAAN</strong></div>
     <div style="display:flex; gap:15px; align-items:center;">
         <div id="syncStatus" style="background:var(--warning); color:black; padding:4px 10px; border-radius:4px; font-weight:bold; transition: 0.3s;">Ühendan...</div>
         <button id="modeToggleBtn" onclick="toggleMode()" style="background:#95a5a6; color:white; border:none; padding:6px 12px; border-radius:4px; font-weight:bold; cursor:pointer;">🔒 VAATAJA</button>
@@ -196,6 +196,7 @@
     
     let saveTimeout; let isSaving = false; let hasPendingChanges = false;
     
+    // ÕIGE JÄRJEKORD KASKAADIS! Kooste (Order 3) on nüüd viimane.
     const CONFIG = { 
         ins:    {l:'Inseneeria', c:100, color:'#0097e6', order:0, p:'prog_ins'}, 
         trei:   {l:'Treial',   c:40,  color:'#9b59b6', order:1, p:'prog_tr'},
@@ -207,7 +208,7 @@
     };
     
     const START_VIEW = new Date("2026-01-01"), TODAY = new Date();
-    let orders = [], customCap = JSON.parse(localStorage.getItem('prod_cap_v94')) || {};
+    let orders = [], customCap = JSON.parse(localStorage.getItem('prod_cap_v95')) || {};
     if (!customCap.holidays) customCap.holidays = [];
     
     let currentMainTabFilter = 'active'; 
@@ -218,7 +219,6 @@
     function safeISO(d) { const dt = new Date(d); return isNaN(dt.getTime()) ? new Date().toISOString().split('T')[0] : dt.toISOString().split('T')[0]; }
     function getWeek(d) { d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7)); return Math.ceil((((d - new Date(Date.UTC(d.getUTCFullYear(),0,1))) / 86400000) + 1)/7); }
     
-    // V94: PURUNEMATU PUHKUSTE KONTROLL
     function isHoliday(dateObj) {
         if (!customCap.holidays || !Array.isArray(customCap.holidays)) return false;
         let dTime = new Date(dateObj).setHours(0,0,0,0);
@@ -321,7 +321,7 @@
         } catch(e) { updateSyncStatus("❌ Ühenduse viga", "danger"); }
     }
 
-    // --- V94: ÜLITÄPNE PROPORTSIONAALNE KOSK (WATERFALL) ---
+    // --- V95: ÕIGES JÄRJEKORRAS PROPORTSIONAALNE KOSK (KOOSTE ON KÕIGE VIIMANE) ---
     function getPhaseDates(o, startView) {
         let sIdx = getDayIndexUTC(o.start, startView);
         let eIdx = getDayIndexUTC(o.end, startView);
@@ -342,13 +342,11 @@
         let insDays = 0, lukkDays = 0, keevDays = 0, koosteDays = 0;
         
         if (totalH > 0) {
-            // Proportsionaalne päevade jaotus
             insDays = Math.round((insH / totalH) * availDays);
             lukkDays = Math.round((lukkH / totalH) * availDays);
             keevDays = Math.round((keevH / totalH) * availDays);
             koosteDays = Math.round((koosteH / totalH) * availDays);
             
-            // Garantii: kui osakonnas on tööd, saab ta vähemalt 1 päeva
             if (insH > 0 && insDays === 0) insDays = 1;
             if (lukkH > 0 && lukkDays === 0) lukkDays = 1;
             if (keevH > 0 && keevDays === 0) keevDays = 1;
@@ -357,20 +355,24 @@
 
         let clamp = (val) => Math.max(sIdx, Math.min(eIdx, val));
 
+        // UUS V95 JÄRJEKORD: INS -> AH1 -> LUKK -> KEEV -> AH2 -> KOOSTE
         let bounds = {
             ins:  { s: sIdx, e: sIdx + Math.max(0, insDays - 1) },
             ah1:  { s: sIdx + insDays, e: sIdx + insDays + ah1D - 1 },
             lukk: { s: sIdx + insDays + ah1D, e: sIdx + insDays + ah1D + Math.max(0, lukkDays - 1) },
             keev: { s: sIdx + insDays + ah1D + lukkDays, e: sIdx + insDays + ah1D + lukkDays + Math.max(0, keevDays - 1) },
-            kooste: { s: eIdx - ah2D - Math.max(0, koosteDays - 1), e: eIdx - ah2D },
-            ah2:  { s: eIdx - ah2D + 1, e: eIdx }
+            
+            // AH2 toimub ENNE Koostet!
+            ah2:  { s: eIdx - koosteDays - ah2D + 1, e: eIdx - koosteDays },
+            
+            // Kooste on 100% kõige viimane!
+            kooste: { s: eIdx - Math.max(0, koosteDays - 1), e: eIdx }
         };
 
-        // Kui tellimuses töötunde pole, joonistame kastid lihtsalt loogilisse ritta
         if (totalH === 0) {
             bounds.lukk = { s: bounds.ah1.e + 1, e: bounds.ah1.e + 1 };
             bounds.keev = { s: bounds.lukk.e, e: bounds.ah2.s - 1 };
-            bounds.kooste = { s: bounds.ah2.s - 1, e: bounds.ah2.s - 1 };
+            bounds.kooste = { s: eIdx, e: eIdx };
         }
 
         // Raudne klamber: Ükski väärtus ei tohi minna raamidest välja!
@@ -475,7 +477,7 @@
         filteredOrders.forEach((o) => {
             let gIdx = orders.indexOf(o);
             
-            // Tsentraalne loogika annab meile kõikide kastide algused ja lõpud!
+            // Võtame info ühtsest targa-kaskaadi funktsioonist!
             let bnds = getPhaseDates(o, START_VIEW);
             
             let myBnd;
@@ -496,10 +498,9 @@
                 <div class="gantt-bars-area" style="width:calc(var(--cell-w) * ${dayCount});">
                     <div class="today-line" style="left:${tIdx * 45}px"></div>`;
             
-            // Allhanked on nüüd turvaliselt raamides
             if(f(o.sub1) > 0) {
-                let ah1Dur = Math.max(1, bnds.ah1.e - bnds.ah1.s + 1);
-                bodyHtml += `<div class="sub-bar sub-pre" style="left:${bnds.ah1.s*45}px; width:${ah1Dur*45 - 2}px">AH1</div>`;
+                let a1Dur = Math.max(1, bnds.ah1.e - bnds.ah1.s + 1);
+                bodyHtml += `<div class="sub-bar sub-pre" style="left:${bnds.ah1.s*45}px; width:${a1Dur*45 - 2}px">AH1</div>`;
             }
             
             bodyHtml += `<div class="task-bar" title="MT: ${o.mt}\nKlient: ${o.client}\n${CONFIG[key].l}: ${o[key]}h\nValmis: ${curProg}%\nSisu: ${o.kirjeldus||'-'}" style="left:${finalLeft}px; width:${taskDur * 45 - 5}px; background:${CONFIG[key].color}">
@@ -508,8 +509,8 @@
             </div>`;
             
             if(f(o.sub2) > 0) {
-                let ah2Dur = Math.max(1, bnds.ah2.e - bnds.ah2.s + 1);
-                bodyHtml += `<div class="sub-bar sub-post" style="left:${bnds.ah2.s*45}px; width:${ah2Dur*45 - 2}px">AH2</div>`;
+                let a2Dur = Math.max(1, bnds.ah2.e - bnds.ah2.s + 1);
+                bodyHtml += `<div class="sub-bar sub-post" style="left:${bnds.ah2.s*45}px; width:${a2Dur*45 - 2}px">AH2</div>`;
             }
             
             bodyHtml += `</div></div>`; 
@@ -683,7 +684,7 @@
     function saveCapacity() {
         if(!isAdmin) return;
         document.querySelectorAll('.cap-num-in').forEach(i => { if(!customCap[i.dataset.k]) customCap[i.dataset.k] = {}; customCap[i.dataset.k][i.dataset.w] = parseInt(i.value); });
-        localStorage.setItem('prod_cap_v94', JSON.stringify(customCap)); 
+        localStorage.setItem('prod_cap_v95', JSON.stringify(customCap)); 
         alert("Puhkused ja võimekus salvestatud brauseri mällu!"); applyUIMode(); fetchData();
     }
 
