@@ -2,7 +2,7 @@
 <html lang="et">
 <head>
     <meta charset="UTF-8">
-    <title>TOCI Tootmisplaan V95.0</title>
+    <title>TOCI Tootmisplaan V96.0</title>
     <style>
         :root { --primary: #1a252f; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; --warning: #f1c40f; --bg: #f4f7f6; --today: #ff4757; --cell-w: 45px; --sub-bg: #95a5a6; }
         *, *:before, *:after { box-sizing: border-box; }
@@ -90,7 +90,7 @@
 </head>
 <body>
 <div class="top-bar">
-    <div>🚀 <strong>TOCI TOOTMISPLAAN</strong></div>
+    <div>🚀 <strong>TOCI TOOTMISPLAAN V96.0</strong></div>
     <div style="display:flex; gap:15px; align-items:center;">
         <div id="syncStatus" style="background:var(--warning); color:black; padding:4px 10px; border-radius:4px; font-weight:bold; transition: 0.3s;">Ühendan...</div>
         <button id="modeToggleBtn" onclick="toggleMode()" style="background:#95a5a6; color:white; border:none; padding:6px 12px; border-radius:4px; font-weight:bold; cursor:pointer;">🔒 VAATAJA</button>
@@ -171,7 +171,7 @@
 <div id="voimekus_tab" class="content flex-view">
     <div id="holiday-manager" style="margin-bottom: 20px; padding: 15px; background: white; border-radius: 8px; border: 1px solid #ddd; flex-shrink: 0;">
         <h3 style="margin-top:0; color:#c62828;">🏖️ Puhkused ja Riigipühad</h3>
-        <p style="font-size:11px; color:#666; margin-top:-5px;">Määratud pühade päevadel jaotatakse koormus automaatselt ümber ja neid ei loeta tööpäevadeks.</p>
+        <p style="font-size:11px; color:#666; margin-top:-5px;">Määratud pühade päevadel jaotatakse koormus automaatselt ümber ja neid ei loeta tööpäevadeks. (Sünkroniseeritakse pilvega kõigile nähtavaks!)</p>
         <div class="admin-only" style="display:none; margin-bottom: 15px; gap: 10px; align-items: center;">
             <input type="text" id="hol-name" placeholder="Nimetus (nt. Suvepuhkus)" style="padding:6px; border-radius:4px; border:1px solid #ccc; width:200px;">
             <input type="date" id="hol-start" style="padding:6px; border-radius:4px; border:1px solid #ccc;">
@@ -186,7 +186,7 @@
         <table class="data-table" id="cap-table" style="min-width: max-content; border-collapse: separate; border-spacing: 0;"></table>
     </div>
     
-    <button id="saveCapBtn" onclick="saveCapacity()" style="margin-top:15px; padding:12px 25px; background:var(--accent); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold; display:none; flex-shrink: 0; align-self: flex-start;">💾 SALVESTA VÕIMEKUS JA PUHKUSED</button>
+    <button id="saveCapBtn" onclick="saveCapacity()" style="margin-top:15px; padding:12px 25px; background:var(--accent); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold; display:none; flex-shrink: 0; align-self: flex-start;">💾 SALVESTA VÕIMEKUS JA PUHKUSED (KÕIGILE)</button>
 </div>
 
 <script>
@@ -196,7 +196,6 @@
     
     let saveTimeout; let isSaving = false; let hasPendingChanges = false;
     
-    // ÕIGE JÄRJEKORD KASKAADIS! Kooste (Order 3) on nüüd viimane.
     const CONFIG = { 
         ins:    {l:'Inseneeria', c:100, color:'#0097e6', order:0, p:'prog_ins'}, 
         trei:   {l:'Treial',   c:40,  color:'#9b59b6', order:1, p:'prog_tr'},
@@ -208,7 +207,7 @@
     };
     
     const START_VIEW = new Date("2026-01-01"), TODAY = new Date();
-    let orders = [], customCap = JSON.parse(localStorage.getItem('prod_cap_v95')) || {};
+    let orders = [], customCap = JSON.parse(localStorage.getItem('prod_cap_v96')) || {};
     if (!customCap.holidays) customCap.holidays = [];
     
     let currentMainTabFilter = 'active'; 
@@ -299,14 +298,25 @@
             
             if(Array.isArray(rawData)) {
                 let cleanedData = []; let seenMt = new Set(); let duplicatesFound = 0;
+                
+                // UUS: Otsime "Süsteemi Seadete" rida (Puhkused ja võimekus) pilvest!
+                let sysRow = rawData.find(o => o.mt === 'SYS_SETTINGS');
+                if (sysRow && sysRow.kirjeldus) {
+                    try { customCap = JSON.parse(sysRow.kirjeldus); } catch(e) {}
+                }
+                if (!customCap.holidays) customCap.holidays = [];
+
                 rawData.forEach(o => {
-                    let cleanMt = String(o.mt).trim().toLowerCase();
+                    let cleanMt = String(o.mt).trim();
+                    if (cleanMt === "SYS_SETTINGS") { cleanedData.push(o); return; } // Säilitame süsteemi rea!
+                    cleanMt = cleanMt.toLowerCase();
                     if (cleanMt === "uus" || cleanMt === "") { cleanedData.push(o); } 
                     else if (!seenMt.has(cleanMt)) { seenMt.add(cleanMt); cleanedData.push(o); } 
                     else { duplicatesFound++; }
                 });
 
                 orders = cleanedData.map(o => {
+                    if (o.mt === "SYS_SETTINGS") return o; // Süsteemi rida ei muudeta andmeteks
                     let obj = {...o, kirjeldus: o.kirjeldus||'', 
                         ins:f(o.ins), trei:f(o.trei), must_k:f(o.must_k), rv_k:f(o.rv_k), must_l:f(o.must_l), rv_l:f(o.rv_l), kooste:f(o.kooste), 
                         prog_ins:f(o.prog_ins), prog_tr:f(o.prog_tr), prog_mk:f(o.prog_mk), prog_rk:f(o.prog_rk), prog_ml:f(o.prog_ml), prog_rl:f(o.prog_rl), prog_ko:f(o.prog_ko),
@@ -321,7 +331,6 @@
         } catch(e) { updateSyncStatus("❌ Ühenduse viga", "danger"); }
     }
 
-    // --- V95: ÕIGES JÄRJEKORRAS PROPORTSIONAALNE KOSK (KOOSTE ON KÕIGE VIIMANE) ---
     function getPhaseDates(o, startView) {
         let sIdx = getDayIndexUTC(o.start, startView);
         let eIdx = getDayIndexUTC(o.end, startView);
@@ -355,17 +364,12 @@
 
         let clamp = (val) => Math.max(sIdx, Math.min(eIdx, val));
 
-        // UUS V95 JÄRJEKORD: INS -> AH1 -> LUKK -> KEEV -> AH2 -> KOOSTE
         let bounds = {
             ins:  { s: sIdx, e: sIdx + Math.max(0, insDays - 1) },
             ah1:  { s: sIdx + insDays, e: sIdx + insDays + ah1D - 1 },
             lukk: { s: sIdx + insDays + ah1D, e: sIdx + insDays + ah1D + Math.max(0, lukkDays - 1) },
             keev: { s: sIdx + insDays + ah1D + lukkDays, e: sIdx + insDays + ah1D + lukkDays + Math.max(0, keevDays - 1) },
-            
-            // AH2 toimub ENNE Koostet!
             ah2:  { s: eIdx - koosteDays - ah2D + 1, e: eIdx - koosteDays },
-            
-            // Kooste on 100% kõige viimane!
             kooste: { s: eIdx - Math.max(0, koosteDays - 1), e: eIdx }
         };
 
@@ -375,7 +379,6 @@
             bounds.kooste = { s: eIdx, e: eIdx };
         }
 
-        // Raudne klamber: Ükski väärtus ei tohi minna raamidest välja!
         for (let k in bounds) {
             bounds[k].s = clamp(bounds[k].s);
             bounds[k].e = clamp(bounds[k].e);
@@ -393,6 +396,7 @@
         let todayTime = new Date(); todayTime.setHours(23, 59, 59, 999);
         
         orders.forEach((o, i) => {
+            if (o.mt === 'SYS_SETTINGS') return; // Süsteemi rida peidetakse tabelist
             if (currentMainTabFilter === 'active' && o.status === 'Valmis') return;
             if (currentMainTabFilter === 'archive' && o.status !== 'Valmis') return;
             let matchText = (!mtV || (o.mt && String(o.mt).toLowerCase().includes(mtV)) || (o.client && String(o.client).toLowerCase().includes(mtV)) || (o.kirjeldus && String(o.kirjeldus).toLowerCase().includes(mtV)));
@@ -411,7 +415,6 @@
                     <td class="divider-right"><input type="date" class="data-in" title="${overTitle}" style="${overStyle}" value="${safeISO(o.end)}" onchange="u(${i},'end',this.value)" ${disAttr}></td>
                     <td><input class="num-in" title="AH1" value="${o.sub1}" onchange="u(${i},'sub1',this.value)" ${disAttr}></td>
                     <td class="divider-right"><input class="num-in" title="AH2" value="${o.sub2}" onchange="u(${i},'sub2',this.value)" ${disAttr}></td>
-                    
                     <td class="divider-right" style="background:#e1f5fe;"><div class="cell-flex"><input class="num-in" title="INS (tunnid)" value="${o.ins}" onchange="u(${i},'ins',this.value)" ${disAttr}><input class="prog-in" title="INS (%)" value="${o.prog_ins}" onchange="u(${i},'prog_ins',this.value)" ${disAttr}></div></td>
                     <td class="divider-right"><div class="cell-flex"><input class="num-in" title="TR (tunnid)" value="${o.trei}" onchange="u(${i},'trei',this.value)" ${disAttr}><input class="prog-in" title="TR (%)" value="${o.prog_tr}" onchange="u(${i},'prog_tr',this.value)" ${disAttr}></div></td>
                     <td class="divider-right"><div class="cell-flex"><input class="num-in" title="MK (tunnid)" value="${o.must_k}" onchange="u(${i},'must_k',this.value)" ${disAttr}><input class="prog-in" title="MK (%)" value="${o.prog_mk}" onchange="u(${i},'prog_mk',this.value)" ${disAttr}></div></td>
@@ -433,6 +436,7 @@
         let todayTime = new Date(); todayTime.setHours(23, 59, 59, 999);
 
         orders.forEach(o => {
+            if (o.mt === 'SYS_SETTINGS') return; // Jäta vahele
             if (o.status === 'Töös' || o.status === 'Ootel') {
                 activeTotal++;
                 let endD = new Date(o.end); endD.setHours(23, 59, 59, 999);
@@ -469,15 +473,13 @@
             headerCols += `<div class="h-col"><div class="h-week">${d%7===0?'W'+getWeek(cur):''}</div><div class="h-day" style="${d===tIdx?'color:red;font-weight:bold;':''}">${cur.getDate()}.${cur.getMonth()+1}</div></div>`;
         }
         let bodyHtml = `<div class="gantt-body" id="b-scroll-${key}">`;
-        let filteredOrders = orders.filter(o => o[key] > 0 && o.status === 'Töös');
+        let filteredOrders = orders.filter(o => o[key] > 0 && o.status === 'Töös' && o.mt !== 'SYS_SETTINGS');
         if (filteredOrders.length === 0) bodyHtml += `<div class="empty-state">ℹ️ Hetkel ei ole ühtegi tellimust "${CONFIG[key].l}" osakonnas 'Töös' staatusega.</div>`;
 
         let disAttr = isAdmin ? "" : "disabled";
 
         filteredOrders.forEach((o) => {
             let gIdx = orders.indexOf(o);
-            
-            // Võtame info ühtsest targa-kaskaadi funktsioonist!
             let bnds = getPhaseDates(o, START_VIEW);
             
             let myBnd;
@@ -534,7 +536,7 @@
         
         let activeStats = {};
         Object.keys(CONFIG).forEach(k => {
-            activeStats[k] = orders.filter(o => o.status === 'Töös' && o[k] > 0).map(o => {
+            activeStats[k] = orders.filter(o => o.status === 'Töös' && o[k] > 0 && o.mt !== 'SYS_SETTINGS').map(o => {
                 let bnds = getPhaseDates(o, START_VIEW);
                 let myBnd;
                 if (CONFIG[k].order === 0) myBnd = bnds.ins;
@@ -582,7 +584,7 @@
         
         let activeStats = {};
         Object.keys(CONFIG).forEach(k => {
-            activeStats[k] = orders.filter(o => o.status === 'Töös' && o[k] > 0).map(o => {
+            activeStats[k] = orders.filter(o => o.status === 'Töös' && o[k] > 0 && o.mt !== 'SYS_SETTINGS').map(o => {
                 let bnds = getPhaseDates(o, START_VIEW);
                 let myBnd;
                 if (CONFIG[k].order === 0) myBnd = bnds.ins;
@@ -681,11 +683,23 @@
 
     function delHoliday(idx) { if(!isAdmin) return; customCap.holidays.splice(idx, 1); saveCapacity(); }
 
+    // UUS! PILVE SÜNKROON PUHKUSTELE!
     function saveCapacity() {
         if(!isAdmin) return;
         document.querySelectorAll('.cap-num-in').forEach(i => { if(!customCap[i.dataset.k]) customCap[i.dataset.k] = {}; customCap[i.dataset.k][i.dataset.w] = parseInt(i.value); });
-        localStorage.setItem('prod_cap_v95', JSON.stringify(customCap)); 
-        alert("Puhkused ja võimekus salvestatud brauseri mällu!"); applyUIMode(); fetchData();
+        localStorage.setItem('prod_cap_v96', JSON.stringify(customCap)); 
+        
+        // Loome/uuendame pilvesüsteemi rida
+        let sysRow = orders.find(o => o.mt === 'SYS_SETTINGS');
+        if(!sysRow) {
+            sysRow = {mt:"SYS_SETTINGS", client:"SYSTEM", kirjeldus:"", start:safeISO(new Date()), end:safeISO(new Date()), sub1:0, sub2:0, ins:0, trei:0, must_k:0, rv_k:0, must_l:0, rv_l:0, kooste:0, prog_ins:0, prog_tr:0, prog_mk:0, prog_rk:0, prog_ml:0, prog_rl:0, prog_ko:0, progress:0, status:'Valmis'};
+            orders.push(sysRow);
+        }
+        sysRow.kirjeldus = JSON.stringify(customCap);
+
+        alert("Puhkused ja võimekus salvestatud PILVE (kõik kolleegid näevad nüüd samu andmeid)!"); 
+        applyUIMode(); 
+        save(); // Saadame info andmebaasi
     }
 
     function save() { 
