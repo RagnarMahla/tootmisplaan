@@ -2,7 +2,7 @@
 <html lang="et">
 <head>
     <meta charset="UTF-8">
-    <title>TOCI Tootmisplaan V147.0 (Firebase võti tagasi!)</title>
+    <title>TOCI Tootmisplaan V148.0 (Täielik Töökorras Versioon)</title>
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
     <style>
@@ -225,7 +225,7 @@
 </div>
 
 <div class="top-bar">
-    <div>🚀 <strong>TOCI TOOTMISPLAAN V147.0 (Firebase võti paigas!)</strong></div>
+    <div>🚀 <strong>TOCI TOOTMISPLAAN V148.0 (Täielik Töökorras Versioon)</strong></div>
     <div style="display:flex; gap:15px; align-items:center;">
         <input type="text" id="globalFilter" placeholder="Otsi (MT, klient)..." oninput="window.applyUIMode()" style="padding:6px 10px; border-radius:4px; border:none; width:200px; font-weight:bold;">
         
@@ -403,6 +403,7 @@
         } catch(e) { console.error("Uue rea lisamise viga:", e); }
     };
 
+    // --- GANTTI LOGIIKA JA TABELID ---
     function getGroupManualDates(o, deptsArray) { let dates = []; deptsArray.forEach(dept => { if(o.allocs && o.allocs[dept]) { Object.keys(o.allocs[dept]).forEach(dStr => { if(Object.values(o.allocs[dept][dStr]).some(h => f(h) > 0)) dates.push(new Date(dStr).getTime()); }); } }); if(dates.length === 0) return null; return { sDate: new Date(Math.min(...dates)), eDate: new Date(Math.max(...dates)) }; }
     function getPhaseDates(o, startView) {
         let d = {}; d.ins = Math.ceil(f(o.ins)/8) || (f(o.ins)>0?1:0); let lukkH = f(o.trei)+f(o.must_l)+f(o.rv_l); d.lukk = Math.ceil(lukkH/8) || (lukkH>0?1:0); let keevH = f(o.must_k)+f(o.rv_k); d.keev = Math.ceil(keevH/8) || (keevH>0?1:0); d.kooste = Math.ceil(f(o.kooste)/8) || (f(o.kooste)>0?1:0); d.ah1 = f(o.sub1); d.ah2 = f(o.sub2);
@@ -446,7 +447,9 @@
                 activeTotal++; let endD = new Date(o.end); endD.setHours(23, 59, 59, 999); let orderEndT = endD.getTime();
                 if (o.status === 'Töös' && orderEndT < todayTime.getTime()) overdueTotal++;
                 let bnds = getPhaseDates(o, START_VIEW);
-                Object.keys(CONFIG).forEach(k => { if(String(o[CONFIG[k].d]) !== 'true') { remH[k] += Math.max(0, f(o[k]) - f(o[CONFIG[k].p])); let myBnd = CONFIG[k].order === 0 ? bnds.ins : (CONFIG[k].order === 1 ? bnds.lukk : (CONFIG[k].order === 2 ? bnds.keev : bnds.kooste)); if(myBnd.eDate.getTime() > orderEndT && f(o[k]) > 0) { lateCounts[k]++; } } });
+                Object.keys(CONFIG).forEach(k => {
+                    if(String(o[CONFIG[k].d]) !== 'true') { remH[k] += Math.max(0, f(o[k]) - f(o[CONFIG[k].p])); let myBnd = CONFIG[k].order === 0 ? bnds.ins : (CONFIG[k].order === 1 ? bnds.lukk : (CONFIG[k].order === 2 ? bnds.keev : bnds.kooste)); if(myBnd.eDate.getTime() > orderEndT && f(o[k]) > 0) { lateCounts[k]++; } }
+                });
             }
         });
         const genDashItem = (k) => { let warnHtml = lateCounts[k] > 0 ? `<div style="color:var(--danger); font-weight:bold; font-size:11px; margin-top:5px; animation: blink 1.5s infinite;">⚠️ ${lateCounts[k]} tellimust hilinemas!</div>` : ''; return `<div class="dash-card" style="border-left-color:${CONFIG[k].color};"><h3>${CONFIG[k].l}</h3><div class="value">${remH[k].toFixed(1)} h</div><div class="sub-text">Filtreeritud järelejäänud tunnid</div>${warnHtml}</div>`; };
@@ -488,7 +491,7 @@
         if (gV) filteredOrders = filteredOrders.filter(o => (o.mt && String(o.mt).toLowerCase().includes(gV)) || (o.client && String(o.client).toLowerCase().includes(gV)) || (o.kirjeldus && String(o.kirjeldus).toLowerCase().includes(gV)));
         if (filteredOrders.length === 0) bodyHtml += `<div class="empty-state">ℹ️ Ühtegi aktiivset allhanget ei leitud.</div>`;
         filteredOrders.forEach((o) => {
-            let gIdx = window.orders.indexOf(o); let bnds = getPhaseDates(o, START_VIEW); let myBnd = key === 'ah1' ? bnds.ah1 : bnds.ah2; let tasks = o.allocs && o.allocs.ah_tasks ? (key === 'ah1' ? o.allocs.ah_tasks.ah1 : o.allocs.ah_tasks.ah2) : [];
+            let gIdx = window.orders.indexOf(o); let bnds = getPhaseDates(o, START_VIEW); let myBnd = key === 'ah1' ? bnds.ah1 : bnds.ah2; let tasks = key === 'ah1' ? o.ah1_tasks : o.ah2_tasks;
             let finalLeft = myBnd.s * 45; let taskDur = Math.max(1, myBnd.e - myBnd.s + 1);
             let isOverdue = myBnd.eDate.getTime() > new Date(o.end).setHours(23,59,59,999); let deptTitleStyle = isOverdue ? "background:#ffebee; color:#c62828; border-color:#f5c6cb;" : "background:#fff3cd; color:#856404; border-color:#ffeeba;";
             let tasksHtml = ''; if(tasks && tasks.length > 0) { tasksHtml = tasks.map(t => `<div style="font-size:10px; margin-bottom:3px; color:${t.done?'#27ae60':'#e74c3c'}; line-height:1.2; max-width:100%;"><span style="font-weight:bold; ${t.done?'text-decoration:line-through;':''}">${t.done?'☑':'☐'} ${t.name}</span> ${t.comment? `<br><i style="color:#777; padding-left:15px; font-size:9px;">- ${t.comment}</i>`:''}</div>`).join(''); } else { tasksHtml = '<div style="font-size:9px; color:#aaa; font-style:italic;">Tegevused puuduvad</div>'; }
@@ -535,8 +538,10 @@
         let o = window.orders[oIdx]; let orderEnd = new Date(o.end).setHours(23,59,59,999); let allocDate = new Date(dateStr).getTime();
         if (allocDate > orderEnd) { if(!confirm(`⚠️ HOIATUS!\nTellimuse tähtaeg on ${safeISO(o.end)}.\nSa proovid planeerida tööd ajale, mis on üle tähtaja!\n\nKas tahad kindlasti jätkata?`)) { return; } }
         if(!o.allocs) o.allocs = {}; if(!o.allocs[dept]) o.allocs[dept] = {}; if(!o.allocs[dept][dateStr]) o.allocs[dept][dateStr] = {};
-        if (append && o.allocs[dept][dateStr][wsName]) o.allocs[dept][dateStr][wsName] = f(o.allocs[dept][dateStr][wsName]) + h; else o.allocs[dept][dateStr][wsName] = h; window.saveData(true); window.renderDispatcher();
+        if (append && o.allocs[dept][dateStr][wsName]) o.allocs[dept][dateStr][wsName] = f(o.allocs[dept][dateStr][wsName]) + h; else o.allocs[dept][dateStr][wsName] = h;
+        window.saveData(true); window.renderDispatcher();
     }
+    
     function deleteAllocationDirect(dept, dateStr, wsName, oIdx) { if(window.orders[oIdx].allocs && window.orders[oIdx].allocs[dept] && window.orders[oIdx].allocs[dept][dateStr]) { delete window.orders[oIdx].allocs[dept][dateStr][wsName]; } window.saveData(true); window.renderDispatcher(); }
     window.resetBrushAndRender = function() { window.activeBrushIdx = null; window.renderDispatcher(); };
     window.toggleBrush = function(idx) { if(!window.isAdmin) { alert("Ainult Administraator saab Pintsli režiimi kasutada!"); return; } if (window.activeBrushIdx === idx) window.activeBrushIdx = null; else window.activeBrushIdx = idx; window.renderDispatcher(); };
@@ -584,7 +589,8 @@
         let bStatus = document.getElementById('brush-status'); if(window.activeBrushIdx !== null) { bStatus.innerHTML = `Pintsel: <b style="color:var(--danger)">${window.orders[window.activeBrushIdx].mt}</b> (Vajuta uuesti, et tühistada)`; } else { bStatus.innerHTML = `Pintsel: <b style="color:#999">VÄLJAS</b>`; }
         let allValidOrders = window.orders.filter(o => o.status !== 'Valmis'); allValidOrders.sort((a, b) => new Date(a.start) - new Date(b.start)); let smartLoad = calculateSmartDailyLoad(allValidOrders);
         let daysToShow = 30; let gridHtml = `<thead><tr><th style="position:sticky; left:0; top:0; z-index:30; background:#2c3e50; color:white; min-width:80px; padding:10px;">Töökoht</th>`;
-        for(let d=0; d<daysToShow; d++) { let dObj = new Date(sDate.getTime() + d*86400000); let isW = dObj.getDay()===0||dObj.getDay()===6; let isHol = isHoliday(dObj); let headerBg = isHol ? '#c62828' : (isW ? '#34495e' : '#2c3e50'); gridHtml += `<th style="position:sticky; top:0; z-index:20; background:${headerBg}; color:white; min-width:80px; font-size:10px; text-align:center;">${dObj.getDate()}.${dObj.getMonth()+1}<br>${['P','E','T','K','N','R','L'][dObj.getDay()]}</th>`; } gridHtml += `</tr></thead><tbody class="${window.activeBrushIdx !== null ? 'grid-brush-mode' : ''}">`;
+        for(let d=0; d<daysToShow; d++) { let dObj = new Date(sDate.getTime() + d*86400000); let isW = dObj.getDay()===0||dObj.getDay()===6; let isHol = isHoliday(dObj); let headerBg = isHol ? '#c62828' : (isW ? '#34495e' : '#2c3e50'); gridHtml += `<th style="position:sticky; top:0; z-index:20; background:${headerBg}; color:white; min-width:80px; font-size:10px; text-align:center;">${dObj.getDate()}.${dObj.getMonth()+1}<br>${['P','E','T','K','N','R','L'][dObj.getDay()]}</th>`; }
+        gridHtml += `</tr></thead><tbody class="${window.activeBrushIdx !== null ? 'grid-brush-mode' : ''}">`;
         let wsCount = (window.customCap.wsCounts && window.customCap.wsCounts[k]) ? window.customCap.wsCounts[k] : (CONFIG[k].ws || 3);
         for(let w=1; w<=wsCount; w++) {
             let wsName = `${CONFIG[k].prefix}-${w}`; gridHtml += `<tr><td style="position:sticky; left:0; background:#f4f7f6; font-weight:bold; border-right:2px solid #ccc; z-index:10; text-align:center;">${wsName}</td>`;
@@ -607,6 +613,7 @@
     
     window.saveAllocationModal = function() { let dept = document.getElementById('alloc-dept').value; let dateStr = document.getElementById('alloc-date').value; let wsName = document.getElementById('alloc-ws').value; let newIdx = document.getElementById('alloc-mt').value; let oldIdx = document.getElementById('alloc-old-idx').value; let h = parseFloat(document.getElementById('alloc-h').value); if (oldIdx !== "") deleteAllocationDirect(dept, dateStr, wsName, parseInt(oldIdx)); if (newIdx !== "" && h > 0) saveAllocationDirect(dept, dateStr, wsName, parseInt(newIdx), h, false); document.getElementById('allocModal').style.display = 'none'; };
     window.deleteAllocationModal = function() { let dept = document.getElementById('alloc-dept').value; let dateStr = document.getElementById('alloc-date').value; let wsName = document.getElementById('alloc-ws').value; let oldIdx = document.getElementById('alloc-old-idx').value; if (oldIdx !== "") deleteAllocationDirect(dept, dateStr, wsName, parseInt(oldIdx)); document.getElementById('allocModal').style.display = 'none'; };
+
     function syncDailyScroll(e) { const scrollX = e.target.scrollLeft; document.querySelectorAll('.daily-chart-wrapper').forEach(w => { if (w !== e.target && w.scrollLeft !== scrollX) w.scrollLeft = scrollX; }); }
 
     function renderDailyCharts() {
