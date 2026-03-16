@@ -2,7 +2,7 @@
 <html lang="et">
 <head>
     <meta charset="UTF-8">
-    <title>TOCI Tootmisplaan V149.0 (Kõik funktsioonid tagasi!)</title>
+    <title>TOCI Tootmisplaan V150.0 (Sorteerimine Tähtaja Järgi)</title>
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
     <style>
@@ -171,14 +171,11 @@
                             <label style="font-size:11px; color:#666; font-weight:bold; margin:0;">AH 1 (Päevi enne)</label>
                             <input type="number" id="edit-ah1" class="edit-input" value="0" min="0" style="width:50px; padding:2px; margin:0; text-align:center; font-weight:bold;">
                         </div>
-                        
                         <div id="ah1-tasks-list" style="max-height:160px; overflow-y:auto; margin-bottom:8px;"></div>
-                        
                         <div style="display:flex; gap:5px; margin-top:auto;">
                             <input type="text" id="edit-ah1-new-task" class="edit-input admin-only" placeholder="Uus tegevus..." style="font-size:11px; padding:4px;">
                             <button onclick="window.addAHTask('ah1')" class="admin-only" style="background:var(--accent); color:white; border:none; border-radius:3px; cursor:pointer; padding:0 8px; font-weight:bold;">+</button>
                         </div>
-                        
                         <label class="checklist-item" style="padding:6px; margin:8px 0 0 0; background:#e8f5e9; border-color:#c8e6c9; justify-content:center;">
                             <input type="checkbox" id="edit-chk-ah1"><span style="font-size:11px; color:#27ae60;">KÕIK AH1 VALMIS</span>
                         </label>
@@ -189,14 +186,11 @@
                             <label style="font-size:11px; color:#666; font-weight:bold; margin:0;">AH 2 (Päevi peale)</label>
                             <input type="number" id="edit-ah2" class="edit-input" value="0" min="0" style="width:50px; padding:2px; margin:0; text-align:center; font-weight:bold;">
                         </div>
-                        
                         <div id="ah2-tasks-list" style="max-height:160px; overflow-y:auto; margin-bottom:8px;"></div>
-                        
                         <div style="display:flex; gap:5px; margin-top:auto;">
                             <input type="text" id="edit-ah2-new-task" class="edit-input admin-only" placeholder="Uus tegevus..." style="font-size:11px; padding:4px;">
                             <button onclick="window.addAHTask('ah2')" class="admin-only" style="background:var(--accent); color:white; border:none; border-radius:3px; cursor:pointer; padding:0 8px; font-weight:bold;">+</button>
                         </div>
-                        
                         <label class="checklist-item" style="padding:6px; margin:8px 0 0 0; background:#e8f5e9; border-color:#c8e6c9; justify-content:center;">
                             <input type="checkbox" id="edit-chk-ah2"><span style="font-size:11px; color:#27ae60;">KÕIK AH2 VALMIS</span>
                         </label>
@@ -231,12 +225,10 @@
 </div>
 
 <div class="top-bar">
-    <div>🚀 <strong>TOCI TOOTMISPLAAN V149.0 (Kõik funktsioonid ja Firebase)</strong></div>
+    <div>🚀 <strong>TOCI TOOTMISPLAAN V150.0 (Tähtaja sorteerimine)</strong></div>
     <div style="display:flex; gap:15px; align-items:center;">
         <input type="text" id="globalFilter" placeholder="Otsi (MT, klient)..." oninput="window.applyUIMode()" style="padding:6px 10px; border-radius:4px; border:none; width:200px; font-weight:bold;">
-        
         <button id="importSheetsBtn" onclick="window.importFromSheets()" style="padding:6px 12px; background:#e67e22; color:white; border:none; border-radius:4px; font-weight:bold; cursor:pointer; display:none; box-shadow: 0 0 10px rgba(230, 126, 34, 0.5);">📥 IMPORDI SHEETSIST</button>
-        
         <button onclick="window.smartExport()" style="padding:6px 12px; background:#16a085; color:white; border:none; border-radius:4px; font-weight:bold; cursor:pointer;">📥 EKSPORDI (CSV)</button>
         <div id="syncStatus" style="background:var(--warning); color:black; padding:4px 10px; border-radius:4px; font-weight:bold; transition: 0.3s;">Käivitan...</div>
         <button id="modeToggleBtn" onclick="window.toggleMode()" style="background:#95a5a6; color:white; border:none; padding:6px 12px; border-radius:4px; font-weight:bold; cursor:pointer;">🔒 VAATAJA</button>
@@ -265,69 +257,8 @@
 </div>
 
 <div id="dashboard_view" class="content"><div class="dashboard-grid" id="dashboard-container"></div></div>
-
-<div id="main_view" class="content active">
-    <div style="margin-bottom:15px; display:flex; gap:10px; align-items:center;">
-        <button id="addOrderBtn" onclick="window.addNewRowAndEdit()" style="padding:10px 20px; background:var(--success); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold; display:none;">+ LISA UUS TELLIMUS</button>
-        <select id="monthFilter" onchange="window.applyUIMode()" style="padding:8px; border-radius:4px; border:1px solid #ccc;">
-            <option value="">Kõik kuud</option>
-            <option value="-01-">Jaanuar</option><option value="-02-">Veebruar</option><option value="-03-">Märts</option><option value="-04-">Aprill</option><option value="-05-">Mai</option><option value="-06-">Juuni</option><option value="-07-">Juuli</option><option value="-08-">August</option><option value="-09-">September</option><option value="-10-">Oktoober</option><option value="-11-">November</option><option value="-12-">Detsember</option>
-        </select>
-        <div id="view-title" style="font-size:16px; font-weight:bold; color:var(--primary); margin-left:15px;">Aktiivsed tööd</div>
-        <div style="font-size:12px; color:#666; margin-left:auto;">💡 <b>Klõpsa tabelis mis tahes reale</b>, et avada Tellimuse Kaart.</div>
-    </div>
-    <div class="table-container">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th style="width:80px; text-align:center;">Toiming</th>
-                    <th>MT Number</th>
-                    <th>Klient</th>
-                    <th>Töö sisu / Kirjeldus</th>
-                    <th>Lõpptähtaeg</th>
-                    <th style="text-align:center;">Üld %</th>
-                    <th>Staatus</th>
-                </tr>
-            </thead>
-            <tbody id="table-body"></tbody>
-        </table>
-    </div>
-</div>
-
-<div id="dispatcher_view" class="content flex-view">
-    <div style="display:flex; gap:15px; margin-bottom:15px; align-items:center;">
-        <select id="disp-dept" onchange="window.resetBrushAndRender()" style="padding:10px; border-radius:4px; font-weight:bold; border:2px solid var(--accent); cursor:pointer;">
-            <option value="must_k">🔥 Must Keevitus</option>
-            <option value="rv_k">✨ RV Keevitus</option>
-            <option value="must_l">🔧 Must Lukksepp</option>
-            <option value="rv_l">🗜️ RV Lukksepp</option>
-            <option value="trei">⚙️ Treial</option>
-            <option value="kooste">🔩 Kooste</option>
-            <option value="ins">📐 Inseneeria</option>
-        </select>
-        <div>
-            <label style="font-size:11px; font-weight:bold; color:#666;">Alguskuupäev:</label><br>
-            <input type="date" id="disp-start" onchange="window.renderDispatcher()" style="padding:6px; border-radius:4px; border:1px solid #ccc;">
-        </div>
-        <div style="font-size:16px; font-weight:bold; color:var(--primary); margin-left:15px;">🗓️ Töökohtade Dispetšer</div>
-        <div style="font-size:11px; color:#666; margin-left:auto;">
-            💡 <b>Triibulised klotsid:</b> Automaatne soovitus. <b>Täisvärvi klotsid:</b> Käsitsi plaan.<br>
-            <b>1 klõps pangas</b> = "Pintsel". <b>1 klõps tabelis</b> = kleebib/kustutab. <b>Topeltklikk</b> = täpne muutmine.
-        </div>
-    </div>
-    
-    <div style="background:#eef2f5; border-radius:8px; border:1px solid #ccc; padding:15px; margin-bottom:15px;">
-        <h3 style="margin-top:0; margin-bottom:10px; color:#2c3e50; display:flex; justify-content:space-between;">
-            <span>🏦 Tundide Pank (Kliki kastil, et valida PINTSEL 🖌️)</span>
-            <span style="font-size:12px; font-weight:normal; color:#666;" id="brush-status">Pintsel: VÄLJAS</span>
-        </h3>
-        <div id="disp-bank" style="display:flex; flex-wrap:wrap; gap:10px; max-height:150px; overflow-y:auto; padding-right:10px;"></div>
-    </div>
-
-    <div class="table-container" style="flex-grow: 1; overflow: auto; padding:0; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
-        <table class="data-table" id="disp-grid" style="min-width: max-content; border-collapse: separate; border-spacing: 0;"></table>
-    </div>
-</div>
+<div id="main_view" class="content active"><div style="margin-bottom:15px; display:flex; gap:10px; align-items:center;"><button id="addOrderBtn" onclick="window.addNewRowAndEdit()" style="padding:10px 20px; background:var(--success); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold; display:none;">+ LISA UUS TELLIMUS</button><select id="monthFilter" onchange="window.applyUIMode()" style="padding:8px; border-radius:4px; border:1px solid #ccc;"><option value="">Kõik kuud</option><option value="-01-">Jaanuar</option><option value="-02-">Veebruar</option><option value="-03-">Märts</option><option value="-04-">Aprill</option><option value="-05-">Mai</option><option value="-06-">Juuni</option><option value="-07-">Juuli</option><option value="-08-">August</option><option value="-09-">September</option><option value="-10-">Oktoober</option><option value="-11-">November</option><option value="-12-">Detsember</option></select><div id="view-title" style="font-size:16px; font-weight:bold; color:var(--primary); margin-left:15px;">Aktiivsed tööd</div><div style="font-size:12px; color:#666; margin-left:auto;">💡 <b>Klõpsa tabelis mis tahes reale</b>, et avada Tellimuse Kaart.</div></div><div class="table-container"><table class="data-table"><thead><tr><th style="width:80px; text-align:center;">Toiming</th><th>MT Number</th><th>Klient</th><th>Töö sisu / Kirjeldus</th><th>Lõpptähtaeg</th><th style="text-align:center;">Üld %</th><th>Staatus</th></tr></thead><tbody id="table-body"></tbody></table></div></div>
+<div id="dispatcher_view" class="content flex-view"><div style="display:flex; gap:15px; margin-bottom:15px; align-items:center;"><select id="disp-dept" onchange="window.resetBrushAndRender()" style="padding:10px; border-radius:4px; font-weight:bold; border:2px solid var(--accent); cursor:pointer;"><option value="must_k">🔥 Must Keevitus</option><option value="rv_k">✨ RV Keevitus</option><option value="must_l">🔧 Must Lukksepp</option><option value="rv_l">🗜️ RV Lukksepp</option><option value="trei">⚙️ Treial</option><option value="kooste">🔩 Kooste</option><option value="ins">📐 Inseneeria</option></select><div><label style="font-size:11px; font-weight:bold; color:#666;">Alguskuupäev:</label><br><input type="date" id="disp-start" onchange="window.renderDispatcher()" style="padding:6px; border-radius:4px; border:1px solid #ccc;"></div><div style="font-size:16px; font-weight:bold; color:var(--primary); margin-left:15px;">🗓️ Töökohtade Dispetšer</div><div style="font-size:11px; color:#666; margin-left:auto;">💡 <b>Triibulised klotsid:</b> Automaatne soovitus. <b>Täisvärvi klotsid:</b> Käsitsi plaan.<br><b>1 klõps pangas</b> = "Pintsel". <b>1 klõps tabelis</b> = kleebib/kustutab. <b>Topeltklikk</b> = täpne muutmine.</div></div><div style="background:#eef2f5; border-radius:8px; border:1px solid #ccc; padding:15px; margin-bottom:15px;"><h3 style="margin-top:0; margin-bottom:10px; color:#2c3e50; display:flex; justify-content:space-between;"><span>🏦 Tundide Pank (Kliki kastil, et valida PINTSEL 🖌️)</span><span style="font-size:12px; font-weight:normal; color:#666;" id="brush-status">Pintsel: VÄLJAS</span></h3><div id="disp-bank" style="display:flex; flex-wrap:wrap; gap:10px; max-height:150px; overflow-y:auto; padding-right:10px;"></div></div><div class="table-container" style="flex-grow: 1; overflow: auto; padding:0; box-shadow: 0 4px 15px rgba(0,0,0,0.05);"><table class="data-table" id="disp-grid" style="min-width: max-content; border-collapse: separate; border-spacing: 0;"></table></div></div>
 
 <div id="gantt_all" class="content"><div class="gantt-outer" id="out-all"></div></div>
 <div id="gantt_in" class="content"><div class="gantt-outer" id="out-in"></div></div>
@@ -343,42 +274,7 @@
 <div id="paeva_koormus_graafik" class="content"><div id="daily-load-container" class="daily-charts-container"></div></div>
 <div id="paeva_koormus_tabel" class="content"><div id="daily-table-container" style="height:100%;"></div></div>
 
-<div id="voimekus_tab" class="content flex-view">
-    <div style="display:flex; gap:20px; margin-bottom: 20px; flex-shrink: 0; flex-wrap: wrap;">
-        <div id="holiday-manager" style="flex:1; min-width:300px; padding: 15px; background: white; border-radius: 8px; border: 1px solid #ddd;">
-            <h3 style="margin-top:0; color:#c62828;">🏖️ Puhkused ja Riigipühad</h3>
-            <p style="font-size:11px; color:#666; margin-top:-5px;">Määratud pühade päevadel jaotatakse koormus automaatselt ümber.</p>
-            <div class="admin-only" style="display:none; margin-bottom: 15px; gap: 10px; align-items: center;">
-                <input type="text" id="hol-name" placeholder="Nimetus (nt. Suvepuhkus)" style="padding:6px; border-radius:4px; border:1px solid #ccc; width:150px;">
-                <input type="date" id="hol-start" style="padding:6px; border-radius:4px; border:1px solid #ccc;">
-                <span style="font-weight:bold;">kuni</span>
-                <input type="date" id="hol-end" title="Jäta tühjaks, kui on ainult 1 päev" style="padding:6px; border-radius:4px; border:1px solid #ccc;">
-                <button onclick="window.addHoliday()" style="padding:7px 15px; background:var(--danger); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">+ LISA PUHKUS</button>
-            </div>
-            <div id="holidays-list" style="display:flex; flex-direction:column; gap:5px; max-height: 100px; overflow-y: auto;"></div>
-        </div>
-        
-        <div id="laser-manager" style="flex:1; min-width:300px; padding: 15px; background: white; border-radius: 8px; border: 1px solid #ddd;">
-            <h3 style="margin-top:0; color:#8e44ad;">⚡ Laseri Koormus (Järjekord)</h3>
-            <p style="font-size:11px; color:#666; margin-top:-5px;">Sisesta kogu planeeritud laseri tundide jääk. Süsteem jagab selle automaatselt tänasest alates vabadele päevadele.</p>
-            <div class="admin-only" style="display:none; margin-bottom: 15px; gap: 10px; align-items: center;">
-                <input type="number" id="laser-total-h" placeholder="Kogu jääk (h)" style="width:120px; padding:6px; border-radius:4px; border:1px solid #ccc;" min="0" step="0.5">
-                <button onclick="window.saveLaserBacklog()" style="padding:7px 15px; background:#8e44ad; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">💾 SALVESTA JÄÄK</button>
-            </div>
-            <div id="laser-list" style="display:flex; flex-direction:column; gap:5px; max-height: 100px; overflow-y: auto;"></div>
-        </div>
-
-        <div id="ws-manager" style="width:350px; padding: 15px; background: white; border-radius: 8px; border: 1px solid #ddd;">
-            <h3 style="margin-top:0; color:#2980b9;">🏭 Töökohtade arv (Dispetšer)</h3>
-            <p style="font-size:11px; color:#666; margin-top:-5px;">Määra, mitu paralleelset töökohta igas osakonnas tabelisse joonistatakse.</p>
-            <div id="ws-list" style="display:flex; flex-direction:column; gap:5px;"></div>
-        </div>
-    </div>
-    <div class="table-container" style="flex-grow: 1; overflow: auto; min-height: 0; padding: 0;">
-        <table class="data-table" id="cap-table" style="min-width: max-content; border-collapse: separate; border-spacing: 0;"></table>
-    </div>
-    <button id="saveCapBtn" onclick="window.saveCapacity()" style="margin-top:15px; padding:12px 25px; background:var(--accent); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold; display:none; flex-shrink: 0; align-self: flex-start;">💾 SALVESTA SEADED</button>
-</div>
+<div id="voimekus_tab" class="content flex-view"><div style="display:flex; gap:20px; margin-bottom: 20px; flex-shrink: 0; flex-wrap: wrap;"><div id="holiday-manager" style="flex:1; min-width:300px; padding: 15px; background: white; border-radius: 8px; border: 1px solid #ddd;"><h3 style="margin-top:0; color:#c62828;">🏖️ Puhkused ja Riigipühad</h3><p style="font-size:11px; color:#666; margin-top:-5px;">Määratud pühade päevadel jaotatakse koormus automaatselt ümber.</p><div class="admin-only" style="display:none; margin-bottom: 15px; gap: 10px; align-items: center;"><input type="text" id="hol-name" placeholder="Nimetus (nt. Suvepuhkus)" style="padding:6px; border-radius:4px; border:1px solid #ccc; width:150px;"><input type="date" id="hol-start" style="padding:6px; border-radius:4px; border:1px solid #ccc;"><span style="font-weight:bold;">kuni</span><input type="date" id="hol-end" title="Jäta tühjaks, kui on ainult 1 päev" style="padding:6px; border-radius:4px; border:1px solid #ccc;"><button onclick="window.addHoliday()" style="padding:7px 15px; background:var(--danger); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">+ LISA PUHKUS</button></div><div id="holidays-list" style="display:flex; flex-direction:column; gap:5px; max-height: 100px; overflow-y: auto;"></div></div><div id="laser-manager" style="flex:1; min-width:300px; padding: 15px; background: white; border-radius: 8px; border: 1px solid #ddd;"><h3 style="margin-top:0; color:#8e44ad;">⚡ Laseri Koormus (Järjekord)</h3><p style="font-size:11px; color:#666; margin-top:-5px;">Sisesta kogu planeeritud laseri tundide jääk. Süsteem jagab selle automaatselt tänasest alates vabadele päevadele.</p><div class="admin-only" style="display:none; margin-bottom: 15px; gap: 10px; align-items: center;"><input type="number" id="laser-total-h" placeholder="Kogu jääk (h)" style="width:120px; padding:6px; border-radius:4px; border:1px solid #ccc;" min="0" step="0.5"><button onclick="window.saveLaserBacklog()" style="padding:7px 15px; background:#8e44ad; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">💾 SALVESTA JÄÄK</button></div><div id="laser-list" style="display:flex; flex-direction:column; gap:5px; max-height: 100px; overflow-y: auto;"></div></div><div id="ws-manager" style="width:350px; padding: 15px; background: white; border-radius: 8px; border: 1px solid #ddd;"><h3 style="margin-top:0; color:#2980b9;">🏭 Töökohtade arv (Dispetšer)</h3><p style="font-size:11px; color:#666; margin-top:-5px;">Määra, mitu paralleelset töökohta igas osakonnas tabelisse joonistatakse.</p><div id="ws-list" style="display:flex; flex-direction:column; gap:5px;"></div></div></div><div class="table-container" style="flex-grow: 1; overflow: auto; min-height: 0; padding: 0;"><table class="data-table" id="cap-table" style="min-width: max-content; border-collapse: separate; border-spacing: 0;"></table></div><button id="saveCapBtn" onclick="window.saveCapacity()" style="margin-top:15px; padding:12px 25px; background:var(--accent); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold; display:none; flex-shrink: 0; align-self: flex-start;">💾 SALVESTA SEADED (PILVE)</button></div>
 
 <script>
     // --- GLOBAALSED MUUTUJAD ---
@@ -600,9 +496,7 @@
             let modalEl = document.getElementById('editModal'); if(modalEl) modalEl.style.display = 'block';
         } catch(e) { console.error("Viga Edit Modali avamisel:", e); alert("Viga kaardi avamisel: " + e.message); }
     };
-
     window.cancelEditModal = function() { if (window.isNewOrder) { window.orders.splice(window.currentEditIndex, 1); window.isNewOrder = false; window.applyUIMode(); } document.getElementById('editModal').style.display = 'none'; };
-
     window.saveEditModal = async function() {
         try {
             let i = window.currentEditIndex; let o = window.orders[i];
@@ -619,7 +513,6 @@
             document.getElementById('editModal').style.display = 'none'; window.applyUIMode(); await window.saveData(true); 
         } catch(e) { console.error("Salvestamise viga:", e); alert("Salvestamisel tekkis viga!"); }
     };
-
     window.deleteFromEdit = async function() { if(!window.isAdmin) return; if(confirm("Kas oled täiesti kindel, et soovid selle tellimuse kustutada?")) { window.orders.splice(window.currentEditIndex, 1); document.getElementById('editModal').style.display = 'none'; window.isNewOrder = false; window.applyUIMode(); await window.saveData(true); } };
     
     window.addNewRowAndEdit = function() { 
@@ -638,14 +531,22 @@
         let P = {}; phases.forEach(p => P[p] = { sStr: null, eStr: null });
         if (anchorIdx === -1) { let cursor = snapToW(o.end || safeISO(TODAY), "prev"); for(let i=5; i>=0; i--) { let p = phases[i]; let dur = d[p]; P[p].eStr = cursor; P[p].sStr = dur > 0 ? subW(cursor, Math.max(0, dur - 1)) : cursor; cursor = dur > 0 ? subW(P[p].sStr, 1) : cursor; } } else {
             for(let i=anchorIdx; i<=5; i++) { let p = phases[i]; let dur = d[p]; if (mDates[p]) { P[p].sStr = safeISO(mDates[p].sDate); P[p].eStr = safeISO(mDates[p].eDate); } else { let prevEnd = P[phases[i-1]].eStr; P[p].sStr = dur > 0 ? addW(prevEnd, 1) : prevEnd; P[p].eStr = dur > 0 ? addW(P[p].sStr, Math.max(0, dur - 1)) : P[p].sStr; } }
-            for(let i=anchorIdx-1; i>=0; i--) { let p = phases[i]; let dur = d[p]; if (mDates[p]) { P[p].sStr = safeISO(mDates[p].sDate); P[p].eStr = safeISO(mDates[p].eDate); } else { let nextStart = P[phases[i+1]].sStr; P[p].eStr = dur > 0 ? subW(nextStart, 1) : nextStart; P[p].eStr = dur > 0 ? subW(P[p].eStr, Math.max(0, dur - 1)) : P[p].eStr; } }
+            for(let i=anchorIdx-1; i>=0; i--) { let p = phases[i]; let dur = d[p]; if (mDates[p]) { P[p].sStr = safeISO(mDates[p].sDate); P[p].eStr = safeISO(mDates[p].eDate); } else { let nextStart = P[phases[i+1]].sStr; P[p].eStr = dur > 0 ? subW(nextStart, 1) : nextStart; P[p].sStr = dur > 0 ? subW(P[p].eStr, Math.max(0, dur - 1)) : P[p].eStr; } }
         }
         let bounds = {}; phases.forEach(p => { bounds[p] = { sDate: new Date(P[p].sStr), eDate: new Date(P[p].eStr) }; bounds[p].s = getDayIndexUTC(bounds[p].sDate, startView); bounds[p].e = getDayIndexUTC(bounds[p].eDate, startView); if (bounds[p].e < bounds[p].s) bounds[p].e = bounds[p].s; }); return bounds;
     }
 
+    // --- UUS SORTEERIMINE: Sisestuse tabelis tähtaja järgi ---
     function renderTable() {
         const gV = document.getElementById('globalFilter').value.toLowerCase(); const mV = document.getElementById('monthFilter').value; const b = document.getElementById('table-body'); b.innerHTML = ''; let todayTime = new Date(); todayTime.setHours(23, 59, 59, 999);
-        window.orders.forEach((o, i) => {
+        
+        let sortedOrders = window.orders.map((o, i) => ({o, i})).sort((a, b) => {
+            let dA = new Date(a.o.end).getTime(); let dB = new Date(b.o.end).getTime();
+            return (isNaN(dA) ? 0 : dA) - (isNaN(dB) ? 0 : dB);
+        });
+
+        sortedOrders.forEach((item) => {
+            let o = item.o; let i = item.i;
             if (window.currentMainTabFilter === 'active' && o.status === 'Valmis') return; if (window.currentMainTabFilter === 'archive' && o.status !== 'Valmis') return;
             let matchText = (!gV || (o.mt && String(o.mt).toLowerCase().includes(gV)) || (o.client && String(o.client).toLowerCase().includes(gV)) || (o.kirjeldus && String(o.kirjeldus).toLowerCase().includes(gV)));
             if ((!mV || safeISO(o.end).includes(mV)) && matchText) {
@@ -683,12 +584,14 @@
         const deptOrder = ['must_k', 'rv_k', 'trei', 'kooste', 'ins', 'must_l', 'rv_l']; deptOrder.forEach(k => { html += genDashItem(k); }); document.getElementById('dashboard-container').innerHTML = html;
     }
 
+    // --- UUS SORTEERIMINE: Kõik Ganttid tähtaja järgi ---
     function renderMasterGantt(containerId) {
         const gV = document.getElementById('globalFilter').value.toLowerCase(); const outer = document.getElementById(containerId); if(!outer) return; const dayCount = 365; const tIdx = getDayIndexUTC(TODAY, START_VIEW);
         let headerCols = ""; for(let d=0; d<dayCount; d++) { let cur = new Date(START_VIEW.getTime() + d * 86400000); headerCols += `<div class="h-col"><div class="h-week">${d%7===0?'W'+getWeek(cur):''}</div><div class="h-day" style="${d===tIdx?'color:red;font-weight:bold;':''}">${cur.getDate()}.${cur.getMonth()+1}</div></div>`; }
         let bodyHtml = `<div class="gantt-body" id="b-scroll-all">`;
         let filteredOrders = window.orders.filter(o => o.status !== 'Valmis');
         if (gV) filteredOrders = filteredOrders.filter(o => (o.mt && String(o.mt).toLowerCase().includes(gV)) || (o.client && String(o.client).toLowerCase().includes(gV)) || (o.kirjeldus && String(o.kirjeldus).toLowerCase().includes(gV)));
+        filteredOrders.sort((a, b) => new Date(a.end).getTime() - new Date(b.end).getTime()); // SORTEERIMINE!
         if (filteredOrders.length === 0) bodyHtml += `<div class="empty-state">ℹ️ Ühtegi filtriga sobivat tellimust ei leitud.</div>`;
         filteredOrders.forEach((o) => {
             let gIdx = window.orders.indexOf(o); let bnds = getPhaseDates(o, START_VIEW);
@@ -715,9 +618,10 @@
         let bodyHtml = `<div class="gantt-body" id="b-scroll-${key}">`;
         let filteredOrders = window.orders.filter(o => (key === 'ah1' ? f(o.sub1) > 0 && o.chk_ah1 !== true : f(o.sub2) > 0 && o.chk_ah2 !== true) && o.status !== 'Valmis');
         if (gV) filteredOrders = filteredOrders.filter(o => (o.mt && String(o.mt).toLowerCase().includes(gV)) || (o.client && String(o.client).toLowerCase().includes(gV)) || (o.kirjeldus && String(o.kirjeldus).toLowerCase().includes(gV)));
+        filteredOrders.sort((a, b) => new Date(a.end).getTime() - new Date(b.end).getTime()); // SORTEERIMINE!
         if (filteredOrders.length === 0) bodyHtml += `<div class="empty-state">ℹ️ Ühtegi aktiivset allhanget ei leitud.</div>`;
         filteredOrders.forEach((o) => {
-            let gIdx = window.orders.indexOf(o); let bnds = getPhaseDates(o, START_VIEW); let myBnd = key === 'ah1' ? bnds.ah1 : bnds.ah2; let tasks = o.allocs && o.allocs.ah_tasks ? (key === 'ah1' ? o.allocs.ah_tasks.ah1 : o.allocs.ah_tasks.ah2) : [];
+            let gIdx = window.orders.indexOf(o); let bnds = getPhaseDates(o, START_VIEW); let myBnd = key === 'ah1' ? bnds.ah1 : bnds.ah2; let tasks = key === 'ah1' ? o.ah1_tasks : o.ah2_tasks;
             let finalLeft = myBnd.s * 45; let taskDur = Math.max(1, myBnd.e - myBnd.s + 1);
             let isOverdue = myBnd.eDate.getTime() > new Date(o.end).setHours(23,59,59,999); let deptTitleStyle = isOverdue ? "background:#ffebee; color:#c62828; border-color:#f5c6cb;" : "background:#fff3cd; color:#856404; border-color:#ffeeba;";
             let tasksHtml = ''; if(tasks && tasks.length > 0) { tasksHtml = tasks.map(t => `<div style="font-size:10px; margin-bottom:3px; color:${t.done?'#27ae60':'#e74c3c'}; line-height:1.2; max-width:100%;"><span style="font-weight:bold; ${t.done?'text-decoration:line-through;':''}">${t.done?'☑':'☐'} ${t.name}</span> ${t.comment? `<br><i style="color:#777; padding-left:15px; font-size:9px;">- ${t.comment}</i>`:''}</div>`).join(''); } else { tasksHtml = '<div style="font-size:9px; color:#aaa; font-style:italic;">Tegevused puuduvad</div>'; }
@@ -733,6 +637,7 @@
         let bodyHtml = `<div class="gantt-body" id="b-scroll-${key}">`;
         let filteredOrders = window.orders.filter(o => o[key] > 0 && o.status !== 'Valmis' && String(o[CONFIG[key].d]) !== 'true');
         if (gV) filteredOrders = filteredOrders.filter(o => (o.mt && String(o.mt).toLowerCase().includes(gV)) || (o.client && String(o.client).toLowerCase().includes(gV)) || (o.kirjeldus && String(o.kirjeldus).toLowerCase().includes(gV)));
+        filteredOrders.sort((a, b) => new Date(a.end).getTime() - new Date(b.end).getTime()); // SORTEERIMINE!
         if (filteredOrders.length === 0) bodyHtml += `<div class="empty-state">ℹ️ Selles osakonnas pole ühtegi töös tellimust.</div>`;
         filteredOrders.forEach((o) => {
             let gIdx = window.orders.indexOf(o); let bnds = getPhaseDates(o, START_VIEW); let myBnd = CONFIG[key].order === 0 ? bnds.ins : (CONFIG[key].order === 1 ? bnds.lukk : (CONFIG[key].order === 2 ? bnds.keev : bnds.kooste));
