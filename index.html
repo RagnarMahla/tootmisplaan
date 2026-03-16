@@ -2,7 +2,7 @@
 <html lang="et">
 <head>
     <meta charset="UTF-8">
-    <title>TOCI Tootmisplaan V144.0 (Andmete Import)</title>
+    <title>TOCI Tootmisplaan V145.0 (Firebase Salvestus Parandatud)</title>
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
     <style>
@@ -231,7 +231,7 @@
 </div>
 
 <div class="top-bar">
-    <div>🚀 <strong>TOCI TOOTMISPLAAN V144.0 (Import Sheetsist -> Firebase)</strong></div>
+    <div>🚀 <strong>TOCI TOOTMISPLAAN V145.0 (Firebase Salvestus Korda Tehtud)</strong></div>
     <div style="display:flex; gap:15px; align-items:center;">
         <input type="text" id="globalFilter" placeholder="Otsi (MT, klient)..." oninput="window.applyUIMode()" style="padding:6px 10px; border-radius:4px; border:none; width:200px; font-weight:bold;">
         
@@ -377,7 +377,7 @@
     <div class="table-container" style="flex-grow: 1; overflow: auto; min-height: 0; padding: 0;">
         <table class="data-table" id="cap-table" style="min-width: max-content; border-collapse: separate; border-spacing: 0;"></table>
     </div>
-    <button id="saveCapBtn" onclick="window.saveCapacity()" style="margin-top:15px; padding:12px 25px; background:var(--accent); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold; display:none; flex-shrink: 0; align-self: flex-start;">💾 SALVESTA SEADED</button>
+    <button id="saveCapBtn" onclick="window.saveCapacity()" style="margin-top:15px; padding:12px 25px; background:var(--accent); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold; display:none; flex-shrink: 0; align-self: flex-start;">💾 SALVESTA SEADED (PILVE)</button>
 </div>
 
 <script>
@@ -399,7 +399,7 @@
     const VANA_API_URL = "https://script.google.com/macros/s/AKfycbwGH8W-wlIs5sPRQqAUGPmRRyJjO9-5I1howW6tqVybo6NBIRLAEy4vmmBpEIyFvGBU/exec";
 
     window.isAdmin = false; const ADMIN_PIN = "1234";
-    let saveTimeout; window.isSaving = false; window.hasPendingChanges = false;
+    window.isSaving = false; window.hasPendingChanges = false;
     window.activeBrushIdx = null; 
     window.currentEditIndex = -1; 
     window.isNewOrder = false;
@@ -488,7 +488,6 @@
             }
             
             let cleanOrders = data.filter(o => String(o.mt).trim() !== 'SYS_SETTINGS' && String(o.mt).trim() !== '' && String(o.mt).toLowerCase() !== 'uus').map(o => {
-                // Konverdime tühjad/vigased JSONid
                 let safeAllocs = {};
                 try { safeAllocs = typeof o.allocs === 'string' ? JSON.parse(o.allocs) : (o.allocs || {}); } catch(e) {}
                 
@@ -644,6 +643,7 @@
         } catch(e) { console.error("UI Uuendamise viga:", e); }
     };
 
+    // VÄLKKIIRE FIREBASE REAL-TIME MOOTOR
     let isFirstLoad = true;
     function startRealtimeSync() {
         updateSyncStatus("🔄 Ühendan Firebase...", "warning");
@@ -876,7 +876,7 @@
             
             document.getElementById('editModal').style.display = 'none';
             window.applyUIMode(); 
-            await window.save(true); 
+            await window.saveData(true); 
         } catch(e) { console.error("Salvestamise viga:", e); alert("Salvestamisel tekkis viga!"); }
     };
 
@@ -886,7 +886,7 @@
             window.orders.splice(window.currentEditIndex, 1);
             document.getElementById('editModal').style.display = 'none';
             window.isNewOrder = false;
-            window.applyUIMode(); await window.save(true); 
+            window.applyUIMode(); await window.saveData(true); 
         }
     };
 
@@ -1152,7 +1152,7 @@
         filteredOrders.forEach((o) => {
             let gIdx = window.orders.indexOf(o); let bnds = getPhaseDates(o, START_VIEW);
             let myBnd = key === 'ah1' ? bnds.ah1 : bnds.ah2;
-            let tasks = key === 'ah1' ? o.ah1_tasks : o.ah2_tasks;
+            let tasks = o.allocs && o.allocs.ah_tasks ? (key === 'ah1' ? o.allocs.ah_tasks.ah1 : o.allocs.ah_tasks.ah2) : [];
             
             let finalLeft = myBnd.s * 45; let taskDur = Math.max(1, myBnd.e - myBnd.s + 1);
 
@@ -1288,12 +1288,12 @@
         if(!o.allocs) o.allocs = {}; if(!o.allocs[dept]) o.allocs[dept] = {}; if(!o.allocs[dept][dateStr]) o.allocs[dept][dateStr] = {};
         if (append && o.allocs[dept][dateStr][wsName]) o.allocs[dept][dateStr][wsName] = f(o.allocs[dept][dateStr][wsName]) + h;
         else o.allocs[dept][dateStr][wsName] = h;
-        window.save(true); window.renderDispatcher();
+        window.saveData(true); window.renderDispatcher();
     }
     
     function deleteAllocationDirect(dept, dateStr, wsName, oIdx) {
         if(window.orders[oIdx].allocs && window.orders[oIdx].allocs[dept] && window.orders[oIdx].allocs[dept][dateStr]) { delete window.orders[oIdx].allocs[dept][dateStr][wsName]; }
-        window.save(true); window.renderDispatcher();
+        window.saveData(true); window.renderDispatcher();
     }
 
     window.resetBrushAndRender = function() { window.activeBrushIdx = null; window.renderDispatcher(); };
@@ -1503,10 +1503,10 @@
         });
     }
 
-    // --- SÄILITA KÕIK ÜLEJÄÄNUD FUNKTSIOONID SAMA LOOGIKAGA ---
     function renderDailyTable() {
         const container = document.getElementById('daily-table-container'); 
         const daysToShow = 365; const startDate = new Date(TODAY); startDate.setDate(startDate.getDate() - 2);
+        
         let allValidOrders = window.orders.filter(o => o.status !== 'Valmis');
         allValidOrders.sort((a, b) => new Date(a.start) - new Date(b.start));
         let smartLoad = calculateSmartDailyLoad(allValidOrders);
@@ -1522,6 +1522,7 @@
         html += `</tr></thead><tbody>`;
         
         const deptOrder = ['must_k', 'rv_k', 'trei', 'kooste', 'ins', 'must_l', 'rv_l'];
+
         deptOrder.forEach(k => {
             html += `<tr><td style="position:sticky; left:0; background:#f4f7f6; font-weight:bold; border-right:2px solid #ccc; z-index:10; color:${CONFIG[k].color};">${CONFIG[k].l}</td>`;
             for(let i=0; i<daysToShow; i++) {
@@ -1529,6 +1530,7 @@
                 let isHol = isHoliday(curDate); 
                 let capCount = (window.customCap.wsCounts && window.customCap.wsCounts[k]) ? window.customCap.wsCounts[k] : CONFIG[k].ws;
                 let dailyCap = capCount * 8;
+                
                 let totalH = smartLoad.tracker[k][dateStr] || 0; 
                 let isOver = totalH > dailyCap + 0.1;
                 let cellStyle = isHol ? "background:#ffebee; color:#c62828;" : (isWeekend ? "background:#eee;" : (isOver ? "background:#ffebee; color:#c62828; font-weight:bold;" : (totalH > 0.1 ? "background:#e8f5e9; color:#2e7d32; font-weight:bold;" : "background:#fff;")));
@@ -1541,9 +1543,201 @@
         container.innerHTML = html; setTimeout(() => { container.firstElementChild.scrollLeft = (2 * 40); }, 100);
     }
 
-    // --- START FIREBASE ALLES SIIN ALL ---
-    startRealtimeSync();
+    function renderHolidays() {
+        let list = document.getElementById('holidays-list'); if(!list) return;
+        let html = "";
+        (window.customCap.holidays || []).forEach((h, i) => {
+            html += `<div style="display:flex; justify-content:space-between; align-items:center; max-width:400px; background:#ffebee; padding:5px 10px; border:1px solid #ffcdd2; border-radius:4px; color:#c62828;">
+                <div><strong>${h.n}</strong>: ${safeISO(h.s)} ${h.s!==h.e ? ' kuni '+safeISO(h.e) : ''}</div>
+                <button class="admin-only" onclick="window.delHoliday(${i})" style="color:white; background:#c62828; border:none; padding:3px 8px; border-radius:3px; cursor:pointer; font-weight:bold; ${window.isAdmin?'display:block':'display:none'}">X</button>
+            </div>`;
+        });
+        if((window.customCap.holidays||[]).length === 0) html = "<div style='color:#777; font-size:11px;'>Ühtegi puhkust pole lisatud.</div>";
+        list.innerHTML = html;
+    }
 
+    function renderWSManager() {
+        let list = document.getElementById('ws-list'); if(!list) return;
+        let disAttr = window.isAdmin ? "" : "disabled";
+        let html = "";
+        
+        const deptOrder = ['ins', 'trei', 'must_k', 'rv_k', 'must_l', 'rv_l', 'kooste'];
+
+        deptOrder.forEach(k => {
+            let count = (window.customCap.wsCounts && window.customCap.wsCounts[k]) ? window.customCap.wsCounts[k] : CONFIG[k].ws;
+            html += `<div style="display:flex; justify-content:space-between; align-items:center; background:#f4f7f6; padding:8px 12px; border-radius:4px; border:1px solid #eee;">
+                <strong>${CONFIG[k].l}</strong>
+                <input type="number" class="ws-num-in" data-k="${k}" value="${count}" min="1" max="50" style="width:60px; padding:4px; font-weight:bold; text-align:center; border:1px solid #ccc; border-radius:3px;" ${disAttr}>
+            </div>`;
+        });
+        
+        let lCount = (window.customCap.wsCounts && window.customCap.wsCounts['laser']) ? window.customCap.wsCounts['laser'] : 3;
+        html += `<div style="display:flex; justify-content:space-between; align-items:center; background:#f3e5f5; padding:8px 12px; border-radius:4px; border:1px solid #e1bee7;">
+            <strong style="color:#8e44ad;">⚡ Laser (graafiku piir)</strong>
+            <input type="number" class="ws-num-in" data-k="laser" value="${lCount}" min="1" max="50" style="width:60px; padding:4px; font-weight:bold; text-align:center; border:1px solid #ccc; border-radius:3px;" ${disAttr}>
+        </div>`;
+        
+        list.innerHTML = html;
+    }
+
+    window.renderLaserManager = function() {
+        let list = document.getElementById('laser-list'); if(!list) return;
+        let html = "";
+        if (window.customCap.laserBacklog && window.customCap.laserBacklog.hours > 0) {
+            html += `<div style="display:flex; justify-content:space-between; align-items:center; background:#f3e5f5; padding:8px 10px; border:1px solid #e1bee7; border-radius:4px; color:#6a1b9a;">
+                <div><strong>Aktiivne jääk:</strong> ${window.customCap.laserBacklog.hours} h<br><small style="color:#888;">Sisestatud: ${window.customCap.laserBacklog.dateSet}</small></div>
+                <button class="admin-only" onclick="window.clearLaserBacklog()" style="color:white; background:#8e44ad; border:none; padding:4px 8px; border-radius:3px; cursor:pointer; font-weight:bold; ${window.isAdmin?'display:block':'display:none'}">KUSTUTA</button>
+            </div>`;
+        } else {
+            html = "<div style='color:#777; font-size:11px;'>Järjekorda pole sisestatud.</div>";
+        }
+        list.innerHTML = html;
+    };
+
+    window.saveLaserBacklog = function() {
+        if(!window.isAdmin) return;
+        let h = parseFloat(document.getElementById('laser-total-h').value);
+        if(isNaN(h) || h < 0) { alert("Sisesta korrektne tundide arv!"); return; }
+        if(!window.customCap.laserBacklog) window.customCap.laserBacklog = {};
+        window.customCap.laserBacklog = { hours: h, dateSet: safeISO(new Date()) };
+        document.getElementById('laser-total-h').value = "";
+        window.saveCapacity();
+    };
+
+    window.clearLaserBacklog = function() {
+        if(!window.isAdmin) return;
+        window.customCap.laserBacklog = { hours: 0, dateSet: safeISO(new Date()) };
+        window.saveCapacity();
+    };
+
+    function renderCapacity() {
+        let disAttr = window.isAdmin ? "" : "disabled";
+        let holidayWeeks = new Set(); let currentYear = TODAY.getFullYear();
+        for(let d=new Date(currentYear,0,1); d.getFullYear()===currentYear; d.setDate(d.getDate()+1)) { if(isHoliday(d)) holidayWeeks.add(getWeek(d)); }
+
+        let h = `<thead><tr><th style="position:sticky; left:0; top:0; z-index:30; background:#2c3e50; color:white; border-right:2px solid #34495e;">Osakond</th>`;
+        for(let i=1; i<=52; i++) {
+            let wStyle = holidayWeeks.has(i) ? "background:#c62828; color:white;" : "background:#eee; color:#333;";
+            h += `<th style="position:sticky; top:0; z-index:20; border-right:1px solid #ccc; border-bottom:2px solid #ccc; ${wStyle}" title="${holidayWeeks.has(i) ? 'Selles nädalas on märgitud puhkus/püha!' : ''}">W${i}</th>`;
+        }
+        h += `</tr></thead><tbody>`;
+
+        const deptOrder = ['ins', 'trei', 'must_k', 'rv_k', 'must_l', 'rv_l', 'kooste'];
+
+        h += deptOrder.map(k => `<tr><td style="position:sticky; left:0; background:#f4f7f6; z-index:25; font-weight:bold; border-right:2px solid #ccc; border-bottom:1px solid #eee; color:${CONFIG[k].color};">${CONFIG[k].l}</td>` + Array.from({length:52},(_,i)=>{
+            let v = (window.customCap[k] && window.customCap[k][i+1]) ? window.customCap[k][i+1] : (CONFIG[k].ws * 8 * 5); 
+            let bgStyle = holidayWeeks.has(i+1) ? "background-color:#ffebee;" : "";
+            return `<td style="border-right:1px solid #eee; border-bottom:1px solid #eee; text-align:center;"><input type="number" class="cap-num-in" style="${bgStyle}" data-k="${k}" data-w="${i+1}" value="${v}" ${disAttr}></td>`;
+        }).join('') + `</tr>`).join('');
+        document.getElementById('cap-table').innerHTML = h + `</tbody>`;
+    }
+
+    window.addHoliday = function() {
+        if(!window.isAdmin) return;
+        let n = document.getElementById('hol-name').value; let s = document.getElementById('hol-start').value; let e = document.getElementById('hol-end').value;
+        if(!n || !s) { alert("Nimetus ja alguskuupäev on kohustuslikud!"); return; }
+        if(!e) e = s;
+        if(!window.customCap.holidays) window.customCap.holidays = []; window.customCap.holidays.push({n:n, s:s, e:e});
+        document.getElementById('hol-name').value = ""; document.getElementById('hol-start').value = ""; document.getElementById('hol-end').value = "";
+        window.saveCapacity(); 
+    };
+
+    window.delHoliday = function(idx) { if(!window.isAdmin) return; window.customCap.holidays.splice(idx, 1); window.saveCapacity(); };
+
+    window.saveCapacity = async function() {
+        if(!window.isAdmin) return;
+        
+        let newCap = { holidays: window.customCap.holidays || [], wsCounts: {}, laserBacklog: window.customCap.laserBacklog || { hours: 0, dateSet: safeISO(TODAY) } };
+        
+        document.querySelectorAll('.ws-num-in').forEach(i => { 
+            newCap.wsCounts[i.dataset.k] = parseInt(i.value) || 1; 
+        });
+        
+        Object.keys(CONFIG).forEach(k => {
+            newCap[k] = {};
+            document.querySelectorAll(`.cap-num-in[data-k="${k}"]`).forEach(i => {
+                newCap[k][i.dataset.w] = parseInt(i.value);
+            });
+        });
+        
+        window.customCap = newCap;
+        localStorage.setItem('prod_cap_live', JSON.stringify(window.customCap)); 
+        
+        window.applyUIMode(); 
+        await window.saveData(true); 
+        alert("✅ Seaded ja puhkused salvestatud PILVE!");
+    };
+
+    window.cleanAllocs = function(allocsObj) {
+        if (!allocsObj || typeof allocsObj !== 'object') return {};
+        let clean = {};
+        for (let dept in allocsObj) {
+            if (dept === 'ah_tasks') {
+                clean[dept] = allocsObj[dept]; 
+                continue;
+            }
+            let deptHasData = false;
+            clean[dept] = {};
+            for (let date in allocsObj[dept]) {
+                let dateHasData = false;
+                clean[dept][date] = {};
+                for (let ws in allocsObj[dept][date]) {
+                    let h = parseFloat(allocsObj[dept][date][ws]) || 0;
+                    if (h > 0) {
+                        clean[dept][date][ws] = h;
+                        dateHasData = true;
+                        deptHasData = true;
+                    }
+                }
+                if (!dateHasData) delete clean[dept][date];
+            }
+            if (!deptHasData) delete clean[dept];
+        }
+        return clean;
+    };
+
+    window.saveData = async function(immediate = false) { 
+        const executeSave = async () => {
+            window.isSaving = true; updateSyncStatus("💾 Salvestan Firebase...", "warning");
+            try {
+                let cleanOrders = window.orders.filter(o => o.mt && String(o.mt).trim() !== '' && String(o.mt) !== 'SYS_SETTINGS').map(o => { 
+                    let safeAllocs = window.cleanAllocs(o.allocs);
+                    safeAllocs.ah_tasks = { ah1: o.ah1_tasks || [], ah2: o.ah2_tasks || [] };
+
+                    return {
+                        mt: o.mt || '', client: o.client || '', kirjeldus: o.kirjeldus || '', start: o.start || safeISO(TODAY), end: o.end || safeISO(TODAY),
+                        sub1: f(o.sub1), sub2: f(o.sub2), status: o.status || 'Ootel',
+                        ins: f(o.ins), trei: f(o.trei), must_k: f(o.must_k), rv_k: f(o.rv_k), must_l: f(o.must_l), rv_l: f(o.rv_l), kooste: f(o.kooste),
+                        prog_ins: f(o.prog_ins), prog_tr: f(o.prog_tr), prog_mk: f(o.prog_mk), prog_rk: f(o.prog_rk), prog_ml: f(o.prog_ml), prog_rl: f(o.prog_rl), prog_ko: f(o.prog_ko),
+                        done_ins: !!o.done_ins, chk_ost: !!o.chk_ost, chk_ah1: !!o.chk_ah1, chk_ah2: !!o.chk_ah2,
+                        chk_notes: o.chk_notes || '',
+                        allocs: JSON.stringify(safeAllocs),
+                        ah1_tasks: JSON.stringify(o.ah1_tasks || []),
+                        ah2_tasks: JSON.stringify(o.ah2_tasks || [])
+                    };
+                });
+
+                await dataDoc.set({
+                    customCap: window.customCap,
+                    orders: cleanOrders
+                });
+                
+                window.isSaving = false; window.hasPendingChanges = false; updateSyncStatus("✅ REAALAJAS", "success");
+            } catch(e) { 
+                window.isSaving = false; updateSyncStatus("❌ Salvestamise viga", "danger"); 
+                console.error(e);
+            }
+        };
+
+        if (immediate) {
+            clearTimeout(window.saveTimeout);
+            await executeSave();
+        } else {
+            window.hasPendingChanges = true; updateSyncStatus("⏳ Ootan...", "warning");
+            clearTimeout(window.saveTimeout);
+            window.saveTimeout = setTimeout(executeSave, 500);
+        }
+    };
 </script>
 </body>
 </html>
