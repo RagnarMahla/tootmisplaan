@@ -2,7 +2,7 @@
 <html lang="et">
 <head>
     <meta charset="UTF-8">
-    <title>TOCI Tootmisplaan V159.0 (Ilma failide laadimiseta, ainult Link)</title>
+    <title>TOCI Tootmisplaan V160.0 (Tähtaja Sein Planeerijas)</title>
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
     <style>
@@ -90,7 +90,7 @@
         .disp-cell:hover { background: rgba(0,0,0,0.05) !important; }
         .disp-alloc { font-size:10px; font-weight:bold; color:white; border-radius:3px; padding:2px; margin:1px; box-shadow:0 1px 3px rgba(0,0,0,0.2); pointer-events:auto; transition: 0.2s; }
         .disp-alloc:hover { transform: scale(1.05); z-index: 10; box-shadow:0 3px 6px rgba(0,0,0,0.3); }
-        .disp-bank-item { background:#fff; border:1px solid #ddd; padding:10px; border-radius:6px; box-shadow:0 2px 5px rgba(0,0,0,0.05); min-width:200px; flex:1; cursor:pointer; transition:0.2s; user-select: none; }
+        .disp-bank-item { background:#fff; border:1px solid #ddd; padding:10px; border-radius:6px; box-shadow:0 2px 5px rgba(0,0,0,0.05); min-width:200px; flex:1; cursor:pointer; transition:0.2s; user-select: none; border-left: 5px solid; }
         .disp-bank-item:hover { box-shadow:0 4px 8px rgba(0,0,0,0.1); transform: translateY(-2px); }
         
         .brush-active { border: 2px dashed #e74c3c !important; background: #fffdf5; transform: scale(1.03); box-shadow: 0 4px 15px rgba(231,76,60,0.2) !important; z-index:10; }
@@ -176,7 +176,7 @@
 </div>
 
 <div class="top-bar">
-    <div>🚀 <strong>TOCI TOOTMISPLAAN V159.0 (Failita, Ainult Link)</strong></div>
+    <div>🚀 <strong>TOCI TOOTMISPLAAN V160.0 (Tähtaja Sein & Lohistamine)</strong></div>
     <div style="display:flex; gap:15px; align-items:center;">
         <input type="text" id="globalFilter" placeholder="Otsi (MT, klient)..." oninput="window.applyUIMode()" style="padding:6px 10px; border-radius:4px; border:none; width:200px; font-weight:bold;">
         <button id="importSheetsBtn" onclick="window.importFromSheets()" style="padding:6px 12px; background:#e67e22; color:white; border:none; border-radius:4px; font-weight:bold; cursor:pointer; display:none; box-shadow: 0 0 10px rgba(230, 126, 34, 0.5);">📥 IMPORDI SHEETSIST</button>
@@ -671,15 +671,50 @@
         let validBankOrders = window.orders.filter((o, i) => { if(o.mt === 'SYS_SETTINGS' || o.status === 'Valmis' || String(o[CONFIG[k].d]) === 'true') return false; let matchText = (!gV || (o.mt && String(o.mt).toLowerCase().includes(gV)) || (o.client && String(o.client).toLowerCase().includes(gV))); if (!matchText) return false; let planned = f(o[k]); if(planned === 0) return false; return true; });
         validBankOrders.forEach(o => {
             let i = window.orders.indexOf(o); let planned = f(o[k]); let allocated = getAllocated(o, k); let remaining = planned - allocated; let rColor = remaining < 0 ? 'red' : (remaining === 0 ? 'var(--success)' : '#333'); let isBrush = window.activeBrushIdx === i;
-            let bnds = getPhaseDates(o, START_VIEW); let myBnd = CONFIG[k].order === 0 ? bnds.ins : (CONFIG[k].order === 1 ? bnds.lukk : (CONFIG[k].order === 2 ? bnds.keev : bnds.kooste)); let sD = myBnd.sDate, eD = myBnd.eDate; let dRange = `${String(sD.getDate()).padStart(2,'0')}.${String(sD.getMonth()+1).padStart(2,'0')} - ${String(eD.getDate()).padStart(2,'0')}.${String(eD.getMonth()+1).padStart(2,'0')}`;
-            bankHtml += `<div class="disp-bank-item ${isBrush ? 'brush-active' : ''}" draggable="true" ondragstart="window.handleDragStart(event, ${i}, 'bank')" style="border-left:5px solid ${remaining === 0 ? 'var(--success)' : CONFIG[k].color}; opacity:${remaining===0 && !isBrush ? 0.5 : 1};" onclick="window.toggleBrush(${i})"><div style="display:flex; justify-content:space-between; align-items:flex-start;"><div style="font-weight:bold; font-size:14px; margin-bottom:2px; max-width:60%; overflow:hidden; text-overflow:ellipsis;">${o.mt}</div><div style="font-size:9px; background:#e1f5fe; color:#0288d1; padding:2px 4px; border-radius:3px; border:1px solid #b3e5fc; white-space:nowrap;" title="Selle osakonna planeeritud ajavahemik">📅 ${dRange}</div></div><div style="color:#666; font-size:10px; margin-bottom:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${o.client || '-'}">${o.client || '-'}</div><div style="display:flex; justify-content:space-between; font-size:11px;"><span>Plaan: <b>${planned}h</b></span><span>Jagatud: <b>${allocated}h</b></span></div><div style="margin-top:5px; font-size:12px; text-align:right;">Jääk: <b style="color:${rColor}; font-size:14px;">${remaining.toFixed(1)}h</b></div></div>`;
+            let bnds = getPhaseDates(o, START_VIEW); let myBnd = CONFIG[k].order === 0 ? bnds.ins : (CONFIG[k].order === 1 ? bnds.lukk : (CONFIG[k].order === 2 ? bnds.keev : bnds.kooste)); let sD = myBnd.sDate, eD = myBnd.eDate; 
+            let deptEndStr = `${String(eD.getDate()).padStart(2,'0')}.${String(eD.getMonth()+1).padStart(2,'0')}`;
+            let overAllEndStr = `${String(new Date(o.end).getDate()).padStart(2,'0')}.${String(new Date(o.end).getMonth()+1).padStart(2,'0')}`;
+            
+            bankHtml += `<div class="disp-bank-item ${isBrush ? 'brush-active' : ''}" draggable="true" ondragstart="window.handleDragStart(event, ${i}, 'bank')" style="border-left:5px solid ${remaining === 0 ? 'var(--success)' : CONFIG[k].color}; opacity:${remaining===0 && !isBrush ? 0.5 : 1};" onclick="window.toggleBrush(${i})">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                    <div style="font-weight:bold; font-size:14px; margin-bottom:2px; max-width:50%; overflow:hidden; text-overflow:ellipsis;">${o.mt}</div>
+                    <div style="font-size:10px; background:#ffebee; color:#c62828; padding:2px 5px; border-radius:3px; border:1px solid #ffcdd2; text-align:right; white-space:nowrap;" title="Osakonna Lõpp / Üldine Lõpp">
+                        <b>🏁 ${deptEndStr}</b> <span style="font-size:8px; color:#555;">(Üld: ${overAllEndStr})</span>
+                    </div>
+                </div>
+                <div style="color:#666; font-size:10px; margin-bottom:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${o.client || '-'}">${o.client || '-'}</div>
+                <div style="display:flex; justify-content:space-between; font-size:11px;"><span>Plaan: <b>${planned}h</b></span><span>Jagatud: <b>${allocated}h</b></span></div>
+                <div style="margin-top:5px; font-size:12px; text-align:right;">Jääk: <b style="color:${rColor}; font-size:14px;">${remaining.toFixed(1)}h</b></div>
+            </div>`;
             allocOptions += `<option value="${i}">${o.mt} (Jääk: ${remaining.toFixed(1)}h)</option>`;
         });
         if(bankHtml === "") bankHtml = "<div style='color:#777; padding:10px;'>Ühtegi planeerimist vajavat tööd ei leitud.</div>"; document.getElementById('disp-bank').innerHTML = bankHtml; window.currentAllocOptions = allocOptions;
-        let bStatus = document.getElementById('brush-status'); if(window.activeBrushIdx !== null) { bStatus.innerHTML = `Planeerimine: <b style="color:var(--danger)">${window.orders[window.activeBrushIdx].mt}</b> (Vajuta uuesti, et tühistada)`; } else { bStatus.innerHTML = `Planeerimine: <b style="color:#999">VÄLJAS</b>`; }
+        
+        let bStatus = document.getElementById('brush-status'); 
+        let activeDeptEndStr = null;
+        if(window.activeBrushIdx !== null) { 
+            let ao = window.orders[window.activeBrushIdx];
+            bStatus.innerHTML = `Planeerimine: <b style="color:var(--danger)">${ao.mt}</b> (Vajuta uuesti, et tühistada)`; 
+            let bnds = getPhaseDates(ao, START_VIEW);
+            let myBnd = CONFIG[k].order === 0 ? bnds.ins : (CONFIG[k].order === 1 ? bnds.lukk : (CONFIG[k].order === 2 ? bnds.keev : bnds.kooste));
+            activeDeptEndStr = safeISO(myBnd.eDate);
+        } else { 
+            bStatus.innerHTML = `Planeerimine: <b style="color:#999">VÄLJAS</b>`; 
+        }
+        
         let allValidOrders = window.orders.filter(o => o.status !== 'Valmis'); allValidOrders.sort((a, b) => new Date(a.end).getTime() - new Date(b.end).getTime()); let smartLoad = calculateSmartDailyLoad(allValidOrders);
         let daysToShow = 30; let gridHtml = `<thead><tr><th style="position:sticky; left:0; top:0; z-index:30; background:#2c3e50; color:white; min-width:80px; padding:10px;">Töökoht</th>`;
-        for(let d=0; d<daysToShow; d++) { let dObj = new Date(sDate.getTime() + d*86400000); let isW = dObj.getDay()===0||dObj.getDay()===6; let isHol = isHoliday(dObj); let headerBg = isHol ? '#c62828' : (isW ? '#34495e' : '#2c3e50'); gridHtml += `<th style="position:sticky; top:0; z-index:20; background:${headerBg}; color:white; min-width:80px; font-size:10px; text-align:center;">${dObj.getDate()}.${dObj.getMonth()+1}<br>${['P','E','T','K','N','R','L'][dObj.getDay()]}</th>`; }
+        for(let d=0; d<daysToShow; d++) { 
+            let dObj = new Date(sDate.getTime() + d*86400000); let dStr = safeISO(dObj);
+            let isW = dObj.getDay()===0||dObj.getDay()===6; let isHol = isHoliday(dObj); 
+            let headerBg = isHol ? '#c62828' : (isW ? '#34495e' : '#2c3e50'); 
+            let deadlineMarker = '';
+            if (activeDeptEndStr === dStr) {
+                headerBg = '#e74c3c';
+                deadlineMarker = '<div style="font-size:9px; color:#ffeaa7; font-weight:bold; padding-top:2px;">🏁 LÕPP</div>';
+            }
+            gridHtml += `<th style="position:sticky; top:0; z-index:20; background:${headerBg}; color:white; min-width:80px; font-size:10px; text-align:center; transition:background 0.3s;">${dObj.getDate()}.${dObj.getMonth()+1}<br>${['P','E','T','K','N','R','L'][dObj.getDay()]}${deadlineMarker}</th>`; 
+        }
         gridHtml += `</tr></thead><tbody class="${window.activeBrushIdx !== null ? 'grid-brush-mode' : ''}">`;
         let wsCount = (window.customCap.wsCounts && window.customCap.wsCounts[k]) ? window.customCap.wsCounts[k] : (CONFIG[k].ws || 3);
         for(let w=1; w<=wsCount; w++) {
@@ -703,7 +738,15 @@
                     }); 
                     if(totalCellH < 8) cellContent += `<div style="color:#ccc; font-size:10px; margin-top:auto;">+</div>`; cellContent += `</div>`; 
                 } else { cellContent = `<div style="color:#eee; font-size:16px; margin-top:2px;">+</div>`; }
-                let isHol = isHoliday(dObj); let isWkend = (dObj.getDay()===0||dObj.getDay()===6); let cellStyle = isHol ? "background: repeating-linear-gradient(45deg, #ffeeee, #ffebee 10px, #ffffff 10px, #ffffff 20px);" : (isWkend ? "background:#fafafa;" : "background:#fff;"); if(totalCellH > 8) cellStyle += " border: 2px solid var(--danger); box-shadow: inset 0 0 5px rgba(231,76,60,0.5);"; 
+                
+                let isHol = isHoliday(dObj); let isWkend = (dObj.getDay()===0||dObj.getDay()===6); 
+                let cellStyle = isHol ? "background: repeating-linear-gradient(45deg, #ffeeee, #ffebee 10px, #ffffff 10px, #ffffff 20px);" : (isWkend ? "background:#fafafa;" : "background:#fff;"); 
+                if(totalCellH > 8) cellStyle += " border: 2px solid var(--danger); box-shadow: inset 0 0 5px rgba(231,76,60,0.5);"; 
+                
+                if (activeDeptEndStr && dStr > activeDeptEndStr && !isHol && !isWkend) {
+                    cellStyle += " background-image: repeating-linear-gradient(45deg, rgba(231, 76, 60, 0.05), rgba(231, 76, 60, 0.05) 10px, transparent 10px, transparent 20px);";
+                }
+                
                 gridHtml += `<td class="disp-cell" style="${cellStyle}" onclick="window.handleCellClick('${k}', '${dStr}', '${wsName}')" ondblclick="window.openAllocModal('${k}', '${dStr}', '${wsName}', -1, 8)" ondragover="event.preventDefault(); this.classList.add('dragover');" ondragleave="this.classList.remove('dragover');" ondrop="window.handleDrop(event, '${k}', '${dStr}', '${wsName}')">${cellContent}</td>`;
             } gridHtml += `</tr>`;
         } gridHtml += `</tbody>`; document.getElementById('disp-grid').innerHTML = gridHtml;
