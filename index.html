@@ -2,13 +2,15 @@
 <html lang="et">
 <head>
     <meta charset="UTF-8">
-    <title>TOCI Tootmisplaan</title>
+    <title>TOCI Tootmisplaan V157.0 (Planeerija Drag & Drop)</title>
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-storage-compat.js"></script>
     <style>
         :root { --primary: #1a252f; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; --warning: #f1c40f; --bg: #f4f7f6; --today: #ff4757; --cell-w: 45px; --sub-bg: #95a5a6; }
         *, *:before, *:after { box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); font-size: 12px; overflow: hidden; }
+        
         .top-bar { background: var(--primary); color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; height: 50px; position: sticky; top: 0; z-index: 10000; }
         .tabs { display: flex; background: #2c3e50; border-bottom: 3px solid var(--accent); overflow-x: auto; height: 45px; position: sticky; top: 50px; z-index: 9000; }
         .tab-btn { padding: 0 18px; color: white; cursor: pointer; border: none; background: none; font-weight: bold; white-space: nowrap; height: 100%; opacity: 0.8; transition: 0.2s; }
@@ -17,22 +19,28 @@
         .content.active { display: block; }
         .flex-view { display: none !important; flex-direction: column; height: calc(100vh - 95px); box-sizing: border-box; }
         .flex-view.active { display: flex !important; }
+
         .table-container { height: calc(100% - 60px); overflow: auto; background: white; border-radius: 8px; border: 1px solid #ddd; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         .data-table { width: 100%; border-collapse: collapse; position: relative; }
         .data-table thead th { position: sticky; top: 0; background: #eee; z-index: 10; border-bottom: 2px solid #ccc; padding: 12px 10px; text-align: left; color:#333; }
         .data-table td { border-bottom: 1px solid #eee; padding: 10px; vertical-align: middle; }
+        
         .row-clickable { cursor: pointer; transition: background 0.2s; }
         .row-clickable:hover { background-color: #e1f5fe !important; }
+        
         tr.status-ootel { background-color: #fff !important; }
         tr.status-toos { background-color: #e3f2fd !important; }
         tr.status-valmis { background-color: #e8f5e9 !important; opacity: 0.8; }
+
         .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; padding: 10px; overflow-y: auto; height: 100%; }
         .dash-card { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border-left: 5px solid var(--accent); display: flex; flex-direction: column; justify-content: center; }
+
         .modal { display: none; position: fixed; z-index: 20000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(4px); }
         .modal-content { background-color: #fff; margin: 5vh auto; padding: 25px; border-radius: 12px; width: 450px; max-width: 95%; box-shadow: 0 15px 40px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto; }
         .modal-content.large { width: 850px; }
         .m-close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; margin-top:-10px; }
         .m-close:hover { color: #333; }
+        
         .edit-section-title { font-size: 14px; font-weight: bold; color: var(--accent); border-bottom: 2px solid #eee; margin-top: 20px; margin-bottom: 10px; padding-bottom: 5px; }
         .edit-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
         .edit-group { margin-bottom: 10px; }
@@ -40,16 +48,19 @@
         .edit-input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; font-family: inherit; }
         .edit-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2); }
         .edit-input:disabled { background-color: #f1f1f1; cursor: not-allowed; }
+        
         .dept-edit-row { display: grid; grid-template-columns: 100px 70px 70px 70px 70px; gap: 10px; align-items: center; padding: 8px; background: #f8f9fa; border-radius: 6px; margin-bottom: 6px; border: 1px solid #eee; }
         .dept-edit-row strong { font-size: 12px; color: #2c3e50; }
         .dept-edit-row input[type="number"] { width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px; text-align: center; font-weight:bold; }
         .dept-edit-row label { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: bold; color: var(--success); cursor: pointer; margin:0;}
         .dept-edit-row input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--success); cursor: pointer; }
+
         .checklist-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: #f8f9fa; border-radius: 6px; border: 1px solid #ddd; margin-bottom: 8px; cursor: pointer; transition: 0.2s; }
         .checklist-item:hover { background: #e1f5fe; border-color: #81d4fa; }
         .checklist-item input { width: 18px; height: 18px; accent-color: var(--success); cursor: pointer; }
         .checklist-item span { font-size: 13px; font-weight: bold; color: #333; }
         .checklist-notes { width: 100%; height: 115px; padding: 10px; border-radius: 6px; border: 1px solid #ccc; font-family: inherit; font-size: 13px; resize: vertical; box-sizing: border-box; background: #fffdf5; }
+
         .gantt-outer { height: 100%; display: flex; flex-direction: column; background: white; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; }
         .gantt-header-wrapper { display: flex; background: #f8f9fa; border-bottom: 2px solid #ccc; height: 75px; }
         .header-corner { width: 340px; min-width: 340px; background: #eee; border-right: 3px solid #bbb; display: flex; align-items: center; padding-left: 15px; font-weight: bold; position: sticky; left: 0; z-index: 2500; }
@@ -67,6 +78,7 @@
         .task-bar:hover { transform: scale(1.02); filter: brightness(1.1); box-shadow: 0 4px 8px rgba(0,0,0,0.2); z-index:200; }
         .progress-fill { position: absolute; left: 0; top: 0; height: 100%; background: rgba(0,0,0,0.3); border-right: 2px solid rgba(255,255,255,0.6); pointer-events:none;}
         .sub-bar { position: absolute; height: 12px; background: var(--sub-bg); opacity: 0.6; border-radius: 3px; z-index: 90; font-size: 8px; color: white; display: flex; align-items: center; justify-content: center; }
+
         .daily-charts-container { height: 100%; overflow-y: auto; display: block; padding-bottom: 50px; }
         .daily-chart-wrapper { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); overflow-x: auto; margin-bottom: 40px; flex-shrink: 0; }
         .daily-chart-area { display: flex; align-items: flex-end; height: 280px; min-height: 280px; gap: 4px; border-bottom: 2px solid #444; position: relative; margin-top: 40px; width: max-content; padding-right: 20px; }
@@ -74,16 +86,29 @@
         .day-label { position: absolute; top: 100%; left: 0; width: 100%; text-align: center; font-size: 9px; padding-top: 5px; line-height: 1.2; }
         .order-segment { width: 100%; border: 1px solid rgba(255,255,255,0.3); border-radius: 2px; display: flex; align-items: center; justify-content: center; overflow: hidden; color: white; font-size: 8px; font-weight: bold; cursor: help; transition: 0.2s; }
         .holiday-bg { background: repeating-linear-gradient(45deg, #ffeeee, #ffebee 10px, #ffffff 10px, #ffffff 20px); border-bottom: 2px solid #e53935 !important; }
-        .disp-cell { cursor:pointer; text-align:center; border-right:1px solid #eee; border-bottom:1px solid #eee; min-width:60px; position:relative; user-select: none; vertical-align: top; }
+        
+        .disp-cell { cursor:pointer; text-align:center; border-right:1px solid #eee; border-bottom:1px solid #eee; min-width:60px; position:relative; user-select: none; vertical-align: top; transition: background 0.1s; }
         .disp-cell:hover { background: rgba(0,0,0,0.05) !important; }
         .disp-alloc { font-size:10px; font-weight:bold; color:white; border-radius:3px; padding:2px; margin:1px; box-shadow:0 1px 3px rgba(0,0,0,0.2); pointer-events:auto; transition: 0.2s; }
         .disp-alloc:hover { transform: scale(1.05); z-index: 10; box-shadow:0 3px 6px rgba(0,0,0,0.3); }
         .disp-bank-item { background:#fff; border:1px solid #ddd; padding:10px; border-radius:6px; box-shadow:0 2px 5px rgba(0,0,0,0.05); min-width:200px; flex:1; cursor:pointer; transition:0.2s; user-select: none; }
         .disp-bank-item:hover { box-shadow:0 4px 8px rgba(0,0,0,0.1); transform: translateY(-2px); }
+        
+        /* Pintsel/Brush css */
         .brush-active { border: 2px dashed #e74c3c !important; background: #fffdf5; transform: scale(1.03); box-shadow: 0 4px 15px rgba(231,76,60,0.2) !important; z-index:10; }
         .grid-brush-mode { cursor: crosshair !important; }
         .grid-brush-mode .disp-cell:hover { background: rgba(231,76,60,0.1) !important; }
         .striped-bg { background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.3), rgba(255,255,255,0.3) 5px, transparent 5px, transparent 10px); }
+        
+        /* Drag & Drop CSS */
+        #file-drop-zone { border: 2px dashed #bdc3c7; border-radius: 6px; padding: 15px; text-align: center; color: #7f8c8d; cursor: pointer; transition: 0.2s; background: #fdfdfd; }
+        #file-drop-zone:hover { border-color: var(--accent); background: #f0f8ff; }
+        #file-drop-zone.dragover { border-color: var(--success); background: #e8f5e9; color: var(--success); }
+        .disp-cell.dragover { background: rgba(46, 204, 113, 0.2) !important; outline: 2px dashed #27ae60 !important; outline-offset: -2px; z-index: 50; }
+        .disp-alloc[draggable="true"] { cursor: grab; }
+        .disp-alloc[draggable="true"]:active { cursor: grabbing; }
+        .disp-bank-item[draggable="true"] { cursor: grab; }
+        .disp-bank-item[draggable="true"]:active { cursor: grabbing; }
     </style>
 </head>
 <body>
@@ -104,6 +129,7 @@
     <div class="modal-content large">
         <span class="m-close" onclick="window.cancelEditModal()">&times;</span>
         <h2 id="edit-modal-title" style="margin-top:0; color:var(--primary); font-size:22px;">🗂️ Tellimuse Kaart</h2>
+        
         <div class="edit-section-title">Põhiinfo</div>
         <div class="edit-grid">
             <div class="edit-group"><label>MT Number (Kohustuslik)</label><input type="text" id="edit-mt" class="edit-input" placeholder="nt. MT-26.1234"></div>
@@ -112,10 +138,32 @@
             <div class="edit-group" style="grid-column: span 2;"><label>Töö kirjeldus</label><input type="text" id="edit-desc" class="edit-input" placeholder="Mida tehakse..."></div>
             <div class="edit-group"><label>Staatus</label><select id="edit-status" class="edit-input" style="font-weight:bold;"><option value="Ootel">Ootel</option><option value="Töös">Töös</option><option value="Valmis">Valmis</option></select></div>
         </div>
+
+        <div class="edit-section-title" style="margin-top:5px;">Dokumendid ja Lingid</div>
+        <div style="display:flex; gap:15px; margin-bottom:15px; align-items:flex-start;">
+            <div style="flex:1;">
+                <label style="display:block; font-size:11px; font-weight:bold; color:#666; margin-bottom:4px;">Kausta link (Väline URL)</label>
+                <div style="display:flex; gap:5px;">
+                   <input type="text" id="edit-link" class="edit-input" placeholder="Kopeeri link siia (nt Google Drive)...">
+                   <button onclick="window.openLink()" style="padding:0 10px; background:#bdc3c7; border:none; border-radius:4px; cursor:pointer;" title="Ava link">🔗</button>
+                </div>
+            </div>
+            <div style="flex:1;">
+                <label style="display:block; font-size:11px; font-weight:bold; color:#666; margin-bottom:4px;">Lae failid Firebase'i (Drag & Drop)</label>
+                <div id="file-drop-zone" class="admin-only" onclick="document.getElementById('edit-file-upload').click();">
+                    <div style="font-size: 20px; margin-bottom: 2px;">📥</div>
+                    <div>Lohista failid siia või <b>kliki</b></div>
+                    <input type="file" id="edit-file-upload" style="display:none;" onchange="window.uploadFiles(event.target.files)" multiple>
+                </div>
+            </div>
+        </div>
+        <div id="edit-files-list" style="display:flex; flex-direction:column; gap:5px; margin-bottom:15px;"></div>
+
         <div class="edit-section-title" style="margin-top:5px;">Projektiplaan (Eeltööd) & Märkmed</div>
         <div style="display:flex; gap:20px;">
             <div style="flex:7;">
                 <div style="display:flex; gap:10px; margin-bottom:10px;"><label class="checklist-item" style="flex:1; margin:0;"><input type="checkbox" id="edit-chk-ins"><span>📐 Inseneeria / Joonised</span></label><label class="checklist-item" style="flex:1; margin:0;"><input type="checkbox" id="edit-chk-ost"><span>📦 Ost / Materjalid käes</span></label></div>
+                
                 <div style="display:flex; gap:10px; align-items:stretch;">
                     <div style="flex:1; background:#f8f9fa; padding:10px; border-radius:6px; border:1px solid #eee; display:flex; flex-direction:column;">
                         <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #ddd; padding-bottom:5px; margin-bottom:8px;"><label style="font-size:11px; color:#666; font-weight:bold; margin:0;">AH 1 (Päevi enne)</label><input type="number" id="edit-ah1" class="edit-input" value="0" min="0" style="width:50px; padding:2px; margin:0; text-align:center; font-weight:bold;"></div>
@@ -133,6 +181,7 @@
             </div>
             <div style="flex:3;"><label style="display:block; font-size:11px; font-weight:bold; color:#666; margin-bottom:4px;">Üldised Märkmed / Kommentaarid:</label><textarea id="edit-chk-notes" class="checklist-notes" placeholder="Kirjuta projekti üldine lisainfo siia..."></textarea></div>
         </div>
+
         <div class="edit-section-title">Töötunnid ja Raport (Reaalajas)</div>
         <div style="display:grid; grid-template-columns: 100px 70px 70px 70px 70px; gap: 10px; margin-bottom:5px; padding:0 8px;"><small style="color:#777; font-weight:bold;">Osakond</small><small style="color:#777; font-weight:bold; text-align:center;">Plaan h</small><small style="color:#777; font-weight:bold; text-align:center;">Tehtud h</small><small style="color:#777; font-weight:bold; text-align:center;">Vahe</small><small style="color:#777; font-weight:bold;">Olek</small></div>
         <div id="edit-departments-container"></div>
@@ -144,7 +193,7 @@
 </div>
 
 <div class="top-bar">
-    <div>🚀 <strong>TOCI TOOTMISPLAAN</strong></div>
+    <div>🚀 <strong>TOCI TOOTMISPLAAN V157.0 (Gantti Drag & Drop)</strong></div>
     <div style="display:flex; gap:15px; align-items:center;">
         <input type="text" id="globalFilter" placeholder="Otsi (MT, klient)..." oninput="window.applyUIMode()" style="padding:6px 10px; border-radius:4px; border:none; width:200px; font-weight:bold;">
         <button id="importSheetsBtn" onclick="window.importFromSheets()" style="padding:6px 12px; background:#e67e22; color:white; border:none; border-radius:4px; font-weight:bold; cursor:pointer; display:none; box-shadow: 0 0 10px rgba(230, 126, 34, 0.5);">📥 IMPORDI SHEETSIST</button>
@@ -177,7 +226,7 @@
 
 <div id="dashboard_view" class="content"><div class="dashboard-grid" id="dashboard-container"></div></div>
 <div id="main_view" class="content active"><div style="margin-bottom:15px; display:flex; gap:10px; align-items:center;"><button id="addOrderBtn" onclick="window.addNewRowAndEdit()" style="padding:10px 20px; background:var(--success); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold; display:none;">+ LISA UUS TELLIMUS</button><select id="monthFilter" onchange="window.applyUIMode()" style="padding:8px; border-radius:4px; border:1px solid #ccc;"><option value="">Kõik kuud</option><option value="-01-">Jaanuar</option><option value="-02-">Veebruar</option><option value="-03-">Märts</option><option value="-04-">Aprill</option><option value="-05-">Mai</option><option value="-06-">Juuni</option><option value="-07-">Juuli</option><option value="-08-">August</option><option value="-09-">September</option><option value="-10-">Oktoober</option><option value="-11-">November</option><option value="-12-">Detsember</option></select><div id="view-title" style="font-size:16px; font-weight:bold; color:var(--primary); margin-left:15px;">Aktiivsed tööd</div><div style="font-size:12px; color:#666; margin-left:auto;">💡 <b>Klõpsa tabelis mis tahes reale</b>, et avada Tellimuse Kaart.</div></div><div class="table-container"><table class="data-table"><thead><tr><th style="width:80px; text-align:center;">Toiming</th><th>MT Number</th><th>Klient</th><th>Töö sisu / Kirjeldus</th><th>Lõpptähtaeg</th><th style="text-align:center;">Plaanitud Lõpp</th><th style="text-align:center;">Üld %</th><th>Staatus</th></tr></thead><tbody id="table-body"></tbody></table></div></div>
-<div id="dispatcher_view" class="content flex-view"><div style="display:flex; gap:15px; margin-bottom:15px; align-items:center;"><select id="disp-dept" onchange="window.resetBrushAndRender()" style="padding:10px; border-radius:4px; font-weight:bold; border:2px solid var(--accent); cursor:pointer;"><option value="must_k">🔥 Must Keevitus</option><option value="rv_k">✨ RV Keevitus</option><option value="must_l">🔧 Must Lukksepp</option><option value="rv_l">🗜️ RV Lukksepp</option><option value="trei">⚙️ Treial</option><option value="kooste">🔩 Kooste</option><option value="ins">📐 Inseneeria</option></select><div><label style="font-size:11px; font-weight:bold; color:#666;">Alguskuupäev:</label><br><input type="date" id="disp-start" onchange="window.renderDispatcher()" style="padding:6px; border-radius:4px; border:1px solid #ccc;"></div><div style="font-size:16px; font-weight:bold; color:var(--primary); margin-left:15px;">🗓️ Töökohtade Planeerimine</div><div style="font-size:11px; color:#666; margin-left:auto;">💡 <b>Triibulised klotsid:</b> Automaatne soovitus (Klõpsa kinnitamiseks!). <b>Täisvärvi klotsid:</b> Käsitsi plaan.<br><b>1 klõps pangas</b> = "Planeerimine". <b>1 klõps tabelis</b> = kleebib/kustutab. <b>Topeltklikk</b> = täpne muutmine.</div></div><div style="background:#eef2f5; border-radius:8px; border:1px solid #ccc; padding:15px; margin-bottom:15px;"><h3 style="margin-top:0; margin-bottom:10px; color:#2c3e50; display:flex; justify-content:space-between;"><span>🏦 Tundide Pank</span><span style="font-size:12px; font-weight:normal; color:#666;" id="brush-status">Planeerimine: VÄLJAS</span></h3><div id="disp-bank" style="display:flex; flex-wrap:wrap; gap:10px; max-height:150px; overflow-y:auto; padding-right:10px;"></div></div><div class="table-container" style="flex-grow: 1; overflow: auto; padding:0; box-shadow: 0 4px 15px rgba(0,0,0,0.05);"><table class="data-table" id="disp-grid" style="min-width: max-content; border-collapse: separate; border-spacing: 0;"></table></div></div>
+<div id="dispatcher_view" class="content flex-view"><div style="display:flex; gap:15px; margin-bottom:15px; align-items:center;"><select id="disp-dept" onchange="window.resetBrushAndRender()" style="padding:10px; border-radius:4px; font-weight:bold; border:2px solid var(--accent); cursor:pointer;"><option value="must_k">🔥 Must Keevitus</option><option value="rv_k">✨ RV Keevitus</option><option value="must_l">🔧 Must Lukksepp</option><option value="rv_l">🗜️ RV Lukksepp</option><option value="trei">⚙️ Treial</option><option value="kooste">🔩 Kooste</option><option value="ins">📐 Inseneeria</option></select><div><label style="font-size:11px; font-weight:bold; color:#666;">Alguskuupäev:</label><br><input type="date" id="disp-start" onchange="window.renderDispatcher()" style="padding:6px; border-radius:4px; border:1px solid #ccc;"></div><div style="font-size:16px; font-weight:bold; color:var(--primary); margin-left:15px;">🗓️ Töökohtade Planeerimine</div><div style="font-size:11px; color:#666; margin-left:auto;">💡 <b>Triibulised klotsid:</b> Automaatne soovitus (Klõpsa kinnitamiseks!). <b>Täisvärvi klotsid:</b> Käsitsi plaan.<br><b>Drag & Drop:</b> Lohista pangast tabelisse või liiguta klotse tabeli sees. <b>Topeltklikk</b> = täpne muutmine.</div></div><div style="background:#eef2f5; border-radius:8px; border:1px solid #ccc; padding:15px; margin-bottom:15px;"><h3 style="margin-top:0; margin-bottom:10px; color:#2c3e50; display:flex; justify-content:space-between;"><span>🏦 Tundide Pank</span><span style="font-size:12px; font-weight:normal; color:#666;" id="brush-status">Planeerimine: VÄLJAS</span></h3><div id="disp-bank" style="display:flex; flex-wrap:wrap; gap:10px; max-height:150px; overflow-y:auto; padding-right:10px;"></div></div><div class="table-container" style="flex-grow: 1; overflow: auto; padding:0; box-shadow: 0 4px 15px rgba(0,0,0,0.05);"><table class="data-table" id="disp-grid" style="min-width: max-content; border-collapse: separate; border-spacing: 0;"></table></div></div>
 <div id="gantt_all" class="content"><div class="gantt-outer" id="out-all"></div></div><div id="gantt_in" class="content"><div class="gantt-outer" id="out-in"></div></div><div id="gantt_tr" class="content"><div class="gantt-outer" id="out-tr"></div></div><div id="gantt_mk" class="content"><div class="gantt-outer" id="out-mk"></div></div><div id="gantt_rk" class="content"><div class="gantt-outer" id="out-rk"></div></div><div id="gantt_ml" class="content"><div class="gantt-outer" id="out-ml"></div></div><div id="gantt_rl" class="content"><div class="gantt-outer" id="out-rl"></div></div><div id="gantt_ko" class="content"><div class="gantt-outer" id="out-ko"></div></div><div id="gantt_ah1" class="content"><div class="gantt-outer" id="out-ah1"></div></div><div id="gantt_ah2" class="content"><div class="gantt-outer" id="out-ah2"></div></div>
 <div id="paeva_koormus_graafik" class="content"><div id="daily-load-container" class="daily-charts-container"></div></div><div id="paeva_koormus_tabel" class="content"><div id="daily-table-container" style="height:100%;"></div></div>
 <div id="voimekus_tab" class="content flex-view"><div style="display:flex; gap:20px; margin-bottom: 20px; flex-shrink: 0; flex-wrap: wrap;"><div id="holiday-manager" style="flex:1; min-width:300px; padding: 15px; background: white; border-radius: 8px; border: 1px solid #ddd;"><h3 style="margin-top:0; color:#c62828;">🏖️ Puhkused ja Riigipühad</h3><p style="font-size:11px; color:#666; margin-top:-5px;">Määratud pühade päevadel jaotatakse koormus automaatselt ümber.</p><div class="admin-only" style="display:none; margin-bottom: 15px; gap: 10px; align-items: center;"><input type="text" id="hol-name" placeholder="Nimetus (nt. Suvepuhkus)" style="padding:6px; border-radius:4px; border:1px solid #ccc; width:150px;"><input type="date" id="hol-start" style="padding:6px; border-radius:4px; border:1px solid #ccc;"><span style="font-weight:bold;">kuni</span><input type="date" id="hol-end" title="Jäta tühjaks, kui on ainult 1 päev" style="padding:6px; border-radius:4px; border:1px solid #ccc;"><button onclick="window.addHoliday()" style="padding:7px 15px; background:var(--danger); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">+ LISA PUHKUS</button></div><div id="holidays-list" style="display:flex; flex-direction:column; gap:5px; max-height: 100px; overflow-y: auto;"></div></div><div id="laser-manager" style="flex:1; min-width:300px; padding: 15px; background: white; border-radius: 8px; border: 1px solid #ddd;"><h3 style="margin-top:0; color:#8e44ad;">⚡ Laseri Koormus (Järjekord)</h3><p style="font-size:11px; color:#666; margin-top:-5px;">Sisesta kogu planeeritud laseri tundide jääk. Süsteem jagab selle automaatselt tänasest alates vabadele päevadele.</p><div class="admin-only" style="display:none; margin-bottom: 15px; gap: 10px; align-items: center;"><input type="number" id="laser-total-h" placeholder="Kogu jääk (h)" style="width:120px; padding:6px; border-radius:4px; border:1px solid #ccc;" min="0" step="0.5"><button onclick="window.saveLaserBacklog()" style="padding:7px 15px; background:#8e44ad; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">💾 SALVESTA JÄÄK</button></div><div id="laser-list" style="display:flex; flex-direction:column; gap:5px; max-height: 100px; overflow-y: auto;"></div></div><div id="ws-manager" style="width:350px; padding: 15px; background: white; border-radius: 8px; border: 1px solid #ddd;"><h3 style="margin-top:0; color:#2980b9;">🏭 Töökohtade arv</h3><p style="font-size:11px; color:#666; margin-top:-5px;">Määra, mitu paralleelset töökohta igas osakonnas tabelisse joonistatakse.</p><div id="ws-list" style="display:flex; flex-direction:column; gap:5px;"></div></div></div><div class="table-container" style="flex-grow: 1; overflow: auto; min-height: 0; padding: 0;"><table class="data-table" id="cap-table" style="min-width: max-content; border-collapse: separate; border-spacing: 0;"></table></div><button id="saveCapBtn" onclick="window.saveCapacity()" style="margin-top:15px; padding:12px 25px; background:var(--accent); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold; display:none; flex-shrink: 0; align-self: flex-start;">💾 SALVESTA SEADED</button></div>
@@ -213,9 +262,9 @@
             if (gV) filteredOrders = filteredOrders.filter(o => (o.mt && String(o.mt).toLowerCase().includes(gV)) || (o.client && String(o.client).toLowerCase().includes(gV)) || (o.kirjeldus && String(o.kirjeldus).toLowerCase().includes(gV)));
             let csv = "\uFEFF"; const clean = str => `"${String(str || '').replace(/"/g, '""').replace(/\n/g, ' ')}"`; const formatTasks = (tasks) => (tasks||[]).map(t => (t.done?'[x] ':'[ ] ')+t.name+(t.comment?' ('+t.comment+')':'')).join(', ');
             if (activeTab === 'main_view') {
-                csv += "MT;Klient;Kirjeldus;Märkmed;Algus;Lõpp;AH1(p);AH1 Tegevused;AH2(p);AH2 Tegevused;INS Plaan;INS Tehtud;INS Valmis;TR Plaan;TR Tehtud;TR Valmis;MK Plaan;MK Tehtud;MK Valmis;RK Plaan;RK Tehtud;RK Valmis;ML Plaan;ML Tehtud;ML Valmis;RL Plaan;RL Tehtud;RL Valmis;KO Plaan;KO Tehtud;KO Valmis;Üld %;Staatus;Ost Valmis;AH1 Valmis;AH2 Valmis\n";
+                csv += "MT;Klient;Kirjeldus;Märkmed;Väline Link;Algus;Lõpp;AH1(p);AH1 Tegevused;AH2(p);AH2 Tegevused;INS Plaan;INS Tehtud;INS Valmis;TR Plaan;TR Tehtud;TR Valmis;MK Plaan;MK Tehtud;MK Valmis;RK Plaan;RK Tehtud;RK Valmis;ML Plaan;ML Tehtud;ML Valmis;RL Plaan;RL Tehtud;RL Valmis;KO Plaan;KO Tehtud;KO Valmis;Üld %;Staatus;Ost Valmis;AH1 Valmis;AH2 Valmis\n";
                 const isD = (v) => String(v)==='true' ? 'JAH' : 'EI';
-                filteredOrders.forEach(o => { let ah1T = o.allocs && o.allocs.ah_tasks ? o.allocs.ah_tasks.ah1 : []; let ah2T = o.allocs && o.allocs.ah_tasks ? o.allocs.ah_tasks.ah2 : []; csv += `${clean(o.mt)};${clean(o.client)};${clean(o.kirjeldus)};${clean(o.chk_notes)};${safeISO(o.start)};${safeISO(o.end)};${o.sub1};${clean(formatTasks(ah1T))};${o.sub2};${clean(formatTasks(ah2T))};${o.ins};${o.prog_ins};${isD(o.done_ins)};${o.trei};${o.prog_tr};${isD(o.done_tr)};${o.must_k};${o.prog_mk};${isD(o.done_mk)};${o.rv_k};${o.prog_rk};${isD(o.done_rk)};${o.must_l};${o.prog_ml};${isD(o.done_ml)};${o.rv_l};${o.prog_rl};${isD(o.done_rl)};${o.kooste};${o.prog_ko};${isD(o.done_ko)};${o.progress}%;${o.status};${isD(o.chk_ost)};${isD(o.chk_ah1)};${isD(o.chk_ah2)}\n`; });
+                filteredOrders.forEach(o => { let ah1T = o.allocs && o.allocs.ah_tasks ? o.allocs.ah_tasks.ah1 : []; let ah2T = o.allocs && o.allocs.ah_tasks ? o.allocs.ah_tasks.ah2 : []; csv += `${clean(o.mt)};${clean(o.client)};${clean(o.kirjeldus)};${clean(o.chk_notes)};${clean(o.link)};${safeISO(o.start)};${safeISO(o.end)};${o.sub1};${clean(formatTasks(ah1T))};${o.sub2};${clean(formatTasks(ah2T))};${o.ins};${o.prog_ins};${isD(o.done_ins)};${o.trei};${o.prog_tr};${isD(o.done_tr)};${o.must_k};${o.prog_mk};${isD(o.done_mk)};${o.rv_k};${o.prog_rk};${isD(o.done_rk)};${o.must_l};${o.prog_ml};${isD(o.done_ml)};${o.rv_l};${o.prog_rl};${isD(o.done_rl)};${o.kooste};${o.prog_ko};${isD(o.done_ko)};${o.progress}%;${o.status};${isD(o.chk_ost)};${isD(o.chk_ah1)};${isD(o.chk_ah2)}\n`; });
             } else if (activeTab === 'gantt_all') {
                 csv += "MT;Klient;INS Algus;INS Lõpp;AH1 Algus;AH1 Lõpp;LUKK/TREI Algus;LUKK/TREI Lõpp;KEEV Algus;KEEV Lõpp;AH2 Algus;AH2 Lõpp;KOOSTE Algus;KOOSTE Lõpp\n";
                 filteredOrders.forEach(o => { let p = getPhaseDates(o, START_VIEW); const fd = (bnd) => bnd && bnd.sDate ? safeISO(bnd.sDate) : ''; const fde = (bnd) => bnd && bnd.eDate ? safeISO(bnd.eDate) : ''; csv += `${clean(o.mt)};${clean(o.client)};${fd(p.ins)};${fde(p.ins)};${fd(p.ah1)};${fde(p.ah1)};${fd(p.lukk)};${fde(p.lukk)};${fd(p.keev)};${fde(p.keev)};${fd(p.ah2)};${fde(p.ah2)};${fd(p.kooste)};${fde(p.kooste)}\n`; });
@@ -257,7 +306,7 @@
                     window.orders = data.orders.map(o => {
                         let parsedAllocs = {}; if(o.allocs) { try { parsedAllocs = JSON.parse(o.allocs); } catch(e){} }
                         let ah1_tasks = []; let ah2_tasks = []; if (parsedAllocs.ah_tasks) { ah1_tasks = parsedAllocs.ah_tasks.ah1 || []; ah2_tasks = parsedAllocs.ah_tasks.ah2 || []; }
-                        let obj = {...o, kirjeldus: o.kirjeldus||'', chk_notes: o.chk_notes||'', ah1_tasks: ah1_tasks, ah2_tasks: ah2_tasks, allocs: parsedAllocs, ins:f(o.ins), trei:f(o.trei), must_k:f(o.must_k), rv_k:f(o.rv_k), must_l:f(o.must_l), rv_l:f(o.rv_l), kooste:f(o.kooste), prog_ins:f(o.prog_ins), prog_tr:f(o.prog_tr), prog_mk:f(o.prog_mk), prog_rk:f(o.prog_rk), prog_ml:f(o.prog_ml), prog_rl:f(o.prog_rl), prog_ko:f(o.prog_ko), status: o.status || 'Töös' };
+                        let obj = {...o, kirjeldus: o.kirjeldus||'', chk_notes: o.chk_notes||'', link: o.link||'', files: o.files||[], ah1_tasks: ah1_tasks, ah2_tasks: ah2_tasks, allocs: parsedAllocs, ins:f(o.ins), trei:f(o.trei), must_k:f(o.must_k), rv_k:f(o.rv_k), must_l:f(o.must_l), rv_l:f(o.rv_l), kooste:f(o.kooste), prog_ins:f(o.prog_ins), prog_tr:f(o.prog_tr), prog_mk:f(o.prog_mk), prog_rk:f(o.prog_rk), prog_ml:f(o.prog_ml), prog_rl:f(o.prog_rl), prog_ko:f(o.prog_ko), status: o.status || 'Töös' };
                         obj.done_ins = String(o.done_ins) === 'true'; obj.chk_ost = String(o.chk_ost) === 'true'; obj.chk_ah1 = String(o.chk_ah1) === 'true'; obj.chk_ah2 = String(o.chk_ah2) === 'true'; obj.start = obj.start || safeISO(TODAY); obj.progress = calcOverallProgress(obj); return obj;
                     });
                 }
@@ -294,6 +343,51 @@
         } catch(e) { console.error("UI Uuendamise viga:", e); }
     };
 
+    window.openLink = function() {
+        let val = document.getElementById('edit-link').value;
+        if(val && val.includes('http')) window.open(val, '_blank');
+        else if(val) window.open('https://' + val, '_blank');
+    };
+
+    window.renderFilesList = function(idx) {
+        let list = document.getElementById('edit-files-list'); if(!list) return;
+        let o = window.orders[idx]; if (!o) return;
+        let html = '';
+        if (o.files && o.files.length > 0) {
+            o.files.forEach((f, fIdx) => {
+                html += `<div style="display:flex; align-items:center; justify-content:space-between; padding:6px 10px; background:#f4f7f6; border:1px solid #ddd; border-radius:4px;">
+                    <a href="${f.url}" target="_blank" style="font-size:12px; font-weight:bold; color:#2c3e50; text-decoration:none; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:85%;">📎 ${f.name}</a>
+                    ${window.isAdmin ? `<button onclick="window.deleteFile(${idx}, ${fIdx})" style="background:none; border:none; color:#e74c3c; cursor:pointer; font-weight:bold; padding:0 5px;" title="Kustuta fail">X</button>` : ''}
+                </div>`;
+            });
+        }
+        if (html === '') html = '<div style="color:#aaa; font-size:11px; font-style:italic;">Ühtegi faili pole üles laetud.</div>';
+        list.innerHTML = html;
+    };
+
+    window.uploadFiles = async function(files) {
+        if(!window.isAdmin || window.currentEditIndex < 0 || !files || files.length === 0) return;
+        let o = window.orders[window.currentEditIndex];
+        let dz = document.getElementById('file-drop-zone'); let oldHtml = dz.innerHTML; dz.innerHTML = `<div style="font-size:16px; font-weight:bold; color:var(--accent); padding: 10px 0;">⏳ Laen üles...</div>`; dz.style.pointerEvents = "none";
+        try {
+            let storageRef = firebase.storage().ref(); if(!o.files) o.files = [];
+            for(let i=0; i<files.length; i++) {
+                let file = files[i]; let safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+                let fileRef = storageRef.child(`toci_files/${Date.now()}_${safeName}`);
+                await fileRef.put(file); let url = await fileRef.getDownloadURL();
+                o.files.push({ name: file.name, url: url, path: fileRef.fullPath });
+            }
+            window.renderFilesList(window.currentEditIndex); await window.saveData(true);
+        } catch(err) { console.error(err); alert("Failide üleslaadimine ebaõnnestus!"); }
+        dz.innerHTML = oldHtml; dz.style.pointerEvents = "auto"; document.getElementById('edit-file-upload').value = "";
+    };
+
+    window.deleteFile = async function(oIdx, fIdx) {
+        if(!window.isAdmin) return; if(!confirm("Kas oled kindel, et soovid selle faili kustutada?")) return;
+        let o = window.orders[oIdx]; let file = o.files[fIdx];
+        try { if(file.path) { await firebase.storage().ref(file.path).delete(); } o.files.splice(fIdx, 1); window.renderFilesList(oIdx); await window.saveData(true); } catch(err) { console.error(err); alert("Faili kustutamine ebaõnnestus!"); }
+    };
+
     window.renderAHTasks = function(phase) {
         let list = document.getElementById(`${phase}-tasks-list`); if(!list) return; let html = ''; let tasks = window.tempAHTasks[phase];
         if (tasks.length === 0) { html = `<div style="font-size:10px; color:#999; text-align:center; padding:10px 0;">Ülesandeid pole lisatud</div>`; } else {
@@ -310,8 +404,9 @@
         try {
             window.currentEditIndex = i; let o = window.orders[i]; let disAttr = window.isAdmin ? "" : "disabled"; let titleEl = document.getElementById('edit-modal-title'); if(titleEl) titleEl.innerText = `🗂️ Tellimuse Kaart: ${o.mt === 'UUS' ? 'Uus Tellimus' : o.mt}`;
             let mtEl = document.getElementById('edit-mt'); if(mtEl) mtEl.value = o.mt === 'UUS' ? '' : o.mt; let clientEl = document.getElementById('edit-client'); if(clientEl) clientEl.value = o.client || ''; let descEl = document.getElementById('edit-desc'); if(descEl) descEl.value = o.kirjeldus || ''; let endEl = document.getElementById('edit-end'); if(endEl) endEl.value = safeISO(o.end); let ah1El = document.getElementById('edit-ah1'); if(ah1El) ah1El.value = f(o.sub1); let ah2El = document.getElementById('edit-ah2'); if(ah2El) ah2El.value = f(o.sub2); let statusEl = document.getElementById('edit-status'); if(statusEl) statusEl.value = o.status || 'Ootel';
+            let linkEl = document.getElementById('edit-link'); if(linkEl) { linkEl.value = o.link || ''; linkEl.disabled = !window.isAdmin; }
             let chkInsEl = document.getElementById('edit-chk-ins'); if(chkInsEl) chkInsEl.checked = o.done_ins === true; let chkOstEl = document.getElementById('edit-chk-ost'); if(chkOstEl) chkOstEl.checked = o.chk_ost === true; let chkAh1El = document.getElementById('edit-chk-ah1'); if(chkAh1El) chkAh1El.checked = o.chk_ah1 === true; let chkAh2El = document.getElementById('edit-chk-ah2'); if(chkAh2El) chkAh2El.checked = o.chk_ah2 === true; let notesEl = document.getElementById('edit-chk-notes'); if(notesEl) notesEl.value = o.chk_notes || '';
-            window.tempAHTasks.ah1 = JSON.parse(JSON.stringify(o.ah1_tasks || [])); window.tempAHTasks.ah2 = JSON.parse(JSON.stringify(o.ah2_tasks || [])); window.renderAHTasks('ah1'); window.renderAHTasks('ah2');
+            window.tempAHTasks.ah1 = JSON.parse(JSON.stringify(o.ah1_tasks || [])); window.tempAHTasks.ah2 = JSON.parse(JSON.stringify(o.ah2_tasks || [])); window.renderAHTasks('ah1'); window.renderAHTasks('ah2'); window.renderFilesList(i);
             if(mtEl) mtEl.disabled = !window.isAdmin; if(clientEl) clientEl.disabled = !window.isAdmin; if(descEl) descEl.disabled = !window.isAdmin; if(endEl) endEl.disabled = !window.isAdmin; if(ah1El) ah1El.disabled = !window.isAdmin; if(ah2El) ah2El.disabled = !window.isAdmin; if(statusEl) statusEl.disabled = !window.isAdmin; if(chkInsEl) chkInsEl.disabled = !window.isAdmin; if(chkOstEl) chkOstEl.disabled = !window.isAdmin;
             if(chkAh1El) chkAh1El.disabled = false; if(chkAh2El) chkAh2El.disabled = false; if(notesEl) notesEl.disabled = false;
             let nt1 = document.getElementById('edit-ah1-new-task'); if(nt1) nt1.disabled = !window.isAdmin; let nt2 = document.getElementById('edit-ah2-new-task'); if(nt2) nt2.disabled = !window.isAdmin;
@@ -331,6 +426,7 @@
                 let mtEl = document.getElementById('edit-mt'); if (!mtEl) return; let newMt = mtEl.value.trim(); if (newMt === "") { alert("MT Number on kohustuslik!"); return; }
                 let isDuplicate = window.orders.some((ord, idx) => idx !== i && String(ord.mt).trim().toLowerCase() === newMt.toLowerCase()); if (isDuplicate) { alert(`⚠️ VIGA: MT number '${newMt}' on juba olemas!`); return; }
                 o.mt = newMt; let clientEl = document.getElementById('edit-client'); if (clientEl) o.client = clientEl.value; let descEl = document.getElementById('edit-desc'); if (descEl) o.kirjeldus = descEl.value; let endEl = document.getElementById('edit-end'); if (endEl) o.end = endEl.value; let ah1El = document.getElementById('edit-ah1'); if (ah1El) o.sub1 = f(ah1El.value); let ah2El = document.getElementById('edit-ah2'); if (ah2El) o.sub2 = f(ah2El.value); let chkOstEl = document.getElementById('edit-chk-ost'); if (chkOstEl) o.chk_ost = chkOstEl.checked; let chkInsEl = document.getElementById('edit-chk-ins'); if (chkInsEl) o.done_ins = chkInsEl.checked;
+                let linkEl = document.getElementById('edit-link'); if(linkEl) o.link = linkEl.value;
                 let statusEl = document.getElementById('edit-status');
                 if (statusEl) { let oldStatus = o.status; o.status = statusEl.value; if (o.status === 'Valmis' && oldStatus !== 'Valmis') { let endD = new Date(o.end); endD.setHours(23, 59, 59, 999); let today = new Date(); if (endD.getTime() < today.getTime()) { if (!o.kirjeldus.includes("LÕPETATUD HILINEMISEGA")) { let dateStr = today.getDate() + "." + (today.getMonth() + 1) + "." + today.getFullYear(); o.kirjeldus = o.kirjeldus + " (⚠️ LÕPETATUD HILINEMISEGA: " + dateStr + ")"; } } } }
                 Object.keys(CONFIG).forEach(k => { let c = CONFIG[k]; let pEl = document.getElementById(`edit-p-${k}`); if(pEl) o[k] = f(pEl.value); let aEl = document.getElementById(`edit-a-${c.p}`); if(aEl) o[c.p] = f(aEl.value); let dEl = document.getElementById(`edit-d-${c.d}`); if(dEl) o[c.d] = dEl.checked; });
@@ -345,11 +441,12 @@
     
     window.addNewRowAndEdit = function() { 
         try { if(!window.isAdmin) { alert("Pead olema administraator, et uut tellimust lisada!"); return; } 
-            window.orders.unshift({ mt:"UUS", client:"", kirjeldus:"", start:safeISO(TODAY), end:safeISO(TODAY), sub1:0, sub2:0, ins:0, trei:0, must_k:0, rv_k:0, must_l:0, rv_l:0, kooste:0, prog_ins:0, prog_tr:0, prog_mk:0, prog_rk:0, prog_ml:0, prog_rl:0, prog_ko:0, done_ins:false, done_tr:false, done_mk:false, done_rk:false, done_ml:false, done_rl:false, done_ko:false, chk_ost:false, chk_ah1:false, chk_ah2:false, chk_notes:"", ah1_tasks:[], ah2_tasks:[], allocs:{}, progress:0, status:'Ootel' }); 
+            window.orders.unshift({ mt:"UUS", client:"", kirjeldus:"", start:safeISO(TODAY), end:safeISO(TODAY), sub1:0, sub2:0, ins:0, trei:0, must_k:0, rv_k:0, must_l:0, rv_l:0, kooste:0, prog_ins:0, prog_tr:0, prog_mk:0, prog_rk:0, prog_ml:0, prog_rl:0, prog_ko:0, done_ins:false, done_tr:false, done_mk:false, done_rk:false, done_ml:false, done_rl:false, done_ko:false, chk_ost:false, chk_ah1:false, chk_ah2:false, chk_notes:"", link:"", files:[], ah1_tasks:[], ah2_tasks:[], allocs:{}, progress:0, status:'Ootel' }); 
             window.currentMainTabFilter = 'active'; window.isNewOrder = true; let vtEl = document.getElementById('view-title'); if(vtEl) vtEl.innerText = "Aktiivsed tööd"; document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); document.querySelector('.tab-btn').classList.add('active'); window.applyUIMode(); window.openEditModal(0);
         } catch(e) { console.error("Uue rea lisamise viga:", e); }
     };
 
+    // --- GANTTI LOGIIKA JA TABELID ---
     function getGroupManualDates(o, deptsArray) { let dates = []; deptsArray.forEach(dept => { if(o.allocs && o.allocs[dept]) { Object.keys(o.allocs[dept]).forEach(dStr => { if(Object.values(o.allocs[dept][dStr]).some(h => f(h) > 0)) dates.push(new Date(dStr).getTime()); }); } }); if(dates.length === 0) return null; return { sDate: new Date(Math.min(...dates)), eDate: new Date(Math.max(...dates)) }; }
     function getPhaseDates(o, startView) {
         let d = {}; d.ins = Math.ceil(f(o.ins)/8) || (f(o.ins)>0?1:0); let lukkH = f(o.trei)+f(o.must_l)+f(o.rv_l); d.lukk = Math.ceil(lukkH/8) || (lukkH>0?1:0); let keevH = f(o.must_k)+f(o.rv_k); d.keev = Math.ceil(keevH/8) || (keevH>0?1:0); d.kooste = Math.ceil(f(o.kooste)/8) || (f(o.kooste)>0?1:0); d.ah1 = f(o.sub1); d.ah2 = f(o.sub2);
@@ -376,7 +473,11 @@
                 let overStyle = isOverdue ? 'color:#c62828; font-weight:bold;' : ''; let overBadge = isOverdue ? `<br><span style="color:#c62828; font-weight:bold; font-size:10px; background:#ffcdd2; padding:2px 4px; border-radius:3px;">⚠️ ÜLE AJA</span>` : '';
                 let totOver = o.progress > 100 ? 'background:#c62828; color:white; border-color:#b71c1c;' : 'background:#e3f2fd; color:#0277bd; border-color:#0288d1;';
                 let ostDone = o.chk_ost === true; let insDone = o.done_ins === true; let ah1Done = f(o.sub1) === 0 || o.chk_ah1 === true; let ah2Done = f(o.sub2) === 0 || o.chk_ah2 === true;
-                let listIcon = (ostDone && insDone && ah1Done && ah2Done) ? '✅' : '📋'; let statusColor = o.status === 'Valmis' ? '#27ae60' : (o.status === 'Töös' ? '#3498db' : '#95a5a6');
+                
+                let listIcon = (ostDone && insDone && ah1Done && ah2Done) ? '✅' : '📋';
+                if (o.link || (o.files && o.files.length > 0)) listIcon += ' 📎';
+                
+                let statusColor = o.status === 'Valmis' ? '#27ae60' : (o.status === 'Töös' ? '#3498db' : '#95a5a6');
                 let bnds = getPhaseDates(o, START_VIEW); let pEnd = bnds.kooste.eDate; let uEnd = new Date(o.end); let isPlanOverdue = false;
                 if (!isNaN(uEnd.getTime())) { uEnd.setHours(23, 59, 59, 999); isPlanOverdue = pEnd.getTime() > uEnd.getTime(); }
                 let pColor = isPlanOverdue ? '#c62828' : '#27ae60'; let pBg = isPlanOverdue ? '#ffebee' : '#e8f5e9';
@@ -477,6 +578,45 @@
         const hS = document.getElementById(`h-scroll-${key}`), bS = document.getElementById(`b-scroll-${key}`); if(bS && hS) { bS.onscroll = () => { hS.scrollLeft = bS.scrollLeft; }; setTimeout(() => { bS.scrollLeft = (tIdx * 45) - 160; }, 100); }
     };
 
+    // --- UUS: DRAG AND DROP KÄITLEJAD DISPETŠERI JAOKS ---
+    window.handleDragStart = function(e, oIdx, source, fromDate = null, fromWs = null, h = null) {
+        if(!window.isAdmin) { e.preventDefault(); return; }
+        e.dataTransfer.setData('text/plain', JSON.stringify({ oIdx: oIdx, source: source, fromDate: fromDate, fromWs: fromWs, h: h }));
+        e.dataTransfer.effectAllowed = "move";
+    };
+
+    window.handleDrop = function(e, dept, targetDate, targetWs) {
+        e.preventDefault(); e.currentTarget.classList.remove('dragover');
+        if(!window.isAdmin) return;
+        try {
+            let data = JSON.parse(e.dataTransfer.getData('text/plain'));
+            let oIdx = data.oIdx; let source = data.source;
+            
+            if (source === 'bank') {
+                let o = window.orders[oIdx]; let remaining = f(o[dept]) - getAllocated(o, dept); 
+                let totalCellH = 0; window.orders.forEach(ord => { if(ord.allocs && ord.allocs[dept] && ord.allocs[dept][targetDate] && ord.allocs[dept][targetDate][targetWs]) { totalCellH += f(ord.allocs[dept][targetDate][targetWs]); } });
+                let room = 8 - totalCellH; if (room <= 0) { alert("See töökoht on sel päeval juba 8h täis planeeritud!"); return; }
+                let paintH = 8;
+                if (remaining > 0) { paintH = Math.min(room, remaining); } else { paintH = room; if(!confirm(`⚠️ HOIATUS!\nTellimusel ${o.mt} on osakonna planeeritud eelarve täis (jääk: ${remaining}h).\nKas soovid lisada plaani veel ${paintH}h ÜLE EELARVE?`)) return; }
+                saveAllocationDirect(dept, targetDate, targetWs, oIdx, paintH, true);
+            } 
+            else if (source === 'grid') {
+                let fromDate = data.fromDate; let fromWs = data.fromWs; let h = data.h;
+                if (fromDate === targetDate && fromWs === targetWs) return; // Samasse kohta tagasi
+                
+                let totalCellH = 0; window.orders.forEach(ord => { if(ord.allocs && ord.allocs[dept] && ord.allocs[dept][targetDate] && ord.allocs[dept][targetDate][targetWs]) { totalCellH += f(ord.allocs[dept][targetDate][targetWs]); } });
+                let room = 8 - totalCellH; if (room < h) { alert(`Selles töökohas ei ole piisavalt vaba aega (${h}h jaoks)!`); return; }
+                
+                let o = window.orders[oIdx];
+                if(o.allocs && o.allocs[dept] && o.allocs[dept][fromDate]) { delete o.allocs[dept][fromDate][fromWs]; }
+                if(!o.allocs) o.allocs = {}; if(!o.allocs[dept]) o.allocs[dept] = {}; if(!o.allocs[dept][targetDate]) o.allocs[dept][targetDate] = {};
+                o.allocs[dept][targetDate][targetWs] = (f(o.allocs[dept][targetDate][targetWs]) || 0) + h;
+                
+                window.saveData(true); window.renderDispatcher();
+            }
+        } catch (err) { console.error("Drop error", err); }
+    };
+
     window.handleInnerBlockClick = function(e, dept, dateStr, wsName, oIdx, h) { 
         e.stopPropagation(); 
         if(!window.isAdmin) return; 
@@ -487,7 +627,6 @@
         } 
     };
     
-    // --- UUS 1-KLIKK KINNITAMINE ---
     window.handleAutoClick = function(e, dept, dateStr, wsName, oIdx, h) {
         e.stopPropagation();
         if(!window.isAdmin) return;
@@ -495,7 +634,6 @@
         else { saveAllocationDirect(dept, dateStr, wsName, oIdx, h, true); }
     };
 
-    // --- UUS EELARVESSE MIINUSSE PLANEERIMINE ---
     window.handleCellClick = function(dept, dateStr, wsName) {
         if(!window.isAdmin) { window.openAllocModal(dept, dateStr, wsName, -1, 8); return; }
         if (window.activeBrushIdx !== null) {
@@ -529,7 +667,6 @@
     window.toggleBrush = function(idx) { if(!window.isAdmin) { alert("Ainult Administraator saab Planeerija režiimi kasutada!"); return; } if (window.activeBrushIdx === idx) window.activeBrushIdx = null; else window.activeBrushIdx = idx; window.renderDispatcher(); };
     function getAllocated(o, dept) { let allocated = 0; if(o.allocs && o.allocs[dept]) Object.values(o.allocs[dept]).forEach(day => { Object.values(day).forEach(h => allocated += f(h)); }); return allocated; }
 
-    // --- UUS TIHKE PAKKIMISE ALGORITM (Prioriteediga) ---
     function calculateSmartDailyLoad(validOrders) {
         let dailyLoadTracker = {}; let wsTracker = {}; Object.keys(CONFIG).forEach(k => { dailyLoadTracker[k] = {}; wsTracker[k] = {}; }); let autoAllocations = []; 
         validOrders.forEach(o => { Object.keys(CONFIG).forEach(k => { if (o.allocs && o.allocs[k]) { Object.keys(o.allocs[k]).forEach(dStr => { if(!wsTracker[k][dStr]) wsTracker[k][dStr] = {}; let sum = 0; Object.keys(o.allocs[k][dStr]).forEach(ws => { let h = f(o.allocs[k][dStr][ws]); wsTracker[k][dStr][ws] = (wsTracker[k][dStr][ws] || 0) + h; sum += h; }); dailyLoadTracker[k][dStr] = (dailyLoadTracker[k][dStr] || 0) + sum; }); } }); });
@@ -590,7 +727,7 @@
         validBankOrders.forEach(o => {
             let i = window.orders.indexOf(o); let planned = f(o[k]); let allocated = getAllocated(o, k); let remaining = planned - allocated; let rColor = remaining < 0 ? 'red' : (remaining === 0 ? 'var(--success)' : '#333'); let isBrush = window.activeBrushIdx === i;
             let bnds = getPhaseDates(o, START_VIEW); let myBnd = CONFIG[k].order === 0 ? bnds.ins : (CONFIG[k].order === 1 ? bnds.lukk : (CONFIG[k].order === 2 ? bnds.keev : bnds.kooste)); let sD = myBnd.sDate, eD = myBnd.eDate; let dRange = `${String(sD.getDate()).padStart(2,'0')}.${String(sD.getMonth()+1).padStart(2,'0')} - ${String(eD.getDate()).padStart(2,'0')}.${String(eD.getMonth()+1).padStart(2,'0')}`;
-            bankHtml += `<div class="disp-bank-item ${isBrush ? 'brush-active' : ''}" style="border-left:5px solid ${remaining === 0 ? 'var(--success)' : CONFIG[k].color}; opacity:${remaining===0 && !isBrush ? 0.5 : 1};" onclick="window.toggleBrush(${i})"><div style="display:flex; justify-content:space-between; align-items:flex-start;"><div style="font-weight:bold; font-size:14px; margin-bottom:2px; max-width:60%; overflow:hidden; text-overflow:ellipsis;">${o.mt}</div><div style="font-size:9px; background:#e1f5fe; color:#0288d1; padding:2px 4px; border-radius:3px; border:1px solid #b3e5fc; white-space:nowrap;" title="Selle osakonna planeeritud ajavahemik">📅 ${dRange}</div></div><div style="color:#666; font-size:10px; margin-bottom:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${o.client || '-'}">${o.client || '-'}</div><div style="display:flex; justify-content:space-between; font-size:11px;"><span>Plaan: <b>${planned}h</b></span><span>Jagatud: <b>${allocated}h</b></span></div><div style="margin-top:5px; font-size:12px; text-align:right;">Jääk: <b style="color:${rColor}; font-size:14px;">${remaining.toFixed(1)}h</b></div></div>`;
+            bankHtml += `<div class="disp-bank-item ${isBrush ? 'brush-active' : ''}" draggable="true" ondragstart="window.handleDragStart(event, ${i}, 'bank')" style="border-left:5px solid ${remaining === 0 ? 'var(--success)' : CONFIG[k].color}; opacity:${remaining===0 && !isBrush ? 0.5 : 1};" onclick="window.toggleBrush(${i})"><div style="display:flex; justify-content:space-between; align-items:flex-start;"><div style="font-weight:bold; font-size:14px; margin-bottom:2px; max-width:60%; overflow:hidden; text-overflow:ellipsis;">${o.mt}</div><div style="font-size:9px; background:#e1f5fe; color:#0288d1; padding:2px 4px; border-radius:3px; border:1px solid #b3e5fc; white-space:nowrap;" title="Selle osakonna planeeritud ajavahemik">📅 ${dRange}</div></div><div style="color:#666; font-size:10px; margin-bottom:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${o.client || '-'}">${o.client || '-'}</div><div style="display:flex; justify-content:space-between; font-size:11px;"><span>Plaan: <b>${planned}h</b></span><span>Jagatud: <b>${allocated}h</b></span></div><div style="margin-top:5px; font-size:12px; text-align:right;">Jääk: <b style="color:${rColor}; font-size:14px;">${remaining.toFixed(1)}h</b></div></div>`;
             allocOptions += `<option value="${i}">${o.mt} (Jääk: ${remaining.toFixed(1)}h)</option>`;
         });
         if(bankHtml === "") bankHtml = "<div style='color:#777; padding:10px;'>Ühtegi planeerimist vajavat tööd ei leitud.</div>"; document.getElementById('disp-bank').innerHTML = bankHtml; window.currentAllocOptions = allocOptions;
@@ -616,11 +753,13 @@
                         let overIcon = al.isOver && !al.isAuto ? " ⚠️" : "";
                         let titleEx = al.isAuto ? "(Soovitus: Klõpsa et kinnitada!)" : (al.isOver ? "(Üle eelarve!)" : "(Käsitsi kinnitatud)"); 
                         let clickAction = al.isAuto ? `window.handleAutoClick(event, '${k}', '${dStr}', '${wsName}', ${al.idx}, ${al.h})` : `window.handleInnerBlockClick(event, '${k}', '${dStr}', '${wsName}', ${al.idx}, ${al.h})`; 
-                        cellContent += `<div class="disp-alloc ${bgClass}" style="background-color:${CONFIG[k].color}; opacity:${opacity}; ${borderClass}" title="${al.client} ${titleEx}" onclick="${clickAction}">${al.mt}${overIcon}<br>${al.h.toFixed(1)}h</div>`; 
+                        let dragAttr = al.isAuto ? "" : `draggable="true" ondragstart="window.handleDragStart(event, ${al.idx}, 'grid', '${dStr}', '${wsName}', ${al.h})"`;
+                        cellContent += `<div class="disp-alloc ${bgClass}" style="background-color:${CONFIG[k].color}; opacity:${opacity}; ${borderClass}" title="${al.client} ${titleEx}" onclick="${clickAction}" ${dragAttr}>${al.mt}${overIcon}<br>${al.h.toFixed(1)}h</div>`; 
                     }); 
                     if(totalCellH < 8) cellContent += `<div style="color:#ccc; font-size:10px; margin-top:auto;">+</div>`; cellContent += `</div>`; 
                 } else { cellContent = `<div style="color:#eee; font-size:16px; margin-top:2px;">+</div>`; }
-                let isHol = isHoliday(dObj); let isWkend = (dObj.getDay()===0||dObj.getDay()===6); let cellStyle = isHol ? "background: repeating-linear-gradient(45deg, #ffeeee, #ffebee 10px, #ffffff 10px, #ffffff 20px);" : (isWkend ? "background:#fafafa;" : "background:#fff;"); if(totalCellH > 8) cellStyle += " border: 2px solid var(--danger); box-shadow: inset 0 0 5px rgba(231,76,60,0.5);"; gridHtml += `<td class="disp-cell" style="${cellStyle}" onclick="window.handleCellClick('${k}', '${dStr}', '${wsName}')" ondblclick="window.openAllocModal('${k}', '${dStr}', '${wsName}', -1, 8)">${cellContent}</td>`;
+                let isHol = isHoliday(dObj); let isWkend = (dObj.getDay()===0||dObj.getDay()===6); let cellStyle = isHol ? "background: repeating-linear-gradient(45deg, #ffeeee, #ffebee 10px, #ffffff 10px, #ffffff 20px);" : (isWkend ? "background:#fafafa;" : "background:#fff;"); if(totalCellH > 8) cellStyle += " border: 2px solid var(--danger); box-shadow: inset 0 0 5px rgba(231,76,60,0.5);"; 
+                gridHtml += `<td class="disp-cell" style="${cellStyle}" onclick="window.handleCellClick('${k}', '${dStr}', '${wsName}')" ondblclick="window.openAllocModal('${k}', '${dStr}', '${wsName}', -1, 8)" ondragover="event.preventDefault(); this.classList.add('dragover');" ondragleave="this.classList.remove('dragover');" ondrop="window.handleDrop(event, '${k}', '${dStr}', '${wsName}')">${cellContent}</td>`;
             } gridHtml += `</tr>`;
         } gridHtml += `</tbody>`; document.getElementById('disp-grid').innerHTML = gridHtml;
     };
@@ -758,7 +897,7 @@
                     return {
                         mt: o.mt || '', client: o.client || '', kirjeldus: o.kirjeldus || '', start: o.start || safeISO(TODAY), end: o.end || safeISO(TODAY), sub1: f(o.sub1), sub2: f(o.sub2), status: o.status || 'Ootel',
                         ins: f(o.ins), trei: f(o.trei), must_k: f(o.must_k), rv_k: f(o.rv_k), must_l: f(o.must_l), rv_l: f(o.rv_l), kooste: f(o.kooste), prog_ins: f(o.prog_ins), prog_tr: f(o.prog_tr), prog_mk: f(o.prog_mk), prog_rk: f(o.prog_rk), prog_ml: f(o.prog_ml), prog_rl: f(o.prog_rl), prog_ko: f(o.prog_ko),
-                        done_ins: !!o.done_ins, chk_ost: !!o.chk_ost, chk_ah1: !!o.chk_ah1, chk_ah2: !!o.chk_ah2, chk_notes: o.chk_notes || '', allocs: JSON.stringify(safeAllocs), ah1_tasks: JSON.stringify(o.ah1_tasks || []), ah2_tasks: JSON.stringify(o.ah2_tasks || [])
+                        done_ins: !!o.done_ins, chk_ost: !!o.chk_ost, chk_ah1: !!o.chk_ah1, chk_ah2: !!o.chk_ah2, chk_notes: o.chk_notes || '', link: o.link || '', files: o.files || [], allocs: JSON.stringify(safeAllocs), ah1_tasks: JSON.stringify(o.ah1_tasks || []), ah2_tasks: JSON.stringify(o.ah2_tasks || [])
                     };
                 });
                 await window.dataDoc.set({ customCap: window.customCap, orders: cleanOrders });
@@ -768,11 +907,29 @@
         if (immediate) { clearTimeout(window.saveTimeout); await executeSave(); } else { window.hasPendingChanges = true; updateSyncStatus("⏳ Ootan...", "warning"); clearTimeout(window.saveTimeout); window.saveTimeout = setTimeout(executeSave, 500); }
     };
 
+    document.addEventListener('DOMContentLoaded', () => {
+        let dz = document.getElementById('file-drop-zone');
+        if (dz) {
+            dz.addEventListener('dragover', (e) => { e.preventDefault(); if(window.isAdmin) dz.classList.add('dragover'); });
+            dz.addEventListener('dragleave', (e) => { e.preventDefault(); dz.classList.remove('dragover'); });
+            dz.addEventListener('drop', (e) => {
+                e.preventDefault(); dz.classList.remove('dragover');
+                if(window.isAdmin && e.dataTransfer.files && e.dataTransfer.files.length > 0) { window.uploadFiles(e.dataTransfer.files); }
+            });
+        }
+    });
+
     // === FIREBASE'i KÄIVITAMINE LÕPUS ===
     const firebaseConfig = { apiKey: "AIzaSyDpHUfflq9WbiYUJ84bP3tXQIHsCEki6gw", authDomain: "tootmisplaan.firebaseapp.com", projectId: "tootmisplaan", storageBucket: "tootmisplaan.firebasestorage.app", messagingSenderId: "38804300838", appId: "1:38804300838:web:268bc2b390aa5ae29f72e7", measurementId: "G-055K8JWHXF" };
     try {
         if (typeof firebase === 'undefined') { updateSyncStatus("❌ Blokeeritud", "danger"); alert("Andmebaasi mootorit ei leitud! Palun kontrolli internetiühendust või lülita AdBlocker välja."); } 
-        else { firebase.initializeApp(firebaseConfig); window.db = firebase.firestore(); window.dataDoc = window.db.collection("toci").doc("peamine_plaan"); window.startRealtimeSync(); }
+        else { 
+            firebase.initializeApp(firebaseConfig); 
+            window.db = firebase.firestore(); 
+            window.storage = firebase.storage(); 
+            window.dataDoc = window.db.collection("toci").doc("peamine_plaan"); 
+            window.startRealtimeSync(); 
+        }
     } catch (e) { console.error("Firebase'i laadimise viga:", e); updateSyncStatus("❌ Mootori viga", "danger"); }
 
 </script>
