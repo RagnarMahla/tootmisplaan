@@ -2,7 +2,7 @@
 <html lang="et">
 <head>
     <meta charset="UTF-8">
-    <title>TOCI Tootmisplaan V160.0 (Tähtaja Sein Planeerijas)</title>
+    <title>TOCI Tootmisplaan V161.0 (Valmis-linnukeste salvestamine!)</title>
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
     <style>
@@ -176,7 +176,7 @@
 </div>
 
 <div class="top-bar">
-    <div>🚀 <strong>TOCI TOOTMISPLAAN V160.0 (Tähtaja Sein & Lohistamine)</strong></div>
+    <div>🚀 <strong>TOCI TOOTMISPLAAN V161.0 (Linnukesed korras!)</strong></div>
     <div style="display:flex; gap:15px; align-items:center;">
         <input type="text" id="globalFilter" placeholder="Otsi (MT, klient)..." oninput="window.applyUIMode()" style="padding:6px 10px; border-radius:4px; border:none; width:200px; font-weight:bold;">
         <button id="importSheetsBtn" onclick="window.importFromSheets()" style="padding:6px 12px; background:#e67e22; color:white; border:none; border-radius:4px; font-weight:bold; cursor:pointer; display:none; box-shadow: 0 0 10px rgba(230, 126, 34, 0.5);">📥 IMPORDI SHEETSIST</button>
@@ -275,7 +275,7 @@
                 let safeAllocs = {}; try { safeAllocs = typeof o.allocs === 'string' ? JSON.parse(o.allocs) : (o.allocs || {}); } catch(e) {}
                 let ah1 = []; let ah2 = []; if(safeAllocs.ah_tasks) { ah1 = safeAllocs.ah_tasks.ah1 || []; ah2 = safeAllocs.ah_tasks.ah2 || []; } else { try { ah1 = JSON.parse(o.ah1_tasks); if(!Array.isArray(ah1)) ah1=[]; } catch(e){} try { ah2 = JSON.parse(o.ah2_tasks); if(!Array.isArray(ah2)) ah2=[]; } catch(e){} }
                 safeAllocs.ah_tasks = { ah1, ah2 };
-                return { mt: String(o.mt).trim(), client: o.client || '', kirjeldus: o.kirjeldus || '', start: o.start || safeISO(TODAY), end: o.end || safeISO(TODAY), sub1: f(o.sub1), sub2: f(o.sub2), status: o.status || 'Ootel', ins: f(o.ins), trei: f(o.trei), must_k: f(o.must_k), rv_k: f(o.rv_k), must_l: f(o.must_l), rv_l: f(o.rv_l), kooste: f(o.kooste), prog_ins: f(o.prog_ins), prog_tr: f(o.prog_tr), prog_mk: f(o.prog_mk), prog_rk: f(o.prog_rk), prog_ml: f(o.prog_ml), prog_rl: f(o.prog_rl), prog_ko: f(o.prog_ko), done_ins: String(o.done_ins) === 'true', chk_ost: String(o.chk_ost) === 'true', chk_ah1: String(o.chk_ah1) === 'true', chk_ah2: String(o.chk_ah2) === 'true', chk_notes: o.chk_notes || '', allocs: JSON.stringify(safeAllocs) };
+                return { mt: String(o.mt).trim(), client: o.client || '', kirjeldus: o.kirjeldus || '', start: o.start || safeISO(TODAY), end: o.end || safeISO(TODAY), sub1: f(o.sub1), sub2: f(o.sub2), status: o.status || 'Ootel', ins: f(o.ins), trei: f(o.trei), must_k: f(o.must_k), rv_k: f(o.rv_k), must_l: f(o.must_l), rv_l: f(o.rv_l), kooste: f(o.kooste), prog_ins: f(o.prog_ins), prog_tr: f(o.prog_tr), prog_mk: f(o.prog_mk), prog_rk: f(o.prog_rk), prog_ml: f(o.prog_ml), prog_rl: f(o.prog_rl), prog_ko: f(o.prog_ko), done_ins: String(o.done_ins) === 'true', done_tr: String(o.done_tr) === 'true', done_mk: String(o.done_mk) === 'true', done_rk: String(o.done_rk) === 'true', done_ml: String(o.done_ml) === 'true', done_rl: String(o.done_rl) === 'true', done_ko: String(o.done_ko) === 'true', chk_ost: String(o.chk_ost) === 'true', chk_ah1: String(o.chk_ah1) === 'true', chk_ah2: String(o.chk_ah2) === 'true', chk_notes: o.chk_notes || '', allocs: JSON.stringify(safeAllocs) };
             });
             updateSyncStatus("Salvestan Firebase'i...", "warning"); await window.dataDoc.set({ customCap: impCap, orders: cleanOrders }); updateSyncStatus("✅ ANDMED IMPORDITUD!", "success"); alert("Google Sheetsi andmed on edukalt Firebase'i üle toodud!"); setTimeout(() => location.reload(), 1500);
         } catch(err) { console.error(err); alert("Import ebaõnnestus! Viga konsoolis."); updateSyncStatus("❌ Import ebaõnnestus", "danger"); }
@@ -292,7 +292,7 @@
                         let parsedAllocs = {}; if(o.allocs) { try { parsedAllocs = JSON.parse(o.allocs); } catch(e){} }
                         let ah1_tasks = []; let ah2_tasks = []; if (parsedAllocs.ah_tasks) { ah1_tasks = parsedAllocs.ah_tasks.ah1 || []; ah2_tasks = parsedAllocs.ah_tasks.ah2 || []; }
                         let obj = {...o, kirjeldus: o.kirjeldus||'', chk_notes: o.chk_notes||'', link: o.link||'', ah1_tasks: ah1_tasks, ah2_tasks: ah2_tasks, allocs: parsedAllocs, ins:f(o.ins), trei:f(o.trei), must_k:f(o.must_k), rv_k:f(o.rv_k), must_l:f(o.must_l), rv_l:f(o.rv_l), kooste:f(o.kooste), prog_ins:f(o.prog_ins), prog_tr:f(o.prog_tr), prog_mk:f(o.prog_mk), prog_rk:f(o.prog_rk), prog_ml:f(o.prog_ml), prog_rl:f(o.prog_rl), prog_ko:f(o.prog_ko), status: o.status || 'Töös' };
-                        obj.done_ins = String(o.done_ins) === 'true'; obj.chk_ost = String(o.chk_ost) === 'true'; obj.chk_ah1 = String(o.chk_ah1) === 'true'; obj.chk_ah2 = String(o.chk_ah2) === 'true'; obj.start = obj.start || safeISO(TODAY); obj.progress = calcOverallProgress(obj); return obj;
+                        obj.done_ins = String(o.done_ins) === 'true'; obj.done_tr = String(o.done_tr) === 'true'; obj.done_mk = String(o.done_mk) === 'true'; obj.done_rk = String(o.done_rk) === 'true'; obj.done_ml = String(o.done_ml) === 'true'; obj.done_rl = String(o.done_rl) === 'true'; obj.done_ko = String(o.done_ko) === 'true'; obj.chk_ost = String(o.chk_ost) === 'true'; obj.chk_ah1 = String(o.chk_ah1) === 'true'; obj.chk_ah2 = String(o.chk_ah2) === 'true'; obj.start = obj.start || safeISO(TODAY); obj.progress = calcOverallProgress(obj); return obj;
                     });
                 }
                 let dsInput = document.getElementById('disp-start'); if(dsInput && !dsInput.value) dsInput.value = safeISO(TODAY); window.applyUIMode(); updateSyncStatus("✅ REAALAJAS", "success");
