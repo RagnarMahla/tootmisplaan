@@ -2,7 +2,7 @@
 <html lang="et">
 <head>
     <meta charset="UTF-8">
-    <title>TOCI Tootmisplaan</title>
+    <title>TOCI Tootmisplaan V163.0 (Planeerimise märge Sisestuslehel)</title>
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
     <style>
@@ -176,7 +176,7 @@
 </div>
 
 <div class="top-bar">
-    <div>🚀 <strong>TOCI TOOTMISPLAAN</strong></div>
+    <div>🚀 <strong>TOCI TOOTMISPLAAN V163.0 (Planeerimise märkega)</strong></div>
     <div style="display:flex; gap:15px; align-items:center;">
         <input type="text" id="globalFilter" placeholder="Otsi (MT, klient)..." oninput="window.applyUIMode()" style="padding:6px 10px; border-radius:4px; border:none; width:200px; font-weight:bold;">
         <button onclick="window.smartExport()" style="padding:6px 12px; background:#16a085; color:white; border:none; border-radius:4px; font-weight:bold; cursor:pointer;">📥 EKSPORDI (CSV)</button>
@@ -220,7 +220,6 @@
     window.customCap = {}; window.orders = []; window.currentMainTabFilter = 'active'; window.tempAHTasks = { ah1: [], ah2: [] };
     const f = (v) => parseFloat(v) || 0;
 
-    // Turvavõrk, et vahemälu vead ei laseks asjal kokku joosta
     window.save = function(immediate) { window.saveData(immediate); };
 
     window.onbeforeunload = function(e) { if (window.isSaving || window.hasPendingChanges) { e.preventDefault(); e.returnValue = "Oota korraks!"; return "Oota korraks!"; } };
@@ -238,6 +237,7 @@
     function getWorkingDays(s, e) { let c = 0, cur = getValidDate(s); let endD = getValidDate(e); let safety = 0; while(cur <= endD && safety < 1000) { if(isWDay(safeISO(cur))) c++; cur.setDate(cur.getDate()+1); safety++; } return c || 1; }
     function updateSyncStatus(text, type) { const el = document.getElementById('syncStatus'); el.innerText = text; if(type === 'success') { el.style.background = "var(--success)"; el.style.color = "white"; } else if(type === 'danger') { el.style.background = "var(--danger)"; el.style.color = "white"; } else { el.style.background = "var(--warning)"; el.style.color = "black"; } }
     function calcOverallProgress(o) { let totalPlanned = f(o.ins) + f(o.trei) + f(o.must_k) + f(o.rv_k) + f(o.must_l) + f(o.rv_l) + f(o.kooste); if (totalPlanned === 0) return 0; let totalActual = f(o.prog_ins) + f(o.prog_tr) + f(o.prog_mk) + f(o.prog_rk) + f(o.prog_ml) + f(o.prog_rl) + f(o.prog_ko); return Math.round((totalActual / totalPlanned) * 100); }
+    function getAllocated(o, dept) { let allocated = 0; if(o.allocs && o.allocs[dept]) Object.values(o.allocs[dept]).forEach(day => { Object.values(day).forEach(h => allocated += f(h)); }); return allocated; }
 
     window.smartExport = function() {
         try {
@@ -274,19 +274,8 @@
                     window.orders = data.orders.map(o => {
                         let parsedAllocs = {}; if(o.allocs) { try { parsedAllocs = JSON.parse(o.allocs); } catch(e){} }
                         let ah1_tasks = []; let ah2_tasks = []; if (parsedAllocs.ah_tasks) { ah1_tasks = parsedAllocs.ah_tasks.ah1 || []; ah2_tasks = parsedAllocs.ah_tasks.ah2 || []; }
-                        
-                        // KÕIK DONE LAHTRID KÄSITSI VÄLJA LOETUD, ET MÄLLU JÄÄKS
                         let obj = {...o, kirjeldus: o.kirjeldus||'', chk_notes: o.chk_notes||'', link: o.link||'', ah1_tasks: ah1_tasks, ah2_tasks: ah2_tasks, allocs: parsedAllocs, ins:f(o.ins), trei:f(o.trei), must_k:f(o.must_k), rv_k:f(o.rv_k), must_l:f(o.must_l), rv_l:f(o.rv_l), kooste:f(o.kooste), prog_ins:f(o.prog_ins), prog_tr:f(o.prog_tr), prog_mk:f(o.prog_mk), prog_rk:f(o.prog_rk), prog_ml:f(o.prog_ml), prog_rl:f(o.prog_rl), prog_ko:f(o.prog_ko), status: o.status || 'Töös' };
-                        
-                        obj.done_ins = String(o.done_ins) === 'true';
-                        obj.done_tr = String(o.done_tr) === 'true';
-                        obj.done_mk = String(o.done_mk) === 'true';
-                        obj.done_rk = String(o.done_rk) === 'true';
-                        obj.done_ml = String(o.done_ml) === 'true';
-                        obj.done_rl = String(o.done_rl) === 'true';
-                        obj.done_ko = String(o.done_ko) === 'true';
-                        
-                        obj.chk_ost = String(o.chk_ost) === 'true'; obj.chk_ah1 = String(o.chk_ah1) === 'true'; obj.chk_ah2 = String(o.chk_ah2) === 'true'; obj.start = obj.start || safeISO(TODAY); obj.progress = calcOverallProgress(obj); return obj;
+                        obj.done_ins = String(o.done_ins) === 'true'; obj.done_tr = String(o.done_tr) === 'true'; obj.done_mk = String(o.done_mk) === 'true'; obj.done_rk = String(o.done_rk) === 'true'; obj.done_ml = String(o.done_ml) === 'true'; obj.done_rl = String(o.done_rl) === 'true'; obj.done_ko = String(o.done_ko) === 'true'; obj.chk_ost = String(o.chk_ost) === 'true'; obj.chk_ah1 = String(o.chk_ah1) === 'true'; obj.chk_ah2 = String(o.chk_ah2) === 'true'; obj.start = obj.start || safeISO(TODAY); obj.progress = calcOverallProgress(obj); return obj;
                     });
                 }
                 let dsInput = document.getElementById('disp-start'); if(dsInput && !dsInput.value) dsInput.value = safeISO(TODAY); window.applyUIMode(); updateSyncStatus("✅ REAALAJAS", "success");
@@ -414,7 +403,12 @@
                 let ostDone = o.chk_ost === true; let insDone = o.done_ins === true; let ah1Done = f(o.sub1) === 0 || o.chk_ah1 === true; let ah2Done = f(o.sub2) === 0 || o.chk_ah2 === true;
                 
                 let listIcon = (ostDone && insDone && ah1Done && ah2Done) ? '✅' : '📋';
-                if (o.link) listIcon += ' 🔗';
+                if (o.link) listIcon += ' 📎';
+                
+                // UUS: Planeeringu märge (Calendar icon)
+                let isPlanned = false;
+                Object.keys(CONFIG).forEach(k => { if(getAllocated(o, k) > 0) isPlanned = true; });
+                let planIcon = isPlanned ? `<span style="font-size:14px; margin-left:5px; cursor:help;" title="Aeg on Planeerijas (Dispetšeris) paika pandud!">🗓️</span>` : '';
                 
                 let statusColor = o.status === 'Valmis' ? '#27ae60' : (o.status === 'Töös' ? '#3498db' : '#95a5a6');
                 let bnds = getPhaseDates(o, START_VIEW); let pEnd = bnds.kooste.eDate; let uEnd = new Date(o.end); let isPlanOverdue = false;
@@ -425,7 +419,7 @@
                     <td style="text-align:center;"><button onclick="window.openEditModal(${i}); event.stopPropagation();" style="padding:6px 12px; background:var(--accent); color:white; border:none; border-radius:4px; font-weight:bold; cursor:pointer; width:100%; white-space:nowrap; box-shadow:0 2px 4px rgba(0,0,0,0.1);">Ava 🗂️</button></td>
                     <td style="font-weight:bold; color:var(--accent); font-size:13px; text-align:center;">${o.mt}</td><td style="font-weight:bold;">${o.client || '-'}</td><td style="color:#555;">${o.kirjeldus || '-'}</td>
                     <td><span style="${overStyle}">${safeISO(o.end)}</span>${overBadge}</td><td style="text-align:center;">${planBadge}</td><td style="text-align:center;"><div style="${totOver} border:1px solid; border-radius:4px; padding:4px 8px; font-weight:bold; display:inline-block;" title="Kogu progress">${o.progress}%</div></td>
-                    <td style="font-weight:bold; color:${statusColor};">${o.status} <span style="font-size:14px; margin-left:5px;" title="Projektiplaani staatus">${listIcon}</span></td>
+                    <td style="font-weight:bold; color:${statusColor};">${o.status} <span style="font-size:14px; margin-left:5px;" title="Projektiplaani staatus">${listIcon}</span>${planIcon}</td>
                 </tr>`;
             }
         });
