@@ -698,7 +698,7 @@
         }
         t.innerHTML += tbody + `</tbody>`;
         if (window.activeBrushIdx !== null) { t.parentElement.classList.add('grid-brush-mode'); } else { t.parentElement.classList.remove('grid-brush-mode'); }
-    };
+    });
         if (b.innerHTML === '') b.innerHTML = '<div style="color:#777; font-size:12px; padding:10px;">Selles osakonnas pole ühtegi planeerimata tundi! 🎉</div>';
         
         let wsCount = (window.customCap.wsCounts && window.customCap.wsCounts[d]) ? window.customCap.wsCounts[d] : CONFIG[d].ws; let maxCap = wsCount * 8; let activeOrderEnd = null; if (window.activeBrushIdx !== null) { let ao = window.orders[window.activeBrushIdx]; activeOrderEnd = new Date(ao.end).getTime(); }
