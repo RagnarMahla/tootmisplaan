@@ -979,6 +979,195 @@ window.renderDispatcher = function() {
         Object.keys(CONFIG).forEach(k => { newCap[k] = {}; document.querySelectorAll(`.cap-num-in[data-k="${k}"]`).forEach(i => { newCap[k][i.dataset.w] = parseInt(i.value); }); });
         window.customCap = newCap; localStorage.setItem('prod_cap_live', JSON.stringify(window.customCap)); window.applyUIMode(); await window.saveData(true); alert("✅ Seaded ja puhkused salvestatud PILVE!");
     };
+   // --- 1. DISPETŠERI PÄÄSTMINE (Lohistamine, klikkimine, pintsel) ---
+    window.toggleBrush = function(idx) {
+        if (!window.isAdmin) return;
+        if (window.activeBrushIdx === idx) window.activeBrushIdx = null;
+        else window.activeBrushIdx = idx;
+        window.renderDispatcher();
+    };
+
+    window.handleCellClick = function(dept, dateStr, wsName) {
+        if (!window.isAdmin) return;
+        if (window.activeBrushIdx !== null) {
+            let o = window.orders[window.activeBrushIdx];
+            let rem = f(o[dept]) - getAllocated(o, dept);
+            if (rem <= 0) { alert("Sellel tellimusel on tunnid juba täis!"); window.activeBrushIdx = null; window.renderDispatcher(); return; }
+            let toAlloc = Math.min(8, rem);
+            if (!o.allocs) o.allocs = {}; if (!o.allocs[dept]) o.allocs[dept] = {}; if (!o.allocs[dept][dateStr]) o.allocs[dept][dateStr] = {};
+            let current = f(o.allocs[dept][dateStr][wsName]);
+            o.allocs[dept][dateStr][wsName] = current + toAlloc;
+            window.saveData(true); window.renderDispatcher();
+        } else {
+            openAllocModal(dept, dateStr, wsName, null, 8);
+        }
+    };
+
+    function openAllocModal(dept, dateStr, wsName, existingIdx, defaultH) {
+        document.getElementById('alloc-dept').value = dept; document.getElementById('alloc-date').value = dateStr; document.getElementById('alloc-ws').value = wsName; document.getElementById('alloc-old-idx').value = existingIdx !== null ? existingIdx : '';
+        let sel = document.getElementById('alloc-mt'); sel.innerHTML = '';
+        let validOrders = window.orders.map((o, i) => ({o, i})).filter(x => x.o.status !== 'Valmis' && f(x.o[dept]) > 0);
+        validOrders.forEach(x => {
+            let rem = f(x.o[dept]) - getAllocated(x.o, dept);
+            let opt = document.createElement('option'); opt.value = x.i; opt.text = `${x.o.mt} (Jääk: ${rem.toFixed(1)}h)`;
+            if (existingIdx === x.i) opt.selected = true;
+            sel.appendChild(opt);
+        });
+        document.getElementById('alloc-h').value = defaultH || 8; document.getElementById('alloc-title').innerText = `${CONFIG[dept].prefix} | ${dateStr} | ${wsName}`;
+        document.getElementById('alloc-del-btn').style.display = existingIdx !== null ? 'block' : 'none';
+        document.getElementById('allocModal').style.display = 'block';
+    }
+
+    window.handleInnerBlockClick = function(event, dept, dateStr, wsName, ordIdx, manualH) {
+        event.stopPropagation(); if (!window.isAdmin) return; openAllocModal(dept, dateStr, wsName, ordIdx, manualH);
+    };
+
+    window.saveAllocationModal = function() {
+        let dept = document.getElementById('alloc-dept').value; let dateStr = document.getElementById('alloc-date').value; let wsName = document.getElementById('alloc-ws').value; let oldIdx = document.getElementById('alloc-old-idx').value; let newIdx = document.getElementById('alloc-mt').value; let h = f(document.getElementById('alloc-h').value);
+        if (newIdx === "") return alert("Vali tellimus!");
+        if (oldIdx !== "" && oldIdx !== newIdx) { let oldO = window.orders[oldIdx]; if (oldO.allocs && oldO.allocs[dept] && oldO.allocs[dept][dateStr]) delete oldO.allocs[dept][dateStr][wsName]; }
+        let o = window.orders[newIdx];
+        if (!o.allocs) o.allocs = {}; if (!o.allocs[dept]) o.allocs[dept] = {}; if (!o.allocs[dept][dateStr]) o.allocs[dept][dateStr] = {};
+        o.allocs[dept][dateStr][wsName] = h;
+        document.getElementById('allocModal').style.display = 'none'; window.saveData(true); window.renderDispatcher();
+    };
+
+    window.deleteAllocationModal = function() {
+        let dept = document.getElementById('alloc-dept').value; let dateStr = document.getElementById('alloc-date').value; let wsName = document.getElementById('alloc-ws').value; let oldIdx = document.getElementById('alloc-old-idx').value;
+        if (oldIdx !== "") { let o = window.orders[oldIdx]; if (o.allocs && o.allocs[dept] && o.allocs[dept][dateStr]) delete o.allocs[dept][dateStr][wsName]; }
+        document.getElementById('allocModal').style.display = 'none'; window.saveData(true); window.renderDispatcher();
+    };
+
+    window.handleAutoClick = function(event, dept, dateStr, wsName, ordIdx, autoH) {
+        event.stopPropagation(); if (!window.isAdmin) return;
+        let o = window.orders[ordIdx];
+        if (!o.allocs) o.allocs = {}; if (!o.allocs[dept]) o.allocs[dept] = {}; if (!o.allocs[dept][dateStr]) o.allocs[dept][dateStr] = {};
+        o.allocs[dept][dateStr][wsName] = autoH;
+        window.saveData(true); window.renderDispatcher();
+    };
+
+    window.handleDragStart = function(event, idx, source, date, ws, h) {
+        if (!window.isAdmin) { event.preventDefault(); return; }
+        event.dataTransfer.setData('text/plain', JSON.stringify({ idx, source, date, ws, h })); window.activeBrushIdx = null; window.renderDispatcher();
+    };
+
+    window.handleDrop = function(event, dept, dateStr, wsName) {
+        event.preventDefault(); event.currentTarget.classList.remove('dragover'); if (!window.isAdmin) return;
+        let data; try { data = JSON.parse(event.dataTransfer.getData('text/plain')); } catch(e) { return; }
+        let o = window.orders[data.idx]; let hToMove = data.h || 8;
+        if (data.source === 'bank') { let rem = f(o[dept]) - getAllocated(o, dept); hToMove = Math.min(8, rem); if (hToMove <= 0) return alert("Tunnid täis!"); } 
+        else if (data.source === 'grid') { if (o.allocs && o.allocs[dept] && o.allocs[dept][data.date]) delete o.allocs[dept][data.date][data.ws]; }
+        if (!o.allocs) o.allocs = {}; if (!o.allocs[dept]) o.allocs[dept] = {}; if (!o.allocs[dept][dateStr]) o.allocs[dept][dateStr] = {};
+        let existing = f(o.allocs[dept][dateStr][wsName]); o.allocs[dept][dateStr][wsName] = existing + hToMove;
+        window.saveData(true); window.renderDispatcher();
+    };
+
+
+    // --- 2. TELLIMUSE KAARDI MINI-GANTT GENERAATOR ---
+    window.generateMiniGanttHTML = function(o) {
+        let bnds = getPhaseDates(o, START_VIEW);
+        let startD = new Date(bnds.ins.sDate); startD.setDate(startD.getDate() - 2);
+        let endD = new Date(o.end); if(isNaN(endD.getTime())) endD = new Date();
+        if(bnds.kooste.eDate.getTime() > endD.getTime()) endD = new Date(bnds.kooste.eDate);
+        endD.setDate(endD.getDate() + 3);
+        
+        let diffDays = Math.ceil((endD - startD) / (1000 * 60 * 60 * 24));
+        if (diffDays > 120) diffDays = 120; // Piirame laiust, et mahuks aknasse
+        
+        let tasks = [];
+        if(f(o.ins)>0 || o.done_ins) tasks.push({ name: "Inseneeria", p: o.done_ins ? 100 : Math.round((f(o.prog_ins)/f(o.ins))*100)||0, s: bnds.ins.sDate, e: bnds.ins.eDate, c: "#0097e6" });
+        tasks.push({ name: "Ost / Mat.", p: o.chk_ost ? 100 : 0, s: bnds.ins.sDate, e: bnds.ins.eDate, c: "#95a5a6" });
+        if(f(o.sub1)>0) tasks.push({ name: "1. Allhange", p: o.chk_ah1 ? 100 : 0, s: bnds.ah1.sDate, e: bnds.ah1.eDate, c: "#7f8c8d" });
+        
+        let lH = f(o.trei)+f(o.must_l)+f(o.rv_l); let lA = f(o.prog_tr)+f(o.prog_ml)+f(o.prog_rl);
+        if(lH>0) tasks.push({ name: "Lukk. & Trei.", p: Math.round((lA/lH)*100)||0, s: bnds.lukk.sDate, e: bnds.lukk.eDate, c: "#3498db" });
+        
+        let kH = f(o.must_k)+f(o.rv_k); let kA = f(o.prog_mk)+f(o.prog_rk);
+        if(kH>0) tasks.push({ name: "Keevitus", p: Math.round((kA/kH)*100)||0, s: bnds.keev.sDate, e: bnds.keev.eDate, c: "#e67e22" });
+        
+        if(f(o.sub2)>0) tasks.push({ name: "2. Allhange", p: o.chk_ah2 ? 100 : 0, s: bnds.ah2.sDate, e: bnds.ah2.eDate, c: "#7f8c8d" });
+        if(f(o.kooste)>0) tasks.push({ name: "Kooste", p: o.done_ko ? 100 : Math.round((f(o.prog_ko)/f(o.kooste))*100)||0, s: bnds.kooste.sDate, e: bnds.kooste.eDate, c: "#27ae60" });
+        
+        let html = `<div style="font-size:12px; font-weight:bold; margin-bottom:5px; color:var(--primary);">📊 Tellimuse ajatelg (Gantt)</div>
+        <table style="width:100%; border-collapse:collapse; border:1px solid #ccc; font-size:10px;"><thead><tr><th style="text-align:left; padding:4px; background:#eee; min-width:100px;">Etapp</th>`;
+        for(let i=0; i<diffDays; i++) {
+            let d = new Date(startD.getTime() + i*86400000);
+            let isWk = d.getDay()===0||d.getDay()===6;
+            html += `<th style="width:22px; background:${isWk?'#ddd':'#eee'}; color:#555; padding:2px; text-align:center; font-weight:normal; font-size:8px; line-height:1;">${d.getDate()}.${d.getMonth()+1}</th>`;
+        }
+        html += `</tr></thead><tbody>`;
+        
+        tasks.forEach(t => {
+            let pStr = t.p > 100 ? 100 : t.p;
+            html += `<tr><td style="padding:4px; border-bottom:1px solid #eee; border-right:1px solid #ccc; font-weight:bold; white-space:nowrap;">${t.name} <span style="float:right; color:${pStr===100?'#27ae60':'#e67e22'}; margin-left:10px;">${pStr}%</span></td>`;
+            let tStart = new Date(t.s).getTime();
+            let tEnd = new Date(t.e).getTime();
+            for(let i=0; i<diffDays; i++) {
+                let d = new Date(startD.getTime() + i*86400000); let time = d.getTime();
+                let isWk = d.getDay()===0||d.getDay()===6; let bg = isWk ? 'background:#f9f9f9;' : '';
+                if(time >= new Date(tStart).setHours(0,0,0,0) && time <= new Date(tEnd).setHours(23,59,59,999)) {
+                    html += `<td style="padding:0; border-bottom:1px solid #eee; ${bg}"><div style="height:14px; margin:2px 0; background:${t.c}; width:100%; border-radius:2px; box-shadow: 0 1px 2px rgba(0,0,0,0.2);"></div></td>`;
+                } else {
+                    html += `<td style="border-bottom:1px solid #eee; ${bg}"></td>`;
+                }
+            }
+            html += `</tr>`;
+        });
+        html += `</tbody></table>`;
+        return html;
+    };
+
+
+    // --- 3. TELLIMUSE KAARDI AVAMISE UUENDUS (Lisab Mini-Gantti) ---
+    window.openEditModal = function(i) {
+        try {
+            window.currentEditIndex = i; let o = window.orders[i]; let disAttr = window.isAdmin ? "" : "disabled"; let titleEl = document.getElementById('edit-modal-title'); if(titleEl) titleEl.innerText = `🗂️ Kaart: ${o.mt === 'UUS' ? 'Uus Tellimus' : o.mt}`;
+            let mtEl = document.getElementById('edit-mt'); if(mtEl) mtEl.value = o.mt === 'UUS' ? '' : o.mt; let clientEl = document.getElementById('edit-client'); if(clientEl) clientEl.value = o.client || ''; let descEl = document.getElementById('edit-desc'); if(descEl) descEl.value = o.kirjeldus || ''; let endEl = document.getElementById('edit-end'); if(endEl) endEl.value = safeISO(o.end); let ah1El = document.getElementById('edit-ah1'); if(ah1El) ah1El.value = f(o.sub1); let ah2El = document.getElementById('edit-ah2'); if(ah2El) ah2El.value = f(o.sub2); let statusEl = document.getElementById('edit-status'); if(statusEl) statusEl.value = o.status || 'Ootel';
+            let linkEl = document.getElementById('edit-link'); if(linkEl) { linkEl.value = o.link || ''; linkEl.disabled = !window.isAdmin; }
+            let chkInsEl = document.getElementById('edit-chk-ins'); if(chkInsEl) chkInsEl.checked = o.done_ins === true; let chkOstEl = document.getElementById('edit-chk-ost'); if(chkOstEl) chkOstEl.checked = o.chk_ost === true; let chkAh1El = document.getElementById('edit-chk-ah1'); if(chkAh1El) chkAh1El.checked = o.chk_ah1 === true; let chkAh2El = document.getElementById('edit-chk-ah2'); if(chkAh2El) chkAh2El.checked = o.chk_ah2 === true; let notesEl = document.getElementById('edit-chk-notes'); if(notesEl) notesEl.value = o.chk_notes || '';
+            window.tempAHTasks.ah1 = JSON.parse(JSON.stringify(o.ah1_tasks || [])); window.tempAHTasks.ah2 = JSON.parse(JSON.stringify(o.ah2_tasks || [])); window.renderAHTasks('ah1'); window.renderAHTasks('ah2');
+            if(mtEl) mtEl.disabled = !window.isAdmin; if(clientEl) clientEl.disabled = !window.isAdmin; if(descEl) descEl.disabled = !window.isAdmin; if(endEl) endEl.disabled = !window.isAdmin; if(ah1El) ah1El.disabled = !window.isAdmin; if(ah2El) ah2El.disabled = !window.isAdmin; if(statusEl) statusEl.disabled = !window.isAdmin; if(chkInsEl) chkInsEl.disabled = !window.isAdmin; if(chkOstEl) chkOstEl.disabled = !window.isAdmin;
+            if(chkAh1El) chkAh1El.disabled = false; if(chkAh2El) chkAh2El.disabled = false; if(notesEl) notesEl.disabled = false;
+            let nt1 = document.getElementById('edit-ah1-new-task'); if(nt1) nt1.disabled = !window.isAdmin; let nt2 = document.getElementById('edit-ah2-new-task'); if(nt2) nt2.disabled = !window.isAdmin;
+            let delBtn = document.getElementById('edit-delete-btn'); if(delBtn) delBtn.style.display = window.isAdmin && !window.isNewOrder ? "block" : "none"; let saveBtn = document.getElementById('edit-save-btn'); if(saveBtn) saveBtn.style.display = "block";
+            let subBtn = document.getElementById('edit-add-sub-btn'); if(subBtn) subBtn.style.display = (window.isAdmin && !o.parentId && !window.isNewOrder) ? "block" : "none";
+            let deptsHtml = ""; Object.keys(CONFIG).forEach(k => { let c = CONFIG[k]; let pVal = f(o[k]); let aVal = f(o[c.p]); let isDone = String(o[c.d]) === 'true'; deptsHtml += `<div class="dept-edit-row"><strong>${c.l}</strong><input type="number" id="edit-p-${k}" value="${pVal}" min="0" ${disAttr} title="Plaanitud tunnid" oninput="window.calcDiff('${k}')"><input type="number" id="edit-a-${c.p}" value="${aVal}" min="0" ${disAttr} title="Tehtud tunnid" oninput="window.calcDiff('${k}')"><div id="diff-${k}" style="width:65px; text-align:center;"></div><label><input type="checkbox" id="edit-d-${c.d}" ${isDone ? 'checked' : ''} ${disAttr}> Valmis</label></div>`; });
+            let deptsContainer = document.getElementById('edit-departments-container'); if(deptsContainer) deptsContainer.innerHTML = deptsHtml; window.calcDiff('ins'); window.calcDiff('trei'); window.calcDiff('must_k'); window.calcDiff('rv_k'); window.calcDiff('must_l'); window.calcDiff('rv_l'); window.calcDiff('kooste');
+            
+            let subsContainer = document.getElementById('edit-subs-container'); let subsList = document.getElementById('edit-subs-list');
+            if (subsContainer && subsList) {
+                if (!o.parentId && !window.isNewOrder) {
+                    let mySubs = window.orders.map((ord, idx) => ({ord, idx})).filter(x => x.ord.parentId === o.mt);
+                    if (mySubs.length > 0) {
+                        let sHtml = '';
+                        mySubs.forEach(s => {
+                            let subO = s.ord; let sIdx = s.idx; let statusColor = subO.status === 'Valmis' ? '#27ae60' : (subO.status === 'Töös' ? '#3498db' : '#95a5a6');
+                            sHtml += `<div style="display:flex; justify-content:space-between; align-items:center; background:#f8f9fa; border:1px solid #ddd; padding:8px; border-radius:4px;">
+                                <div><b>${subO.mt.split(' / ').pop()}</b> <span style="font-size:11px; color:#777;">(${subO.kirjeldus||''})</span> - <span style="color:${statusColor}; font-weight:bold;">${subO.status}</span> <span style="font-size:10px; color:#555;">(${subO.progress}%)</span></div>
+                                <button onclick="window.openEditModal(${sIdx})" style="padding:4px 8px; background:var(--accent); color:white; border:none; border-radius:3px; cursor:pointer; font-size:11px; font-weight:bold;">Ava 🗂️</button>
+                            </div>`;
+                        });
+                        subsList.innerHTML = sHtml; subsContainer.style.display = 'block';
+                    } else { subsContainer.style.display = 'none'; }
+                } else { subsContainer.style.display = 'none'; }
+            }
+
+            // GANTTI SÜSTIMINE
+            let ganttContainer = document.getElementById('edit-mini-gantt');
+            if (!ganttContainer) {
+                let notesDiv = document.getElementById('edit-chk-notes').parentElement.parentElement;
+                ganttContainer = document.createElement('div');
+                ganttContainer.id = 'edit-mini-gantt';
+                ganttContainer.style.marginTop = '15px'; ganttContainer.style.marginBottom = '10px';
+                ganttContainer.style.overflowX = 'auto'; ganttContainer.style.border = '1px solid #ddd'; ganttContainer.style.borderRadius = '6px'; ganttContainer.style.padding = '10px'; ganttContainer.style.background = '#fff';
+                notesDiv.insertAdjacentElement('afterend', ganttContainer);
+            }
+            if (!window.isNewOrder) { ganttContainer.innerHTML = window.generateMiniGanttHTML(o); ganttContainer.style.display = 'block'; } 
+            else { ganttContainer.style.display = 'none'; }
+
+            let modalEl = document.getElementById('editModal'); if(modalEl) modalEl.style.display = 'block';
+        } catch(e) { console.error("Viga Edit Modali avamisel:", e); alert("Viga kaardi avamisel: " + e.message); }
+    }; 
 </script>
 </body>
 </html>
