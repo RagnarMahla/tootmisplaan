@@ -596,20 +596,109 @@
         }); return { tracker: dailyLoadTracker, autoAllocs: autoAllocations, wsTracker: wsTracker };
     }
 
-    window.renderDispatcher = function() {
-        const d = document.getElementById('disp-dept').value; const s = getValidDate(document.getElementById('disp-start').value); const t = document.getElementById('disp-grid'); const b = document.getElementById('disp-bank'); b.innerHTML = ''; t.innerHTML = ''; document.getElementById('brush-status').innerText = window.activeBrushIdx !== null ? "Pintsli režiim (SEES)" : "Planeerimine: VÄLJAS"; if (d === 'all') { b.innerHTML = '<div style="color:#777; font-size:12px; padding:10px;">Vali konkreetne osakond, et klotse kalendrisse lohistada.</div>'; return; }
+   window.renderDispatcher = function() {
+        const d = document.getElementById('disp-dept').value;
+        const s = getValidDate(document.getElementById('disp-start').value);
+        const t = document.getElementById('disp-grid');
+        const b = document.getElementById('disp-bank');
+        b.innerHTML = ''; t.innerHTML = '';
+        document.getElementById('brush-status').innerText = window.activeBrushIdx !== null ? "Pintsli režiim (SEES)" : "Planeerimine: VÄLJAS";
+
         const gV = document.getElementById('globalFilter').value.toLowerCase();
-        let validOrders = window.orders.map((o, i) => ({ o, i })).filter(item => item.o.status !== 'Valmis' && String(item.o[CONFIG[d].d]) !== 'true'); validOrders.sort((a,b) => new Date(a.o.end).getTime() - new Date(b.o.end).getTime());
+        // Filtreerime välja vaid mitte-valmis tellimused
+        let validOrders = window.orders.map((o, i) => ({ o, i })).filter(item => item.o.status !== 'Valmis');
+        validOrders.sort((a,b) => new Date(a.o.end).getTime() - new Date(b.o.end).getTime());
         let smartLoad = calculateSmartDailyLoad(validOrders.map(item => item.o));
-        
-        validOrders.forEach(item => {
-            let matchText = (!gV || (item.o.mt && String(item.o.mt).toLowerCase().includes(gV)) || (item.o.client && String(item.o.client).toLowerCase().includes(gV)) || (item.o.kirjeldus && String(item.o.kirjeldus).toLowerCase().includes(gV))); if (!matchText) return;
-            let o = item.o; let i = item.i; let pH = f(o[d]); let aH = getAllocated(o, d); let rem = Math.max(0, pH - aH);
-            if (rem > 0) {
-                let aObj = smartLoad.autoAllocs.find(a => a.mt === o.mt); let bnds = getPhaseDates(o, START_VIEW); let myBnd = CONFIG[d].order === 0 ? bnds.ins : (CONFIG[d].order === 1 ? bnds.lukk : (CONFIG[d].order === 2 ? bnds.keev : bnds.kooste)); let isOverdue = myBnd.eDate.getTime() > new Date(o.end).setHours(23,59,59,999); let warn = isOverdue ? '⚠️' : '';
-                b.innerHTML += `<div class="disp-bank-item ${window.activeBrushIdx===i?'brush-active':''}" draggable="${window.isAdmin}" ondragstart="window.handleDragStart(event, ${i}, 'bank')" onclick="window.toggleBrush(${i})" style="border-left-color:${CONFIG[d].color};"><div style="font-weight:bold; font-size:12px;">${warn} ${o.mt}</div><div style="font-size:10px; color:#555;">${o.client||'-'} | Lõpp: ${safeISO(o.end)}</div><div style="margin-top:5px; font-weight:bold; color:var(--primary);">Jääk: <span style="color:var(--danger); font-size:14px;">${rem.toFixed(1)}h</span> / ${pH}h</div></div>`;
+
+        let deptsToRender = d === 'all' ? Object.keys(CONFIG) : [d];
+
+        // 1. TUNDIDE PANGA JOONISTAMINE
+        if (d === 'all') {
+            b.innerHTML = '<div style="color:#777; font-size:12px; padding:10px;">👉 <b>Vali konkreetne osakond (ülevalt rippmenüüst)</b>, et Tundide Pank avaneks ja saaksid klotse kalendrisse käsitsi lohistada. Selles "Kõik osakonnad" vaates näed tehase suurt pilti!</div>';
+        } else {
+            validOrders.forEach(item => {
+                if(String(item.o[CONFIG[d].d]) === 'true') return; // Peidame ära, kui osakond on märgitud "Valmis"
+                let matchText = (!gV || (item.o.mt && String(item.o.mt).toLowerCase().includes(gV)) || (item.o.client && String(item.o.client).toLowerCase().includes(gV)) || (item.o.kirjeldus && String(item.o.kirjeldus).toLowerCase().includes(gV)));
+                if (!matchText) return;
+                let o = item.o; let i = item.i; let pH = f(o[d]); let aH = getAllocated(o, d); let rem = Math.max(0, pH - aH);
+                if (rem > 0) {
+                    let aObj = smartLoad.autoAllocs.find(a => a.mt === o.mt);
+                    let bnds = getPhaseDates(o, START_VIEW);
+                    let myBnd = CONFIG[d].order === 0 ? bnds.ins : (CONFIG[d].order === 1 ? bnds.lukk : (CONFIG[d].order === 2 ? bnds.keev : bnds.kooste));
+                    let isOverdue = myBnd.eDate.getTime() > new Date(o.end).setHours(23,59,59,999);
+                    let warn = isOverdue ? '⚠️' : '';
+                    let shortName = o.parentId ? '↳ ' + o.mt.split(' / ').pop() : o.mt;
+                    b.innerHTML += `<div class="disp-bank-item ${window.activeBrushIdx===i?'brush-active':''}" draggable="${window.isAdmin}" ondragstart="window.handleDragStart(event, ${i}, 'bank')" onclick="window.toggleBrush(${i})" style="border-left-color:${CONFIG[d].color};"><div style="font-weight:bold; font-size:12px;">${warn} ${shortName}</div><div style="font-size:10px; color:#555;">${o.client||'-'} | Lõpp: ${safeISO(o.end)}</div><div style="margin-top:5px; font-weight:bold; color:var(--primary);">Jääk: <span style="color:var(--danger); font-size:14px;">${rem.toFixed(1)}h</span> / ${pH}h</div></div>`;
+                }
+            });
+            if (b.innerHTML === '') b.innerHTML = '<div style="color:#777; font-size:12px; padding:10px;">Selles osakonnas pole ühtegi planeerimata tundi! 🎉</div>';
+        }
+
+        // 2. TABELI JOONISTAMINE
+        let activeOrderEnd = null;
+        if (window.activeBrushIdx !== null) { let ao = window.orders[window.activeBrushIdx]; activeOrderEnd = new Date(ao.end).getTime(); }
+
+        let thead = `<thead><tr><th style="position:sticky; left:0; top:0; z-index:30; min-width:80px; background:#2c3e50; color:white; border-right:2px solid #34495e;">Päev</th>`;
+        deptsToRender.forEach(deptKey => {
+            let wsCount = (window.customCap.wsCounts && window.customCap.wsCounts[deptKey]) ? window.customCap.wsCounts[deptKey] : CONFIG[deptKey].ws;
+            for(let w=1; w<=wsCount; w++) {
+                thead += `<th style="position:sticky; top:0; z-index:20; background:${CONFIG[deptKey].color}; color:white; border-right:1px solid rgba(0,0,0,0.1); white-space:nowrap; padding:6px; font-size:11px;">${CONFIG[deptKey].prefix}-${w}</th>`;
             }
         });
+        thead += `</tr></thead><tbody>`;
+        t.innerHTML = thead;
+
+        let tbody = "";
+        for (let i = 0; i < 30; i++) {
+            let curD = new Date(s.getTime() + i*86400000); let dateStr = safeISO(curD);
+            let isWknd = curD.getDay() === 0 || curD.getDay() === 6; let isHol = isHoliday(curD);
+            let trBg = ""; let warnBorder = "";
+            
+            // Üle tähtaja hoiatus pintslile
+            if (activeOrderEnd && curD.getTime() > activeOrderEnd + 86400000) { trBg = "background: repeating-linear-gradient(45deg, #ffebee, #ffebee 10px, #fff 10px, #fff 20px);"; warnBorder = "border-right: 3px solid #c62828;"; }
+            if (isHol) { trBg = "background: #ffebee;"; } else if (isWknd) { trBg = "background: #eee;"; }
+
+            let tdDate = `<td style="position:sticky; left:0; font-weight:bold; z-index:10; border-right:2px solid #ccc; background:${isHol?'#c62828':(isWknd?'#bdc3c7':'#f4f7f6')}; color:${isHol||isWknd?'white':'#333'}; ${warnBorder}">${curD.getDate()}.${curD.getMonth()+1}<br><span style="font-size:10px; font-weight:normal;">${['P','E','T','K','N','R','L'][curD.getDay()]}</span></td>`;
+            let tdCols = "";
+
+            deptsToRender.forEach(deptKey => {
+                let wsCount = (window.customCap.wsCounts && window.customCap.wsCounts[deptKey]) ? window.customCap.wsCounts[deptKey] : CONFIG[deptKey].ws;
+                for(let w=1; w<=wsCount; w++) {
+                    let wsName = `${CONFIG[deptKey].prefix}-${w}`; let cellHtml = "";
+
+                    // Käsitsi paigutatud plokid
+                    window.orders.forEach((ord, ordIdx) => {
+                        let manualH = ord.allocs && ord.allocs[deptKey] && ord.allocs[deptKey][dateStr] ? f(ord.allocs[deptKey][dateStr][wsName]) : 0;
+                        if (manualH > 0) {
+                            let shortName = ord.parentId ? ord.mt.split(' / ').pop() : ord.mt; // Alamkoostude puhul näita lühendatud nime
+                            cellHtml += `<div class="disp-alloc" draggable="${window.isAdmin}" ondragstart="window.handleDragStart(event, ${ordIdx}, 'grid', '${dateStr}', '${wsName}', ${manualH})" onclick="window.handleInnerBlockClick(event, '${deptKey}', '${dateStr}', '${wsName}', ${ordIdx}, ${manualH})" style="background:${CONFIG[deptKey].color};" title="${ord.mt}\n${manualH}h">${manualH}h ${shortName}</div>`;
+                        }
+                    });
+
+                    // Autopiloodi triibulised plokid (soovitused)
+                    if (!isWknd && !isHol) {
+                        window.orders.forEach(ord => {
+                            let aObj = smartLoad.autoAllocs.find(a => a.mt === ord.mt);
+                            if (aObj && aObj.depts[deptKey] && aObj.depts[deptKey][dateStr]) {
+                                let autoH = f(aObj.depts[deptKey][dateStr][wsName]);
+                                if (autoH > 0 && !(ord.allocs && ord.allocs[deptKey] && ord.allocs[deptKey][dateStr] && ord.allocs[deptKey][dateStr][wsName])) {
+                                    let ordIdx = window.orders.indexOf(ord);
+                                    let shortName = ord.parentId ? ord.mt.split(' / ').pop() : ord.mt;
+                                    cellHtml += `<div class="disp-alloc striped-bg" onclick="window.handleAutoClick(event, '${deptKey}', '${dateStr}', '${wsName}', ${ordIdx}, ${autoH})" style="background-color:${CONFIG[deptKey].color}; color:#fff; opacity:0.8;" title="Automaatne soovitus!\nKlõpsa, et kinnitada.">${autoH.toFixed(1)}h ${shortName}</div>`;
+                                }
+                            }
+                        });
+                    }
+
+                    let dropEvents = window.isAdmin ? `ondragover="event.preventDefault(); event.currentTarget.classList.add('dragover');" ondragleave="event.currentTarget.classList.remove('dragover');" ondrop="window.handleDrop(event, '${deptKey}', '${dateStr}', '${wsName}')" onclick="window.handleCellClick('${deptKey}', '${dateStr}', '${wsName}')"` : "";
+                    tdCols += `<td class="disp-cell" ${dropEvents}>${cellHtml}</td>`;
+                }
+            });
+            tbody += `<tr style="${trBg}">${tdDate}${tdCols}</tr>`;
+        }
+        t.innerHTML += tbody + `</tbody>`;
+        if (window.activeBrushIdx !== null) { t.parentElement.classList.add('grid-brush-mode'); } else { t.parentElement.classList.remove('grid-brush-mode'); }
+    };
         if (b.innerHTML === '') b.innerHTML = '<div style="color:#777; font-size:12px; padding:10px;">Selles osakonnas pole ühtegi planeerimata tundi! 🎉</div>';
         
         let wsCount = (window.customCap.wsCounts && window.customCap.wsCounts[d]) ? window.customCap.wsCounts[d] : CONFIG[d].ws; let maxCap = wsCount * 8; let activeOrderEnd = null; if (window.activeBrushIdx !== null) { let ao = window.orders[window.activeBrushIdx]; activeOrderEnd = new Date(ao.end).getTime(); }
