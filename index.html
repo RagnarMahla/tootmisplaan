@@ -596,7 +596,7 @@
         }); return { tracker: dailyLoadTracker, autoAllocs: autoAllocations, wsTracker: wsTracker };
     }
 
-   window.renderDispatcher = function() {
+window.renderDispatcher = function() {
         const d = document.getElementById('disp-dept').value;
         const s = getValidDate(document.getElementById('disp-start').value);
         const t = document.getElementById('disp-grid');
@@ -698,38 +698,6 @@
         }
         t.innerHTML += tbody + `</tbody>`;
         if (window.activeBrushIdx !== null) { t.parentElement.classList.add('grid-brush-mode'); } else { t.parentElement.classList.remove('grid-brush-mode'); }
-    });
-        if (b.innerHTML === '') b.innerHTML = '<div style="color:#777; font-size:12px; padding:10px;">Selles osakonnas pole ühtegi planeerimata tundi! 🎉</div>';
-        
-        let wsCount = (window.customCap.wsCounts && window.customCap.wsCounts[d]) ? window.customCap.wsCounts[d] : CONFIG[d].ws; let maxCap = wsCount * 8; let activeOrderEnd = null; if (window.activeBrushIdx !== null) { let ao = window.orders[window.activeBrushIdx]; activeOrderEnd = new Date(ao.end).getTime(); }
-        
-        let thead = `<thead><tr><th style="position:sticky; left:0; top:0; z-index:30; min-width:80px; background:#2c3e50; color:white; border-right:2px solid #34495e;">Päev</th>`; for(let w=1; w<=wsCount; w++) { thead += `<th style="position:sticky; top:0; z-index:20; background:#2c3e50; color:white; border-right:1px solid #34495e;">${CONFIG[d].prefix}-${w}</th>`; } thead += `</tr></thead><tbody>`; t.innerHTML = thead;
-        
-        for (let i = 0; i < 30; i++) {
-            let curD = new Date(s.getTime() + i*86400000); let dateStr = safeISO(curD); let isWknd = curD.getDay() === 0 || curD.getDay() === 6; let isHol = isHoliday(curD);
-            let trBg = ""; let warnBorder = "";
-            if (activeOrderEnd && curD.getTime() > activeOrderEnd + 86400000) { trBg = "background: repeating-linear-gradient(45deg, #ffebee, #ffebee 10px, #fff 10px, #fff 20px);"; warnBorder = "border-right: 3px solid #c62828;"; }
-            if (isHol) { trBg = "background: #ffebee;"; } else if (isWknd) { trBg = "background: #eee;"; }
-            let tdDate = `<td style="position:sticky; left:0; font-weight:bold; z-index:10; border-right:2px solid #ccc; background:${isHol?'#c62828':(isWknd?'#bdc3c7':'#f4f7f6')}; color:${isHol||isWknd?'white':'#333'}; ${warnBorder}">${curD.getDate()}.${curD.getMonth()+1}<br><span style="font-size:10px; font-weight:normal;">${['P','E','T','K','N','R','L'][curD.getDay()]}</span></td>`;
-            let tdCols = "";
-            for(let w=1; w<=wsCount; w++) {
-                let wsName = `${CONFIG[d].prefix}-${w}`; let cellHtml = "";
-                window.orders.forEach((ord, ordIdx) => {
-                    let manualH = ord.allocs && ord.allocs[d] && ord.allocs[d][dateStr] ? f(ord.allocs[d][dateStr][wsName]) : 0;
-                    if (manualH > 0) { cellHtml += `<div class="disp-alloc" draggable="${window.isAdmin}" ondragstart="window.handleDragStart(event, ${ordIdx}, 'grid', '${dateStr}', '${wsName}', ${manualH})" onclick="window.handleInnerBlockClick(event, '${d}', '${dateStr}', '${wsName}', ${ordIdx}, ${manualH})" style="background:${CONFIG[d].color};" title="${ord.mt}\n${manualH}h">${manualH}h ${ord.mt}</div>`; }
-                });
-                if (!isWknd && !isHol) {
-                    window.orders.forEach(ord => {
-                        let aObj = smartLoad.autoAllocs.find(a => a.mt === ord.mt);
-                        if (aObj && aObj.depts[d] && aObj.depts[d][dateStr]) { let autoH = f(aObj.depts[d][dateStr][wsName]); if (autoH > 0 && !(ord.allocs && ord.allocs[d] && ord.allocs[d][dateStr] && ord.allocs[d][dateStr][wsName])) { let ordIdx = window.orders.indexOf(ord); cellHtml += `<div class="disp-alloc striped-bg" onclick="window.handleAutoClick(event, '${d}', '${dateStr}', '${wsName}', ${ordIdx}, ${autoH})" style="background-color:${CONFIG[d].color}; color:#fff; opacity:0.8;" title="Automaatne soovitus!\nKlõpsa, et kinnitada.">${autoH.toFixed(1)}h ${ord.mt}</div>`; } }
-                    });
-                }
-                let dropEvents = window.isAdmin ? `ondragover="event.preventDefault(); event.currentTarget.classList.add('dragover');" ondragleave="event.currentTarget.classList.remove('dragover');" ondrop="window.handleDrop(event, '${d}', '${dateStr}', '${wsName}')" onclick="window.handleCellClick('${d}', '${dateStr}', '${wsName}')"` : "";
-                tdCols += `<td class="disp-cell" ${dropEvents}>${cellHtml}</td>`;
-            }
-            t.innerHTML += `<tr style="${trBg}">${tdDate}${tdCols}</tr>`;
-        }
-        t.innerHTML += `</tbody>`; if (window.activeBrushIdx !== null) { t.parentElement.classList.add('grid-brush-mode'); } else { t.parentElement.classList.remove('grid-brush-mode'); }
     };
 
     window.cleanAllocs = function(allocsObj) {
