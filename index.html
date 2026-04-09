@@ -233,31 +233,46 @@
   window.printOrder = function() {
         let o = window.orders[window.currentEditIndex];
         if(!o) return;
-        let pW = window.open('', '_blank');
-        let bnds = getPhaseDates(o, START_VIEW);
         
-        let startD = new Date(bnds.ins.sDate); startD.setDate(startD.getDate() - 2);
+        // Leiame kõik alamkoostud
+        let mySubs = window.orders.filter(ord => ord.parentId === o.mt);
+        
+        // Arvutame kogu projekti maksimaalse ajatelje (peatellimus + kõik alamkoostud)
+        let bnds = getPhaseDates(o, START_VIEW);
+        let startD = new Date(bnds.ins.sDate); 
         let endD = new Date(o.end); if(isNaN(endD.getTime())) endD = new Date();
         if(bnds.kooste.eDate.getTime() > endD.getTime()) endD = new Date(bnds.kooste.eDate);
+        
+        mySubs.forEach(sub => {
+            let sBnds = getPhaseDates(sub, START_VIEW);
+            if (sBnds.ins.sDate < startD) startD = new Date(sBnds.ins.sDate);
+            let sEnd = new Date(sub.end); if (!isNaN(sEnd.getTime()) && sEnd > endD) endD = sEnd;
+            if (sBnds.kooste.eDate > endD) endD = new Date(sBnds.kooste.eDate);
+        });
+        
+        // Lisame veidi "puhvrit" graafiku algusesse ja lõppu
+        startD.setDate(startD.getDate() - 2);
         endD.setDate(endD.getDate() + 3);
         
         let diffDays = Math.ceil((endD - startD) / (1000 * 60 * 60 * 24));
-        if (diffDays > 150) diffDays = 150;
-        
-        let tasks = [];
-        if(f(o.ins)>0 || o.done_ins) tasks.push({ name: "Inseneeria / Joonised", r: "Insener", p: o.done_ins ? 100 : Math.round((f(o.prog_ins)/f(o.ins))*100)||0, s: bnds.ins.sDate, e: bnds.ins.eDate, c: "#0097e6" });
-        tasks.push({ name: "Materjalid / Ost", r: "Ostuosakond", p: o.chk_ost ? 100 : 0, s: bnds.ins.sDate, e: bnds.ins.eDate, c: "#95a5a6" });
-        if(f(o.sub1)>0) tasks.push({ name: "1. Allhange (AH1)", r: "Allhankija", p: o.chk_ah1 ? 100 : 0, s: bnds.ah1.sDate, e: bnds.ah1.eDate, c: "#7f8c8d" });
-        
-        let lH = f(o.trei)+f(o.must_l)+f(o.rv_l); let lA = f(o.prog_tr)+f(o.prog_ml)+f(o.prog_rl);
-        if(lH>0) tasks.push({ name: "Lukksepp ja Treial", r: "Tootmine", p: Math.round((lA/lH)*100)||0, s: bnds.lukk.sDate, e: bnds.lukk.eDate, c: "#3498db" });
-        
-        let kH = f(o.must_k)+f(o.rv_k); let kA = f(o.prog_mk)+f(o.prog_rk);
-        if(kH>0) tasks.push({ name: "Keevitus", r: "Tootmine", p: Math.round((kA/kH)*100)||0, s: bnds.keev.sDate, e: bnds.keev.eDate, c: "#e67e22" });
-        
-        if(f(o.sub2)>0) tasks.push({ name: "2. Allhange (AH2)", r: "Allhankija", p: o.chk_ah2 ? 100 : 0, s: bnds.ah2.sDate, e: bnds.ah2.eDate, c: "#7f8c8d" });
-        if(f(o.kooste)>0) tasks.push({ name: "Kooste", r: "Tootmine", p: o.done_ko ? 100 : Math.round((f(o.prog_ko)/f(o.kooste))*100)||0, s: bnds.kooste.sDate, e: bnds.kooste.eDate, c: "#27ae60" });
-        
+        if (diffDays > 150) diffDays = 150; // Et paberile ära mahuks
+
+        // Abifunktsioon etappide lugemiseks
+        const getTasks = (ord) => {
+            let tBnds = getPhaseDates(ord, START_VIEW);
+            let t = [];
+            if(f(ord.ins)>0 || ord.done_ins) t.push({ name: "Inseneeria / Joonised", r: "Insener", p: ord.done_ins ? 100 : Math.round((f(ord.prog_ins)/f(ord.ins))*100)||0, s: tBnds.ins.sDate, e: tBnds.ins.eDate, c: "#0097e6" });
+            t.push({ name: "Materjalid / Ost", r: "Ostuosakond", p: ord.chk_ost ? 100 : 0, s: tBnds.ins.sDate, e: tBnds.ins.eDate, c: "#95a5a6" });
+            if(f(ord.sub1)>0) t.push({ name: "1. Allhange (AH1)", r: "Allhankija", p: ord.chk_ah1 ? 100 : 0, s: tBnds.ah1.sDate, e: tBnds.ah1.eDate, c: "#7f8c8d" });
+            let lH = f(ord.trei)+f(ord.must_l)+f(ord.rv_l); let lA = f(ord.prog_tr)+f(ord.prog_ml)+f(ord.prog_rl);
+            if(lH>0) t.push({ name: "Lukksepp ja Treial", r: "Tootmine", p: Math.round((lA/lH)*100)||0, s: tBnds.lukk.sDate, e: tBnds.lukk.eDate, c: "#3498db" });
+            let kH = f(ord.must_k)+f(ord.rv_k); let kA = f(ord.prog_mk)+f(ord.prog_rk);
+            if(kH>0) t.push({ name: "Keevitus", r: "Tootmine", p: Math.round((kA/kH)*100)||0, s: tBnds.keev.sDate, e: tBnds.keev.eDate, c: "#e67e22" });
+            if(f(ord.sub2)>0) t.push({ name: "2. Allhange (AH2)", r: "Allhankija", p: ord.chk_ah2 ? 100 : 0, s: tBnds.ah2.sDate, e: tBnds.ah2.eDate, c: "#7f8c8d" });
+            if(f(ord.kooste)>0) t.push({ name: "Kooste", r: "Tootmine", p: ord.done_ko ? 100 : Math.round((f(ord.prog_ko)/f(ord.kooste))*100)||0, s: tBnds.kooste.sDate, e: tBnds.kooste.eDate, c: "#27ae60" });
+            return t;
+        };
+
         const sf = d => { let dt = new Date(d); return `${String(dt.getDate()).padStart(2,'0')}.${String(dt.getMonth()+1).padStart(2,'0')}.${dt.getFullYear()}`; };
         
         let html = `<html><head><title>Progress Report: ${o.mt}</title><style>
@@ -292,58 +307,64 @@
         }
         html += daysHtml + `</tr></thead><tbody>`;
         
-        tasks.forEach(t => {
-            let pStr = t.p > 100 ? 100 : t.p;
-            html += `<tr>
-                <td style="font-weight:bold;">${t.name}</td>
-                <td class="t-center">${t.r}</td>
-                <td class="t-center" style="font-weight:bold; color:${pStr===100?'#27ae60':'#e67e22'}">${pStr}%</td>
-                <td class="t-center" style="font-size:10px;">${sf(t.s)}</td><td class="t-center" style="font-size:10px;">${sf(t.e)}</td>`;
-            
-            let tStart = new Date(t.s).getTime();
-            let tEnd = new Date(t.e).getTime();
-            
-            for(let i=0; i<diffDays; i++) {
-                let d = new Date(startD.getTime() + i*86400000);
-                let time = d.getTime();
-                let isWk = d.getDay()===0||d.getDay()===6;
-                let bg = isWk ? 'wknd' : '';
+        // Ridade joonistaja (saab hakkama nii ema- kui ka alamtootega)
+        const renderTasksRows = (tasksArr, isSub) => {
+            let rows = '';
+            tasksArr.forEach(t => {
+                let pStr = t.p > 100 ? 100 : t.p;
+                let indent = isSub ? '&nbsp;&nbsp;&nbsp;↳ ' : '';
+                let fw = isSub ? 'normal' : 'bold';
+                rows += `<tr>
+                    <td style="font-weight:${fw};">${indent}${t.name}</td>
+                    <td class="t-center">${t.r}</td>
+                    <td class="t-center" style="font-weight:bold; color:${pStr===100?'#27ae60':'#e67e22'}">${pStr}%</td>
+                    <td class="t-center" style="font-size:10px;">${sf(t.s)}</td><td class="t-center" style="font-size:10px;">${sf(t.e)}</td>`;
                 
-                if(time >= new Date(tStart).setHours(0,0,0,0) && time <= new Date(tEnd).setHours(23,59,59,999)) {
-                    html += `<td class="bar-cell ${bg}"><div class="bar" style="background:${t.c}; width:100%;"></div></td>`;
-                } else {
-                    html += `<td class="${bg}"></td>`;
+                let tStart = new Date(t.s).getTime();
+                let tEnd = new Date(t.e).getTime();
+                
+                for(let i=0; i<diffDays; i++) {
+                    let d = new Date(startD.getTime() + i*86400000);
+                    let time = d.getTime();
+                    let isWk = d.getDay()===0||d.getDay()===6;
+                    let bg = isWk ? 'wknd' : '';
+                    
+                    if(time >= new Date(tStart).setHours(0,0,0,0) && time <= new Date(tEnd).setHours(23,59,59,999)) {
+                        rows += `<td class="bar-cell ${bg}"><div class="bar" style="background:${t.c}; width:100%;"></div></td>`;
+                    } else {
+                        rows += `<td class="${bg}"></td>`;
+                    }
                 }
-            }
-            html += `</tr>`;
-        });
-        
-        html += `</tbody></table><br>`;
-
-        // --- ALAMKOOSTUDE LISAMINE RAPORTISSE ---
-        let mySubs = window.orders.filter(ord => ord.parentId === o.mt);
-        if (mySubs.length > 0) {
-            html += `<h3 style="margin-top:20px; margin-bottom:5px; color:#2c3e50; font-size:14px;">🔗 Seotud alamkoostud / detailid</h3>
-            <table style="margin-top:0;"><thead><tr><th class="t-left">Alamkoost / Nimi</th><th style="width:100px;">Staatus</th><th style="width:80px;">Valmidus</th><th style="width:100px;">Lõpp tähtaeg</th></tr></thead><tbody>`;
-            mySubs.forEach(sub => {
-                html += `<tr>
-                    <td style="font-weight:bold;">${sub.mt.split(' / ').pop()} <span style="font-weight:normal; color:#555;">(${sub.kirjeldus || '-'})</span></td>
-                    <td class="t-center" style="font-weight:bold; color:${sub.status==='Valmis'?'#27ae60':(sub.status==='Töös'?'#3498db':'#95a5a6')};">${sub.status}</td>
-                    <td class="t-center" style="font-weight:bold;">${sub.progress}%</td>
-                    <td class="t-center">${sf(sub.end)}</td>
-                </tr>`;
+                rows += `</tr>`;
             });
-            html += `</tbody></table><br>`;
-        }
-        // ----------------------------------------
+            return rows;
+        };
         
-        html += `<div style="font-size:12px; color:#555;"><b>Lisamärkused:</b> ${o.chk_notes || '-'}</div>
+        // 1. PEATELLIMUSE REA
+        if (mySubs.length > 0) {
+            html += `<tr><td colspan="${5 + diffDays}" style="background:#e0e0e0; font-weight:bold; font-size:14px; padding:6px;">📦 PEATELLIMUS</td></tr>`;
+        }
+        html += renderTasksRows(getTasks(o), false);
+        
+        // 2. KÕIKIDE ALAMKOOSTUDE REA
+        if (mySubs.length > 0) {
+            mySubs.forEach(sub => {
+                let shortName = sub.mt.split(' / ').pop();
+                html += `<tr><td colspan="${5 + diffDays}" style="background:#eef2f5; font-weight:bold; color:#2c3e50; padding:6px; border-top:2px solid #ccc;">
+                    🔗 ALAMKOOST: ${shortName} <span style="font-weight:normal; color:#555;">(${sub.kirjeldus || '-'})</span> | Valmidus: <span style="color:${sub.progress===100?'#27ae60':'#e67e22'}">${sub.progress}%</span>
+                </td></tr>`;
+                html += renderTasksRows(getTasks(sub), true);
+            });
+        }
+        
+        html += `</tbody></table><br>
+        <div style="font-size:12px; color:#555;"><b>Lisamärkused:</b> ${o.chk_notes || '-'}</div>
         </body></html>`;
         
+        let pW = window.open('', '_blank');
         pW.document.write(html);
         pW.document.close();
     };
-
     window.addSubOrder = async function() {
         if(!window.isAdmin) return;
         let p = window.orders[window.currentEditIndex];
