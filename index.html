@@ -148,6 +148,10 @@
             </div>
             <div style="flex:3;"><label style="display:block; font-size:11px; font-weight:bold; color:#666; margin-bottom:4px;">Üldised Märkmed / Kommentaarid:</label><textarea id="edit-chk-notes" class="checklist-notes" placeholder="Kirjuta projekti üldine lisainfo siia..."></textarea></div>
         </div>
+        <div id="edit-subs-container" style="display:none; margin-bottom:15px;">
+            <div class="edit-section-title" style="margin-top:5px;">🔗 Seotud Alamkoostud</div>
+            <div id="edit-subs-list" style="display:flex; flex-direction:column; gap:5px;"></div>
+        </div>
         <div class="edit-section-title">Töötunnid ja Raport (Reaalajas)</div>
         <div style="display:grid; grid-template-columns: 100px 70px 70px 70px 70px; gap: 10px; margin-bottom:5px; padding:0 8px;"><small style="color:#777; font-weight:bold;">Osakond</small><small style="color:#777; font-weight:bold; text-align:center;">Plaan h</small><small style="color:#777; font-weight:bold; text-align:center;">Tehtud h</small><small style="color:#777; font-weight:bold; text-align:center;">Vahe</small><small style="color:#777; font-weight:bold;">Olek</small></div>
         <div id="edit-departments-container"></div>
@@ -202,6 +206,10 @@
     const START_VIEW = new Date("2026-01-01"), TODAY = new Date();
     window.customCap = {}; window.orders = []; window.currentMainTabFilter = 'active'; window.tempAHTasks = { ah1: [], ah2: [] };
     const f = (v) => parseFloat(v) || 0;
+    window.resetBrushAndRender = function() {
+        window.activeBrushIdx = null;
+        window.renderDispatcher();
+    };
 
     window.save = function(immediate) { window.saveData(immediate); };
     window.onbeforeunload = function(e) { if (window.isSaving || window.hasPendingChanges) { e.preventDefault(); e.returnValue = "Oota korraks!"; return "Oota korraks!"; } };
@@ -222,22 +230,20 @@
     function calcOverallProgress(o) { let totalPlanned = f(o.ins) + f(o.trei) + f(o.must_k) + f(o.rv_k) + f(o.must_l) + f(o.rv_l) + f(o.kooste); if (totalPlanned === 0) return 0; let totalActual = f(o.prog_ins) + f(o.prog_tr) + f(o.prog_mk) + f(o.prog_rk) + f(o.prog_ml) + f(o.prog_rl) + f(o.prog_ko); return Math.round((totalActual / totalPlanned) * 100); }
     function getAllocated(o, dept) { let allocated = 0; if(o.allocs && o.allocs[dept]) Object.values(o.allocs[dept]).forEach(day => { Object.values(day).forEach(h => allocated += f(h)); }); return allocated; }
 
-   window.printOrder = function() {
+  window.printOrder = function() {
         let o = window.orders[window.currentEditIndex];
         if(!o) return;
         let pW = window.open('', '_blank');
         let bnds = getPhaseDates(o, START_VIEW);
         
-        // Arvutame graafiku pikkuse (algusest kuni kooste lõpu või kliendi tähtajani)
         let startD = new Date(bnds.ins.sDate); startD.setDate(startD.getDate() - 2);
         let endD = new Date(o.end); if(isNaN(endD.getTime())) endD = new Date();
         if(bnds.kooste.eDate.getTime() > endD.getTime()) endD = new Date(bnds.kooste.eDate);
         endD.setDate(endD.getDate() + 3);
         
         let diffDays = Math.ceil((endD - startD) / (1000 * 60 * 60 * 24));
-        if (diffDays > 150) diffDays = 150; // Piirame laiust, et mahuks paberile
+        if (diffDays > 150) diffDays = 150;
         
-        // Koostame tööetappide andmestiku
         let tasks = [];
         if(f(o.ins)>0 || o.done_ins) tasks.push({ name: "Inseneeria / Joonised", r: "Insener", p: o.done_ins ? 100 : Math.round((f(o.prog_ins)/f(o.ins))*100)||0, s: bnds.ins.sDate, e: bnds.ins.eDate, c: "#0097e6" });
         tasks.push({ name: "Materjalid / Ost", r: "Ostuosakond", p: o.chk_ost ? 100 : 0, s: bnds.ins.sDate, e: bnds.ins.eDate, c: "#95a5a6" });
@@ -276,7 +282,6 @@
             <div><b>Üldine valmidus:</b> <span style="color:#27ae60; font-weight:bold; font-size:16px;">${o.progress}%</span></div>
         </div>`;
         
-        // Tabeli päis
         html += `<table><thead><tr><th class="t-left" style="min-width:140px;">Tööetapp / Staadium</th><th style="min-width:90px;">Vastutaja</th><th style="width:50px;">Progress</th><th>Algus</th><th>Lõpp</th>`;
         let daysHtml = "";
         for(let i=0; i<diffDays; i++) {
@@ -287,7 +292,6 @@
         }
         html += daysHtml + `</tr></thead><tbody>`;
         
-        // Read vastavalt etappidele
         tasks.forEach(t => {
             let pStr = t.p > 100 ? 100 : t.p;
             html += `<tr>
@@ -305,7 +309,6 @@
                 let isWk = d.getDay()===0||d.getDay()===6;
                 let bg = isWk ? 'wknd' : '';
                 
-                // Joonistame värvilise klotsi, kui päev jääb alguse ja lõpu vahele
                 if(time >= new Date(tStart).setHours(0,0,0,0) && time <= new Date(tEnd).setHours(23,59,59,999)) {
                     html += `<td class="bar-cell ${bg}"><div class="bar" style="background:${t.c}; width:100%;"></div></td>`;
                 } else {
@@ -315,8 +318,26 @@
             html += `</tr>`;
         });
         
-        html += `</tbody></table><br>
-        <div style="font-size:12px; color:#555;"><b>Lisamärkused:</b> ${o.chk_notes || '-'}</div>
+        html += `</tbody></table><br>`;
+
+        // --- ALAMKOOSTUDE LISAMINE RAPORTISSE ---
+        let mySubs = window.orders.filter(ord => ord.parentId === o.mt);
+        if (mySubs.length > 0) {
+            html += `<h3 style="margin-top:20px; margin-bottom:5px; color:#2c3e50; font-size:14px;">🔗 Seotud alamkoostud / detailid</h3>
+            <table style="margin-top:0;"><thead><tr><th class="t-left">Alamkoost / Nimi</th><th style="width:100px;">Staatus</th><th style="width:80px;">Valmidus</th><th style="width:100px;">Lõpp tähtaeg</th></tr></thead><tbody>`;
+            mySubs.forEach(sub => {
+                html += `<tr>
+                    <td style="font-weight:bold;">${sub.mt.split(' / ').pop()} <span style="font-weight:normal; color:#555;">(${sub.kirjeldus || '-'})</span></td>
+                    <td class="t-center" style="font-weight:bold; color:${sub.status==='Valmis'?'#27ae60':(sub.status==='Töös'?'#3498db':'#95a5a6')};">${sub.status}</td>
+                    <td class="t-center" style="font-weight:bold;">${sub.progress}%</td>
+                    <td class="t-center">${sf(sub.end)}</td>
+                </tr>`;
+            });
+            html += `</tbody></table><br>`;
+        }
+        // ----------------------------------------
+        
+        html += `<div style="font-size:12px; color:#555;"><b>Lisamärkused:</b> ${o.chk_notes || '-'}</div>
         </body></html>`;
         
         pW.document.write(html);
@@ -440,7 +461,7 @@
         try { let c = CONFIG[k]; let pEl = document.getElementById(`edit-p-${k}`); let aEl = document.getElementById(`edit-a-${c.p}`); if(!pEl || !aEl) return; let pVal = f(pEl.value); let aVal = f(aEl.value); let diff = aVal - pVal; let el = document.getElementById(`diff-${k}`); if(!el) return; if(pVal > 0 || aVal > 0) { if(diff > 0) el.innerHTML = `<span style="color:#c62828; font-size:11px; font-weight:bold; background:#ffebee; padding:2px 4px; border-radius:3px;">+${diff}h üle</span>`; else if(diff < 0) el.innerHTML = `<span style="color:#27ae60; font-size:11px; font-weight:bold;">${Math.abs(diff)}h varu</span>`; else el.innerHTML = `<span style="color:#999; font-size:11px; font-weight:bold;">Täpselt</span>`; } else { el.innerHTML = `<span style="color:#ccc; font-size:11px;">-</span>`; } } catch(e) {}
     };
 
-    window.openEditModal = function(i) {
+  window.openEditModal = function(i) {
         try {
             window.currentEditIndex = i; let o = window.orders[i]; let disAttr = window.isAdmin ? "" : "disabled"; let titleEl = document.getElementById('edit-modal-title'); if(titleEl) titleEl.innerText = `🗂️ Kaart: ${o.mt === 'UUS' ? 'Uus Tellimus' : o.mt}`;
             let mtEl = document.getElementById('edit-mt'); if(mtEl) mtEl.value = o.mt === 'UUS' ? '' : o.mt; let clientEl = document.getElementById('edit-client'); if(clientEl) clientEl.value = o.client || ''; let descEl = document.getElementById('edit-desc'); if(descEl) descEl.value = o.kirjeldus || ''; let endEl = document.getElementById('edit-end'); if(endEl) endEl.value = safeISO(o.end); let ah1El = document.getElementById('edit-ah1'); if(ah1El) ah1El.value = f(o.sub1); let ah2El = document.getElementById('edit-ah2'); if(ah2El) ah2El.value = f(o.sub2); let statusEl = document.getElementById('edit-status'); if(statusEl) statusEl.value = o.status || 'Ootel';
@@ -454,6 +475,33 @@
             let subBtn = document.getElementById('edit-add-sub-btn'); if(subBtn) subBtn.style.display = (window.isAdmin && !o.parentId && !window.isNewOrder) ? "block" : "none";
             let deptsHtml = ""; Object.keys(CONFIG).forEach(k => { let c = CONFIG[k]; let pVal = f(o[k]); let aVal = f(o[c.p]); let isDone = String(o[c.d]) === 'true'; deptsHtml += `<div class="dept-edit-row"><strong>${c.l}</strong><input type="number" id="edit-p-${k}" value="${pVal}" min="0" ${disAttr} title="Plaanitud tunnid" oninput="window.calcDiff('${k}')"><input type="number" id="edit-a-${c.p}" value="${aVal}" min="0" ${disAttr} title="Tehtud tunnid" oninput="window.calcDiff('${k}')"><div id="diff-${k}" style="width:65px; text-align:center;"></div><label><input type="checkbox" id="edit-d-${c.d}" ${isDone ? 'checked' : ''} ${disAttr}> Valmis</label></div>`; });
             let deptsContainer = document.getElementById('edit-departments-container'); if(deptsContainer) deptsContainer.innerHTML = deptsHtml; window.calcDiff('ins'); window.calcDiff('trei'); window.calcDiff('must_k'); window.calcDiff('rv_k'); window.calcDiff('must_l'); window.calcDiff('rv_l'); window.calcDiff('kooste');
+            
+            // --- ALAMKOOSTUDE LUGEMINE ---
+            let subsContainer = document.getElementById('edit-subs-container');
+            let subsList = document.getElementById('edit-subs-list');
+            if (subsContainer && subsList) {
+                if (!o.parentId && !window.isNewOrder) {
+                    let mySubs = window.orders.map((ord, idx) => ({ord, idx})).filter(x => x.ord.parentId === o.mt);
+                    if (mySubs.length > 0) {
+                        let sHtml = '';
+                        mySubs.forEach(s => {
+                            let subO = s.ord; let sIdx = s.idx;
+                            let statusColor = subO.status === 'Valmis' ? '#27ae60' : (subO.status === 'Töös' ? '#3498db' : '#95a5a6');
+                            sHtml += `<div style="display:flex; justify-content:space-between; align-items:center; background:#f8f9fa; border:1px solid #ddd; padding:8px; border-radius:4px;">
+                                <div><b>${subO.mt.split(' / ').pop()}</b> <span style="font-size:11px; color:#777;">(${subO.kirjeldus||''})</span> - <span style="color:${statusColor}; font-weight:bold;">${subO.status}</span> <span style="font-size:10px; color:#555;">(${subO.progress}%)</span></div>
+                                <button onclick="window.openEditModal(${sIdx})" style="padding:4px 8px; background:var(--accent); color:white; border:none; border-radius:3px; cursor:pointer; font-size:11px; font-weight:bold;">Ava 🗂️</button>
+                            </div>`;
+                        });
+                        subsList.innerHTML = sHtml;
+                        subsContainer.style.display = 'block';
+                    } else {
+                        subsContainer.style.display = 'none';
+                    }
+                } else {
+                    subsContainer.style.display = 'none';
+                }
+            }
+
             let modalEl = document.getElementById('editModal'); if(modalEl) modalEl.style.display = 'block';
         } catch(e) { console.error("Viga Edit Modali avamisel:", e); alert("Viga kaardi avamisel: " + e.message); }
     };
