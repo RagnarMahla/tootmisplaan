@@ -665,7 +665,7 @@
         }); return { tracker: dailyLoadTracker, autoAllocs: autoAllocations, wsTracker: wsTracker };
     }
 
-window.renderDispatcher = function() {
+   window.renderDispatcher = function() {
         const d = document.getElementById('disp-dept').value;
         const s = getValidDate(document.getElementById('disp-start').value);
         const t = document.getElementById('disp-grid');
@@ -738,7 +738,8 @@ window.renderDispatcher = function() {
                         let manualH = ord.allocs && ord.allocs[deptKey] && ord.allocs[deptKey][dateStr] ? f(ord.allocs[deptKey][dateStr][wsName]) : 0;
                         if (manualH > 0) {
                             let shortName = ord.parentId ? ord.mt.split(' / ').pop() : ord.mt;
-                            cellHtml += `<div class="disp-alloc" draggable="${window.isAdmin}" ondragstart="window.handleDragStart(event, ${ordIdx}, 'grid', '${dateStr}', '${wsName}', ${manualH})" onclick="window.handleInnerBlockClick(event, '${deptKey}', '${dateStr}', '${wsName}', ${ordIdx}, ${manualH})" style="background:${CONFIG[deptKey].color};" title="${ord.mt}\n${manualH}h">${manualH}h ${shortName}</div>`;
+                            let clientHtml = ord.client ? `<div style="font-size:8px; font-weight:normal; line-height:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px;">👤 ${ord.client}</div>` : '';
+                            cellHtml += `<div class="disp-alloc" draggable="${window.isAdmin}" ondragstart="window.handleDragStart(event, ${ordIdx}, 'grid', '${dateStr}', '${wsName}', ${manualH})" onclick="window.handleInnerBlockClick(event, '${deptKey}', '${dateStr}', '${wsName}', ${ordIdx}, ${manualH})" style="background:${CONFIG[deptKey].color};" title="${ord.mt}\nKlient: ${ord.client || '-'}\n${manualH}h"><div style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${manualH}h ${shortName}</div>${clientHtml}</div>`;
                         }
                     });
 
@@ -750,7 +751,8 @@ window.renderDispatcher = function() {
                                 if (autoH > 0 && !(ord.allocs && ord.allocs[deptKey] && ord.allocs[deptKey][dateStr] && ord.allocs[deptKey][dateStr][wsName])) {
                                     let ordIdx = window.orders.indexOf(ord);
                                     let shortName = ord.parentId ? ord.mt.split(' / ').pop() : ord.mt;
-                                    cellHtml += `<div class="disp-alloc striped-bg" onclick="window.handleAutoClick(event, '${deptKey}', '${dateStr}', '${wsName}', ${ordIdx}, ${autoH})" style="background-color:${CONFIG[deptKey].color}; color:#fff; opacity:0.8;" title="Automaatne soovitus!\nKlõpsa, et kinnitada.">${autoH.toFixed(1)}h ${shortName}</div>`;
+                                    let clientHtml = ord.client ? `<div style="font-size:8px; font-weight:normal; line-height:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px;">👤 ${ord.client}</div>` : '';
+                                    cellHtml += `<div class="disp-alloc striped-bg" onclick="window.handleAutoClick(event, '${deptKey}', '${dateStr}', '${wsName}', ${ordIdx}, ${autoH})" style="background-color:${CONFIG[deptKey].color}; color:#fff; opacity:0.8;" title="Automaatne soovitus!\nKlient: ${ord.client || '-'}\nKlõpsa, et kinnitada."><div style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${autoH.toFixed(1)}h ${shortName}</div>${clientHtml}</div>`;
                                 }
                             }
                         });
