@@ -241,6 +241,11 @@
     <select id="disp-dept" onchange="window.resetBrushAndRender()" style="padding:10px; border-radius:4px; font-weight:bold; border:2px solid var(--accent); cursor:pointer;"><option value="all">🌐 KÕIK OSAKONNAD KORRAGA</option><option value="must_k">🔥 Must Keevitus</option><option value="rv_k">✨ RV Keevitus</option><option value="must_l">🔧 Must Lukksepp</option><option value="rv_l">🗜️ RV Lukksepp</option><option value="trei">⚙️ Treial</option><option value="kooste">🔩 Kooste</option><option value="ins">📐 Inseneeria</option></select>
     <button onclick="window.autoPlanAll()" class="admin-only" style="padding:10px; background:#8e44ad; color:white; border:none; border-radius:4px; font-weight:bold; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.2); display:none;">🪄 AUTOPILOOT</button>
     <div><label style="font-size:11px; font-weight:bold; color:#666;">Algus:</label><input type="date" id="disp-start" onchange="window.renderDispatcher()" style="padding:6px; border-radius:4px; border:1px solid #ccc; margin-left:5px;"></div>
+    <div style="display:flex; gap:4px; align-items:center;">
+        <button onclick="window.dispNav(-1)" style="padding:6px 10px; background:#2c3e50; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;" title="Eelmine nädal">◀</button>
+        <button onclick="window.dispNavToday()" style="padding:6px 10px; background:var(--today); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold; font-size:11px;">TÄNA</button>
+        <button onclick="window.dispNav(1)" style="padding:6px 10px; background:#2c3e50; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;" title="Järgmine nädal">▶</button>
+    </div>
     <div style="display:flex; align-items:center; gap:5px; background:white; border:1px solid #ccc; border-radius:4px; padding:4px 8px;">
         <span style="font-size:11px; font-weight:bold; color:#666;">🔍 Projekt:</span>
         <input type="text" id="disp-project-filter" placeholder="Otsi MT, klient..." oninput="window.renderDispatcher()" style="padding:5px; border:none; outline:none; font-size:12px; width:160px;">
@@ -256,10 +261,24 @@
 <div id="voimekus_tab" class="content flex-view"><div style="display:flex; gap:20px; margin-bottom: 20px; flex-shrink: 0; flex-wrap: wrap;"><div id="holiday-manager" style="flex:1; min-width:300px; padding: 15px; background: white; border-radius: 8px; border: 1px solid #ddd;"><h3 style="margin-top:0; color:#c62828;">🏖️ Puhkused ja Riigipühad</h3><p style="font-size:11px; color:#666; margin-top:-5px;">Määratud pühade päevadel jaotatakse koormus automaatselt ümber.</p><div class="admin-only" style="display:none; margin-bottom: 15px; gap: 10px; align-items: center;"><input type="text" id="hol-name" placeholder="Nimetus (nt. Suvepuhkus)" style="padding:6px; border-radius:4px; border:1px solid #ccc; width:150px;"><input type="date" id="hol-start" style="padding:6px; border-radius:4px; border:1px solid #ccc;"><span style="font-weight:bold;">kuni</span><input type="date" id="hol-end" title="Jäta tühjaks, kui on ainult 1 päev" style="padding:6px; border-radius:4px; border:1px solid #ccc;"><button onclick="window.addHoliday()" style="padding:7px 15px; background:var(--danger); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">+ LISA PUHKUS</button></div><div id="holidays-list" style="display:flex; flex-direction:column; gap:5px; max-height: 100px; overflow-y: auto;"></div></div><div id="laser-manager" style="flex:1; min-width:300px; padding: 15px; background: white; border-radius: 8px; border: 1px solid #ddd;"><h3 style="margin-top:0; color:#8e44ad;">⚡ Laseri Koormus (Järjekord)</h3><div class="admin-only" style="display:none; margin-bottom: 15px; gap: 10px; align-items: center;"><input type="number" id="laser-total-h" placeholder="Kogu jääk (h)" style="width:120px; padding:6px; border-radius:4px; border:1px solid #ccc;" min="0" step="0.5"><button onclick="window.saveLaserBacklog()" style="padding:7px 15px; background:#8e44ad; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">💾 SALVESTA</button></div><div id="laser-list" style="display:flex; flex-direction:column; gap:5px; max-height: 100px; overflow-y: auto;"></div></div><div id="ws-manager" style="width:350px; padding: 15px; background: white; border-radius: 8px; border: 1px solid #ddd;"><h3 style="margin-top:0; color:#2980b9;">🏭 Töökohtade arv</h3><div id="ws-list" style="display:flex; flex-direction:column; gap:5px;"></div></div></div><div class="table-container" style="flex-grow: 1; overflow: auto; min-height: 0; padding: 0;"><table class="data-table" id="cap-table" style="min-width: max-content; border-collapse: separate; border-spacing: 0;"></table></div><button id="saveCapBtn" onclick="window.saveCapacity()" style="margin-top:15px; padding:12px 25px; background:var(--accent); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold; display:none; flex-shrink: 0; align-self: flex-start;">💾 SALVESTA SEADED</button></div>
 
 <script>
-    const CONFIG = { ins:{l:'Inseneeria',c:100,color:'#0097e6',order:0,p:'prog_ins',d:'done_ins',ws:2,prefix:'INS'}, trei:{l:'Treial',c:40,color:'#9b59b6',order:1,p:'prog_tr',d:'done_tr',ws:2,prefix:'TR'}, must_k:{l:'Must Keev',c:240,color:'#e67e22',order:2,p:'prog_mk',d:'done_mk',ws:6,prefix:'MK'}, rv_k:{l:'RV Keev',c:120,color:'#f39c12',order:2,p:'prog_rk',d:'done_rk',ws:3,prefix:'RK'}, must_l:{l:'Must Lukk',c:120,color:'#3498db',order:1,p:'prog_ml',d:'done_ml',ws:4,prefix:'ML'}, rv_l:{l:'RV Lukk',c:40,color:'#2980b9',order:1,p:'prog_rl',d:'done_rl',ws:2,prefix:'RL'}, kooste:{l:'Kooste',c:80,color:'#27ae60',order:3,p:'prog_ko',d:'done_ko',ws:4,prefix:'KO'} };
-    window.isAdmin = false; const ADMIN_PIN = "1234"; window.saveTimeout = null; window.isSaving = false; window.hasPendingChanges = false; window.activeBrushIdx = null; window.currentEditIndex = -1; window.isNewOrder = false;
-    const START_VIEW = new Date("2026-01-01"), TODAY = new Date();
-    window.customCap = {}; window.orders = []; window.currentMainTabFilter = 'active'; window.tempAHTasks = { ah1: [], ah2: [] };
+    window.resetBrushAndRender = function() {
+        window.activeBrushIdx = null;
+        window.renderDispatcher();
+    };
+
+    window.dispNav = function(weeks) {
+        let inp = document.getElementById('disp-start');
+        let cur = getValidDate(inp.value);
+        cur.setDate(cur.getDate() + weeks * 7);
+        inp.value = safeISO(cur);
+        window.renderDispatcher();
+    };
+
+    window.dispNavToday = function() {
+        let inp = document.getElementById('disp-start');
+        inp.value = safeISO(TODAY);
+        window.renderDispatcher();
+    };ndow.customCap = {}; window.orders = []; window.currentMainTabFilter = 'active'; window.tempAHTasks = { ah1: [], ah2: [] };
     const f = (v) => parseFloat(v) || 0;
     window.resetBrushAndRender = function() {
         window.activeBrushIdx = null;
@@ -283,7 +302,7 @@
     function getWorkingDays(s, e) { let c = 0, cur = getValidDate(s); let endD = getValidDate(e); let safety = 0; while(cur <= endD && safety < 1000) { if(isWDay(safeISO(cur))) c++; cur.setDate(cur.getDate()+1); safety++; } return c || 1; }
     function updateSyncStatus(text, type) { const el = document.getElementById('syncStatus'); el.innerText = text; if(type === 'success') { el.style.background = "var(--success)"; el.style.color = "white"; } else if(type === 'danger') { el.style.background = "var(--danger)"; el.style.color = "white"; } else { el.style.background = "var(--warning)"; el.style.color = "black"; } }
     function calcOverallProgress(o) { let totalPlanned = f(o.ins) + f(o.trei) + f(o.must_k) + f(o.rv_k) + f(o.must_l) + f(o.rv_l) + f(o.kooste); if (totalPlanned === 0) return 0; let totalActual = f(o.prog_ins) + f(o.prog_tr) + f(o.prog_mk) + f(o.prog_rk) + f(o.prog_ml) + f(o.prog_rl) + f(o.prog_ko); return Math.round((totalActual / totalPlanned) * 100); }
-    function getAllocated(o, dept) { let allocated = 0; if(o.allocs && o.allocs[dept]) Object.values(o.allocs[dept]).forEach(day => { Object.values(day).forEach(h => allocated += f(h)); }); return allocated; }
+    function getAllocated(o, dept) { let allocated = 0; if(o.allocs && o.allocs[dept]) Object.values(o.allocs[dept]).forEach(day => { Object.keys(day).forEach(ws => { if (!ws.endsWith('_done')) allocated += f(day[ws]); }); }); return allocated; }
 
   window.printOrder = function() {
         let o = window.orders[window.currentEditIndex];
@@ -892,8 +911,11 @@
             let wsCount = (window.customCap.wsCounts && window.customCap.wsCounts[deptKey]) ? window.customCap.wsCounts[deptKey] : CONFIG[deptKey].ws;
             for(let w=1; w<=wsCount; w++) {
                 thead += `<th style="position:sticky; top:0; z-index:20; background:${CONFIG[deptKey].color}; color:white; border-right:1px solid rgba(0,0,0,0.1); white-space:nowrap; padding:6px; font-size:11px;">${CONFIG[deptKey].prefix}-${w}</th>`;
-            }
-        });
+        let tbody = "";
+        let yearEnd = new Date(TODAY.getFullYear(), 11, 31);
+        let daysToShow = Math.min(Math.ceil((yearEnd.getTime() - s.getTime()) / 86400000) + 1, 365);
+        if (daysToShow < 14) daysToShow = 14;
+        for (let i = 0; i < daysToShow; i++) {
         thead += `</tr></thead><tbody>`;
         t.innerHTML = thead;
 
@@ -921,13 +943,15 @@
                             let clientHtml = ord.client ? `<div style="font-size:8px; font-weight:normal; line-height:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px;">👤 ${ord.client}</div>` : '';
                             let dimmed = pF && !matchesProjectFilter(ord) ? 'opacity:0.2;' : '';
                             let highlight = pF && matchesProjectFilter(ord) ? 'box-shadow:0 0 0 2px white, 0 0 0 4px #f1c40f;' : '';
-                            // Mineviku klots ilma tehtud tundideta — punane hoiatus
                             let isPast = curD < TODAY && safeISO(curD) < safeISO(TODAY);
                             let doneH = f(ord[CONFIG[deptKey].p]);
                             let plannedH = f(ord[deptKey]);
-                            let overdueStyle = isPast && doneH < plannedH ? 'border:2px solid #e74c3c;' : '';
-                            let overdueIcon = isPast && doneH < plannedH ? '⚠️ ' : '';
-                            cellHtml += `<div class="disp-alloc" draggable="${window.isAdmin}" ondragstart="window.handleDragStart(event, ${ordIdx}, 'grid', '${dateStr}', '${wsName}', ${manualH})" onclick="window.handleInnerBlockClick(event, '${deptKey}', '${dateStr}', '${wsName}', ${ordIdx}, ${manualH})" style="background:${CONFIG[deptKey].color}; ${dimmed} ${highlight} ${overdueStyle}" title="${ord.mt}\nKlient: ${ord.client || '-'}\nPlaneeritud: ${manualH}h\nEelarve tehtud: ${doneH}/${plannedH}h"><div style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${overdueIcon}${manualH}h ${shortName}</div>${clientHtml}</div>`;
+                            let dayDoneH = f(ord.allocs[deptKey][dateStr][wsName + '_done']);
+                            let hasDone = dayDoneH > 0;
+                            let overdueStyle = isPast && !hasDone ? 'border:2px solid #e74c3c;' : '';
+                            let doneStyle = hasDone ? 'border:2px solid #27ae60;' : '';
+                            let doneLabel = hasDone ? `<div style="font-size:8px; color:#27ae60; font-weight:bold; margin-top:1px;">✅ tehtud ${dayDoneH}h</div>` : (isPast ? `<div style="font-size:8px; color:#e74c3c; font-weight:bold; margin-top:1px;">⚠️ märkimata</div>` : '');
+                            cellHtml += `<div class="disp-alloc" draggable="${window.isAdmin}" ondragstart="window.handleDragStart(event, ${ordIdx}, 'grid', '${dateStr}', '${wsName}', ${manualH})" onclick="window.handleInnerBlockClick(event, '${deptKey}', '${dateStr}', '${wsName}', ${ordIdx}, ${manualH})" style="background:${CONFIG[deptKey].color}; ${dimmed} ${highlight} ${overdueStyle} ${doneStyle}" title="${ord.mt}\nKlient: ${ord.client || '-'}\nPlaneeritud: ${manualH}h\nTehtud: ${dayDoneH}h"><div style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${manualH}h ${shortName}</div>${clientHtml}${doneLabel}</div>`;
                         }
                     });
 
@@ -963,7 +987,15 @@
             let deptHasData = false; clean[dept] = {};
             for (let date in allocsObj[dept]) {
                 let dateHasData = false; clean[dept][date] = {};
-                for (let ws in allocsObj[dept][date]) { let h = parseFloat(allocsObj[dept][date][ws]) || 0; if (h > 0) { clean[dept][date][ws] = h; dateHasData = true; deptHasData = true; } }
+                for (let ws in allocsObj[dept][date]) {
+                    if (ws.endsWith('_done')) {
+                        let h = parseFloat(allocsObj[dept][date][ws]) || 0;
+                        if (h > 0) { clean[dept][date][ws] = h; dateHasData = true; deptHasData = true; }
+                    } else {
+                        let h = parseFloat(allocsObj[dept][date][ws]) || 0;
+                        if (h > 0) { clean[dept][date][ws] = h; dateHasData = true; deptHasData = true; }
+                    }
+                }
                 if (!dateHasData) delete clean[dept][date];
             }
             if (!deptHasData) delete clean[dept];
@@ -1226,7 +1258,15 @@
             sel.appendChild(opt);
         });
         document.getElementById('alloc-h').value = defaultH || 8;
-        document.getElementById('alloc-done-h').value = 0;
+        // Laadi olemasolev tehtud tundide väärtus kui on
+        let existingDone = 0;
+        if (existingIdx !== null) {
+            let o = window.orders[existingIdx];
+            if (o && o.allocs && o.allocs[dept] && o.allocs[dept][dateStr]) {
+                existingDone = f(o.allocs[dept][dateStr][wsName + '_done']) || 0;
+            }
+        }
+        document.getElementById('alloc-done-h').value = existingDone;
         document.getElementById('alloc-title').innerText = `${CONFIG[dept].prefix} | ${dateStr} | ${wsName}`;
         document.getElementById('alloc-del-btn').style.display = existingIdx !== null ? 'block' : 'none';
         document.getElementById('allocModal').style.display = 'block';
@@ -1257,12 +1297,12 @@
     window.saveAllocationModal = function() {
         let dept = document.getElementById('alloc-dept').value; let dateStr = document.getElementById('alloc-date').value; let wsName = document.getElementById('alloc-ws').value; let oldIdx = document.getElementById('alloc-old-idx').value; let newIdx = document.getElementById('alloc-mt').value; let h = f(document.getElementById('alloc-h').value); let doneH = f(document.getElementById('alloc-done-h').value);
         if (newIdx === "") return alert("Vali tellimus!");
-        if (oldIdx !== "" && oldIdx !== newIdx) { let oldO = window.orders[oldIdx]; if (oldO.allocs && oldO.allocs[dept] && oldO.allocs[dept][dateStr]) delete oldO.allocs[dept][dateStr][wsName]; }
+        if (oldIdx !== "" && oldIdx !== newIdx) { let oldO = window.orders[oldIdx]; if (oldO.allocs && oldO.allocs[dept] && oldO.allocs[dept][dateStr]) { delete oldO.allocs[dept][dateStr][wsName]; delete oldO.allocs[dept][dateStr][wsName+'_done']; } }
         let o = window.orders[newIdx];
         if (!o.allocs) o.allocs = {}; if (!o.allocs[dept]) o.allocs[dept] = {}; if (!o.allocs[dept][dateStr]) o.allocs[dept][dateStr] = {};
         o.allocs[dept][dateStr][wsName] = h;
-        // Lisa tehtud tunnid osakonna prog_* väljale
         if (doneH > 0) {
+            o.allocs[dept][dateStr][wsName + '_done'] = doneH;
             let progKey = CONFIG[dept].p;
             o[progKey] = Math.round((f(o[progKey]) + doneH) * 10) / 10;
             o.progress = calcOverallProgress(o);
